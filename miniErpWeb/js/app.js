@@ -9,6 +9,7 @@ const quantidadeProdutos = document.getElementById("quantidadeProdutos");
 const itensEstoque = document.getElementById("itensEstoque");
 const valorTotalEstoque = document.getElementById("valorTotalEstoque");
 const mensagem = document.getElementById("mensagem");
+const formularioBuscaProduto = document.getElementById("formBuscaProduto");
 const campoCodigoBusca = document.getElementById("codigoBusca");
 const botaoBuscar = document.getElementById("botaoBuscar");
 const botaoLimparBusca = document.getElementById("botaoLimparBusca");
@@ -90,6 +91,11 @@ function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, 
 }
 
 botaoBuscar.addEventListener("click", function () {
+    buscarProduto();
+});
+
+formularioBuscaProduto.addEventListener("submit", function (event) {
+    event.preventDefault();
     buscarProduto();
 });
 
@@ -190,24 +196,35 @@ function obterClasseSituacaoEstoque(quantidade) {
 }
 
 function buscarProduto() {
-    const codigoBuscadoTexto = campoCodigoBusca.value.trim();
-    const codigoBuscado = Number(codigoBuscadoTexto);
+    const termoBusca = campoCodigoBusca.value.trim().toLowerCase();
 
-    if (codigoBuscadoTexto === "" || codigoBuscado <= 0) {
-        exibirMensagem("Informe um código válido para buscar.", "erro");
+    if (termoBusca === "") {
+        exibirMensagem("Informe um código ou nome para buscar.", "erro");
         campoCodigoBusca.focus();
         return;
     }
 
-    for (const produto of produtos) {
-        if (produto.codigo === codigoBuscado) {
-            atualizarTabela([produto]);
-            exibirMensagem("Produto encontrado.", "sucesso");
-            return;
+    const codigoBuscado = Number(termoBusca);
+    const buscaPorCodigo = !Number.isNaN(codigoBuscado) && codigoBuscado > 0;
+
+    const resultados = produtos.filter(function (produto) {
+        const nomeProduto = produto.nome.toLowerCase();
+
+        if (buscaPorCodigo && produto.codigo === codigoBuscado) {
+            return true;
         }
+
+        return nomeProduto.includes(termoBusca);
+    });
+
+    if (resultados.length === 0) {
+        atualizarTabela([]);
+        exibirMensagem("Nenhum produto encontrado.", "erro");
+        return;
     }
 
-    exibirMensagem("Produto não encontrado.", "erro");
+    atualizarTabela(resultados);
+    exibirMensagem("Busca concluída: " + resultados.length + " resultado(s).", "sucesso");
 }
 
 function removerProduto(codigo) {
