@@ -1,9 +1,12 @@
 const produtos = [];
+let codigoProdutoEmEdicao = null;
 const formulario = document.getElementById("formProduto");
 const campoCodigo = document.getElementById("codigo");
 const campoNome = document.getElementById("nome");
 const campoPreco = document.getElementById("preco");
 const campoQuantidade = document.getElementById("quantidade");
+const botaoSalvarProduto = document.getElementById("botaoSalvarProduto");
+const botaoLimparFormulario = formulario.querySelector("button[type='reset']");
 const tabelaProdutos = document.getElementById("tabelaProdutos");
 const quantidadeProdutos = document.getElementById("quantidadeProdutos");
 const itensEstoque = document.getElementById("itensEstoque");
@@ -32,20 +35,44 @@ formulario.addEventListener("submit", function (event) {
         return;
     }
 
-    const produto = {
-        codigo: codigo,
-        nome: nome,
-        preco: preco,
-        quantidade: quantidade
-    };
+    if (codigoProdutoEmEdicao === null) {
+        const produto = {
+            codigo: codigo,
+            nome: nome,
+            preco: preco,
+            quantidade: quantidade
+        };
 
-    produtos.push(produto);
+        produtos.push(produto);
+        exibirMensagem("Produto cadastrado com sucesso.", "sucesso");
+    } else {
+        const produtoParaEditar = produtos.find(function (produto) {
+            return produto.codigo === codigoProdutoEmEdicao;
+        });
+
+        if (produtoParaEditar === undefined) {
+            exibirMensagem("Produto não encontrado para edição.", "erro");
+            return;
+        }
+
+        produtoParaEditar.nome = nome;
+        produtoParaEditar.preco = preco;
+        produtoParaEditar.quantidade = quantidade;
+
+        limparModoEdicao();
+        exibirMensagem("Produto editado com sucesso.", "sucesso");
+    }
+
     salvarProdutos();
     atualizarTabela(produtos);
     atualizarIndicadores();
-    exibirMensagem("Produto cadastrado com sucesso.", "sucesso");
     formulario.reset();
     campoCodigo.focus();
+});
+
+botaoLimparFormulario.addEventListener("click", function () {
+    limparModoEdicao();
+    exibirMensagem("", "");
 });
 
 function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, preco, quantidade) {
@@ -79,11 +106,13 @@ function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, 
         return false;
     }
 
-    for (const produto of produtos) {
-        if (produto.codigo === codigo) {
-            exibirMensagem("Já existe um produto com esse código.", "erro");
-            campoCodigo.focus();
-            return false;
+    if (codigoProdutoEmEdicao === null) {
+        for (const produto of produtos) {
+            if (produto.codigo === codigo) {
+                exibirMensagem("Já existe um produto com esse código.", "erro");
+                campoCodigo.focus();
+                return false;
+            }
         }
     }
 
@@ -151,7 +180,10 @@ function atualizarTabela(listaProdutos) {
             "<td>" + produto.quantidade + "</td>" +
             "<td>" + formatarMoeda(valorTotal) + "</td>" +
             "<td><span class=\"" + classeSituacao + "\">" + situacao + "</span></td>" +
-            "<td><button type=\"button\" onclick=\"removerProduto(" + produto.codigo + ")\">Remover</button></td>";
+            "<td>" +
+            "<button type=\"button\" onclick=\"editarProduto(" + produto.codigo + ")\">Editar</button> " +
+            "<button type=\"button\" onclick=\"removerProduto(" + produto.codigo + ")\">Remover</button>" +
+            "</td>";
 
         tabelaProdutos.appendChild(linha);
     }
@@ -225,6 +257,36 @@ function buscarProduto() {
 
     atualizarTabela(resultados);
     exibirMensagem("Busca concluída: " + resultados.length + " resultado(s).", "sucesso");
+}
+
+function editarProduto(codigo) {
+    const produtoEncontrado = produtos.find(function (produto) {
+        return produto.codigo === codigo;
+    });
+
+    if (produtoEncontrado === undefined) {
+        exibirMensagem("Produto não encontrado para edição.", "erro");
+        return;
+    }
+
+    codigoProdutoEmEdicao = codigo;
+
+    campoCodigo.value = produtoEncontrado.codigo;
+    campoNome.value = produtoEncontrado.nome;
+    campoPreco.value = produtoEncontrado.preco;
+    campoQuantidade.value = produtoEncontrado.quantidade;
+
+    campoCodigo.disabled = true;
+    botaoSalvarProduto.textContent = "Salvar alteração";
+    campoNome.focus();
+
+    exibirMensagem("Edite os dados do produto e salve a alteração.", "sucesso");
+}
+
+function limparModoEdicao() {
+    codigoProdutoEmEdicao = null;
+    campoCodigo.disabled = false;
+    botaoSalvarProduto.textContent = "Cadastrar produto";
 }
 
 function removerProduto(codigo) {
