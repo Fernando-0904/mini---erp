@@ -44,6 +44,25 @@ Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão we
 - mostrar a situação do estoque;
 - salvar os produtos no navegador usando `localStorage`.
 
+### Atualizações recentes das funções da tela
+
+Além das funções já existentes, a versão web recebeu melhorias no fluxo de ações da tabela e do formulário:
+
+- editar produto diretamente pela tabela;
+- remover produto com confirmação;
+- alterar o botão de cadastro para "Salvar alteração" durante a edição;
+- bloquear temporariamente o campo de código durante a edição para evitar inconsistências;
+- limpar o modo de edição ao salvar ou ao clicar em limpar formulário;
+- buscar produtos por código ou nome;
+- executar busca pressionando Enter no campo de busca.
+
+Fluxo da edição de produto:
+
+1. Ao clicar em Editar, os dados do item voltam para o formulário.
+2. O sistema entra em modo de edição e altera o texto do botão principal.
+3. Após salvar, os dados são atualizados na lista, a tabela é renderizada novamente e os indicadores são recalculados.
+4. O modo de edição é encerrado e o formulário retorna ao estado normal.
+
 ## Estrutura visual da versão web
 
 Na parte de HTML, a página foi organizada em seções para deixar o sistema mais fácil de entender e usar. A estrutura possui cabeçalho, área de indicadores, formulário de cadastro, campo de busca, tabela de produtos e rodapé.
