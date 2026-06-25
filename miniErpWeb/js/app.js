@@ -163,7 +163,13 @@ function atualizarTabela(listaProdutos) {
     tabelaProdutos.innerHTML = "";
 
     if (listaProdutos.length === 0) {
-        tabelaProdutos.innerHTML = "<tr><td colspan=\"7\">Nenhum produto cadastrado.</td></tr>";
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 7;
+        celulaVazia.textContent = "Nenhum produto cadastrado.";
+        linhaVazia.appendChild(celulaVazia);
+        tabelaProdutos.appendChild(linhaVazia);
         return;
     }
 
@@ -173,20 +179,57 @@ function atualizarTabela(listaProdutos) {
         const situacao = obterSituacaoEstoque(produto.quantidade);
         const classeSituacao = obterClasseSituacaoEstoque(produto.quantidade);
 
-        linha.innerHTML =
-            "<td>" + produto.codigo + "</td>" +
-            "<td>" + produto.nome + "</td>" +
-            "<td>" + formatarMoeda(produto.preco) + "</td>" +
-            "<td>" + produto.quantidade + "</td>" +
-            "<td>" + formatarMoeda(valorTotal) + "</td>" +
-            "<td><span class=\"" + classeSituacao + "\">" + situacao + "</span></td>" +
-            "<td>" +
-            "<button type=\"button\" onclick=\"editarProduto(" + produto.codigo + ")\">Editar</button> " +
-            "<button type=\"button\" onclick=\"removerProduto(" + produto.codigo + ")\">Remover</button>" +
-            "</td>";
+        linha.appendChild(criarCelula(produto.codigo));
+        linha.appendChild(criarCelula(produto.nome));
+        linha.appendChild(criarCelula(formatarMoeda(produto.preco)));
+        linha.appendChild(criarCelula(produto.quantidade));
+        linha.appendChild(criarCelula(formatarMoeda(valorTotal)));
+        linha.appendChild(criarCelulaSituacao(situacao, classeSituacao));
+        linha.appendChild(criarCelulaAcoes(produto.codigo));
 
         tabelaProdutos.appendChild(linha);
     }
+}
+
+function criarCelula(texto) {
+    const celula = document.createElement("td");
+    celula.textContent = texto;
+    return celula;
+}
+
+function criarCelulaSituacao(situacao, classeSituacao) {
+    const celula = document.createElement("td");
+    const textoSituacao = document.createElement("span");
+
+    textoSituacao.className = classeSituacao;
+    textoSituacao.textContent = situacao;
+    celula.appendChild(textoSituacao);
+
+    return celula;
+}
+
+function criarCelulaAcoes(codigo) {
+    const celula = document.createElement("td");
+    const botaoEditar = document.createElement("button");
+    const botaoRemover = document.createElement("button");
+
+    botaoEditar.type = "button";
+    botaoEditar.textContent = "Editar";
+    botaoEditar.addEventListener("click", function () {
+        editarProduto(codigo);
+    });
+
+    botaoRemover.type = "button";
+    botaoRemover.textContent = "Remover";
+    botaoRemover.addEventListener("click", function () {
+        removerProduto(codigo);
+    });
+
+    celula.appendChild(botaoEditar);
+    celula.appendChild(document.createTextNode(" "));
+    celula.appendChild(botaoRemover);
+
+    return celula;
 }
 
 function atualizarIndicadores() {
