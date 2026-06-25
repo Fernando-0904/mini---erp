@@ -1,9 +1,14 @@
 namespace projetoerp;
 
-class Produto
+public class Produto
 {
-    public int Codigo;
-    public string Nome = "";
-    public decimal PrecoUnitario;
-    public int QuantidadeEstoque;
+    public int Codigo { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public decimal PrecoUnitario { get; set; }
+    public int QuantidadeEstoque { get; set; }
+
+    public decimal CalcularValorTotal()
+    {
+        return PrecoUnitario * QuantidadeEstoque;
+    }
 }
