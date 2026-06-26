@@ -340,19 +340,11 @@ function removerProduto(codigo) {
 }
 
 function salvarProdutos() {
-    localStorage.setItem("produtos", JSON.stringify(produtos));
+    salvarProdutosNoStorage(produtos);
 }
 
 function carregarProdutos() {
-    const dadosSalvos = localStorage.getItem("produtos");
-
-    if (dadosSalvos === null) {
-        atualizarTabela(produtos);
-        atualizarIndicadores();
-        return;
-    }
-
-    const produtosSalvos = JSON.parse(dadosSalvos);
+    const produtosSalvos = carregarProdutosDoStorage();
 
     for (const produto of produtosSalvos) {
         produtos.push(produto);
