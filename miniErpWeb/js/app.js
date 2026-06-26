@@ -1,31 +1,15 @@
 const produtos = [];
 let codigoProdutoEmEdicao = null;
-const formulario = document.getElementById("formProduto");
-const campoCodigo = document.getElementById("codigo");
-const campoNome = document.getElementById("nome");
-const campoPreco = document.getElementById("preco");
-const campoQuantidade = document.getElementById("quantidade");
-const botaoSalvarProduto = document.getElementById("botaoSalvarProduto");
-const botaoLimparFormulario = formulario.querySelector("button[type='reset']");
-const tabelaProdutos = document.getElementById("tabelaProdutos");
-const quantidadeProdutos = document.getElementById("quantidadeProdutos");
-const itensEstoque = document.getElementById("itensEstoque");
-const valorTotalEstoque = document.getElementById("valorTotalEstoque");
-const mensagem = document.getElementById("mensagem");
-const formularioBuscaProduto = document.getElementById("formBuscaProduto");
-const campoCodigoBusca = document.getElementById("codigoBusca");
-const botaoBuscar = document.getElementById("botaoBuscar");
-const botaoLimparBusca = document.getElementById("botaoLimparBusca");
 
 carregarProdutos();
 
-formulario.addEventListener("submit", function (event) {
+elementos.formulario.addEventListener("submit", function (event) {
     event.preventDefault();
 
-    const codigoTexto = campoCodigo.value.trim();
-    const nome = campoNome.value.trim();
-    const precoTexto = campoPreco.value.trim();
-    const quantidadeTexto = campoQuantidade.value.trim();
+    const codigoTexto = elementos.campoCodigo.value.trim();
+    const nome = elementos.campoNome.value.trim();
+    const precoTexto = elementos.campoPreco.value.trim();
+    const quantidadeTexto = elementos.campoQuantidade.value.trim();
 
     const codigo = Number(codigoTexto);
     const preco = Number(precoTexto);
@@ -66,11 +50,11 @@ formulario.addEventListener("submit", function (event) {
     salvarProdutos();
     atualizarTabela(produtos);
     atualizarIndicadores();
-    formulario.reset();
-    campoCodigo.focus();
+    elementos.formulario.reset();
+    elementos.campoCodigo.focus();
 });
 
-botaoLimparFormulario.addEventListener("click", function () {
+elementos.botaoLimparFormulario.addEventListener("click", function () {
     limparModoEdicao();
     exibirMensagem("", "");
 });
@@ -78,31 +62,31 @@ botaoLimparFormulario.addEventListener("click", function () {
 function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, preco, quantidade) {
     if (codigoTexto === "" || codigo <= 0) {
         exibirMensagem("Informe um código válido.", "erro");
-        campoCodigo.focus();
+        elementos.campoCodigo.focus();
         return false;
     }
 
     if (nome === "") {
         exibirMensagem("Informe o nome do produto.", "erro");
-        campoNome.focus();
+        elementos.campoNome.focus();
         return false;
     }
 
     if (precoTexto === "" || preco <= 0) {
         exibirMensagem("Informe um preço válido.", "erro");
-        campoPreco.focus();
+        elementos.campoPreco.focus();
         return false;
     }
 
     if (quantidadeTexto === "") {
         exibirMensagem("Informe a quantidade do produto.", "erro");
-        campoQuantidade.focus();
+        elementos.campoQuantidade.focus();
         return false;
     }
 
     if (quantidade < 0) {
         exibirMensagem("A quantidade não pode ser negativa.", "erro");
-        campoQuantidade.focus();
+        elementos.campoQuantidade.focus();
         return false;
     }
 
@@ -110,7 +94,7 @@ function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, 
         for (const produto of produtos) {
             if (produto.codigo === codigo) {
                 exibirMensagem("Já existe um produto com esse código.", "erro");
-                campoCodigo.focus();
+                elementos.campoCodigo.focus();
                 return false;
             }
         }
@@ -119,36 +103,36 @@ function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, 
     return true;
 }
 
-botaoBuscar.addEventListener("click", function () {
+elementos.botaoBuscar.addEventListener("click", function () {
     buscarProduto();
 });
 
-formularioBuscaProduto.addEventListener("submit", function (event) {
+elementos.formularioBuscaProduto.addEventListener("submit", function (event) {
     event.preventDefault();
     buscarProduto();
 });
 
-botaoLimparBusca.addEventListener("click", function () {
+elementos.botaoLimparBusca.addEventListener("click", function () {
     limparBusca();
 });
 
 function limparBusca() {
-    campoCodigoBusca.value = "";
+    elementos.campoCodigoBusca.value = "";
     atualizarTabela(produtos);
     exibirMensagem("", "");
-    campoCodigoBusca.focus();
+    elementos.campoCodigoBusca.focus();
 }
 
 function exibirMensagem(texto, tipo) {
-    mensagem.textContent = texto;
-    mensagem.className = "";
+    elementos.mensagem.textContent = texto;
+    elementos.mensagem.className = "";
 
     if (tipo === "sucesso") {
-        mensagem.className = "mensagem-sucesso";
+        elementos.mensagem.className = "mensagem-sucesso";
     }
 
     if (tipo === "erro") {
-        mensagem.className = "mensagem-erro";
+        elementos.mensagem.className = "mensagem-erro";
     }
 }
 
@@ -160,7 +144,7 @@ function formatarMoeda(valor) {
 }
 
 function atualizarTabela(listaProdutos) {
-    tabelaProdutos.innerHTML = "";
+    elementos.tabelaProdutos.innerHTML = "";
 
     if (listaProdutos.length === 0) {
         const linhaVazia = document.createElement("tr");
@@ -169,7 +153,7 @@ function atualizarTabela(listaProdutos) {
         celulaVazia.colSpan = 7;
         celulaVazia.textContent = "Nenhum produto cadastrado.";
         linhaVazia.appendChild(celulaVazia);
-        tabelaProdutos.appendChild(linhaVazia);
+        elementos.tabelaProdutos.appendChild(linhaVazia);
         return;
     }
 
@@ -187,7 +171,7 @@ function atualizarTabela(listaProdutos) {
         linha.appendChild(criarCelulaSituacao(situacao, classeSituacao));
         linha.appendChild(criarCelulaAcoes(produto.codigo));
 
-        tabelaProdutos.appendChild(linha);
+        elementos.tabelaProdutos.appendChild(linha);
     }
 }
 
@@ -241,9 +225,9 @@ function atualizarIndicadores() {
         valorTotal += produto.preco * produto.quantidade;
     }
 
-    quantidadeProdutos.textContent = produtos.length;
-    itensEstoque.textContent = totalItens;
-    valorTotalEstoque.textContent = formatarMoeda(valorTotal);
+    elementos.quantidadeProdutos.textContent = produtos.length;
+    elementos.itensEstoque.textContent = totalItens;
+    elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
 function obterSituacaoEstoque(quantidade) {
@@ -271,11 +255,11 @@ function obterClasseSituacaoEstoque(quantidade) {
 }
 
 function buscarProduto() {
-    const termoBusca = campoCodigoBusca.value.trim().toLowerCase();
+    const termoBusca = elementos.campoCodigoBusca.value.trim().toLowerCase();
 
     if (termoBusca === "") {
         exibirMensagem("Informe um código ou nome para buscar.", "erro");
-        campoCodigoBusca.focus();
+        elementos.campoCodigoBusca.focus();
         return;
     }
 
@@ -314,22 +298,22 @@ function editarProduto(codigo) {
 
     codigoProdutoEmEdicao = codigo;
 
-    campoCodigo.value = produtoEncontrado.codigo;
-    campoNome.value = produtoEncontrado.nome;
-    campoPreco.value = produtoEncontrado.preco;
-    campoQuantidade.value = produtoEncontrado.quantidade;
+    elementos.campoCodigo.value = produtoEncontrado.codigo;
+    elementos.campoNome.value = produtoEncontrado.nome;
+    elementos.campoPreco.value = produtoEncontrado.preco;
+    elementos.campoQuantidade.value = produtoEncontrado.quantidade;
 
-    campoCodigo.disabled = true;
-    botaoSalvarProduto.textContent = "Salvar alteração";
-    campoNome.focus();
+    elementos.campoCodigo.disabled = true;
+    elementos.botaoSalvarProduto.textContent = "Salvar alteração";
+    elementos.campoNome.focus();
 
     exibirMensagem("Edite os dados do produto e salve a alteração.", "sucesso");
 }
 
 function limparModoEdicao() {
     codigoProdutoEmEdicao = null;
-    campoCodigo.disabled = false;
-    botaoSalvarProduto.textContent = "Cadastrar produto";
+    elementos.campoCodigo.disabled = false;
+    elementos.botaoSalvarProduto.textContent = "Cadastrar produto";
 }
 
 function removerProduto(codigo) {
