@@ -77,6 +77,22 @@ Também foi adicionada responsividade. Os indicadores usam grid para ficarem lad
 
 As mensagens e os status de estoque também receberam classes CSS próprias. Com isso, o sistema consegue diferenciar visualmente mensagens de sucesso, mensagens de erro, produtos sem estoque, produtos com estoque baixo e produtos disponíveis.
 
+## Organização do código JavaScript
+
+No começo, todo o JavaScript da versão web ficava em um único arquivo. Conforme o projeto cresceu, o código foi separado em arquivos menores, cada um com uma responsabilidade clara. A ideia foi deixar o projeto mais fácil de ler, manter e evoluir, seguindo a mesma linha de separação de responsabilidades que foi aplicada na versão em C#.
+
+Hoje a parte web está organizada assim:
+
+- `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
+- `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
+- `storage.js`: cuida da persistência, ou seja, salvar e carregar os produtos no `localStorage`;
+- `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
+- `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
+
+Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
+
+O carregamento dos dados salvos também ficou mais seguro. A leitura do `localStorage` passou a usar `try/catch`, de forma que, se os dados estiverem inválidos ou corrompidos, a aplicação limpa o conteúdo inválido e inicia com uma lista vazia, em vez de quebrar.
+
 ## Regras do sistema
 
 O sistema aplica algumas regras para evitar cadastros inválidos:
@@ -88,7 +104,7 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 - a quantidade não pode ficar vazia;
 - a quantidade não pode ser negativa.
 
-A quantidade igual a zero e permitida, pois representa um produto cadastrado, mas sem unidades em estoque.
+A quantidade igual a zero é permitida, pois representa um produto cadastrado, mas sem unidades em estoque.
 
 ## Tecnologias utilizadas
 
@@ -113,7 +129,11 @@ projeto erp/
 │   ├── css/
 │   │   └── style.css
 │   ├── js/
-│   │   └── app.js
+│   │   ├── app.js
+│   │   ├── dom-elements.js
+│   │   ├── produto-controller.js
+│   │   ├── storage.js
+│   │   └── ui.js
 │   └── assets/
 └── .gitignore
 ```
@@ -143,6 +163,27 @@ No GitHub, o link local acima abre o arquivo HTML dentro do repositório. O link
 
 Não é necessário instalar pacotes, rodar servidor, usar banco de dados ou configurar API.
 
+## Testes manuais realizados
+
+| Cenário | Entrada | Resultado esperado | Status |
+|---|---|---|---|
+| Cadastro válido | Código 101, nome Teclado, preço 120, quantidade 5 | Produto cadastrado, exibido na tabela e indicadores atualizados | OK |
+| Código duplicado | Cadastrar outro produto com código 101 | Sistema exibe erro e não cadastra o produto | OK |
+| Código inválido | Código vazio, zero, negativo ou decimal | Sistema exibe erro de código inválido | OK |
+| Nome vazio | Nome em branco | Sistema exibe erro e não cadastra o produto | OK |
+| Preço inválido | Preço vazio, zero, negativo ou texto inválido | Sistema exibe erro de preço inválido | OK |
+| Quantidade inválida | Quantidade vazia, negativa, decimal ou texto inválido | Sistema exibe erro de quantidade inválida | OK |
+| Quantidade zero | Código válido, nome válido, preço válido, quantidade 0 | Produto cadastrado como sem estoque | OK |
+| Busca por código existente | Buscar código de produto cadastrado | Sistema exibe o produto encontrado | OK |
+| Busca por nome existente | Buscar parte do nome de produto cadastrado | Sistema exibe os produtos compatíveis | OK |
+| Busca sem resultado | Buscar código ou nome inexistente | Sistema exibe mensagem de nenhum produto encontrado | OK |
+| Edição válida | Editar nome, preço e quantidade com valores válidos | Produto atualizado na tabela e indicadores recalculados | OK |
+| Edição com campo inválido | Informar campo inválido durante edição | Sistema exibe erro e não salva a alteração | OK |
+| Remoção confirmada | Clicar em Remover e confirmar | Produto removido da tabela e indicadores atualizados | OK |
+| Remoção cancelada | Clicar em Remover e cancelar | Produto permanece cadastrado | OK |
+| Persistência após atualizar página | Cadastrar produto e pressionar F5 | Produto continua listado após recarregar a página | OK |
+| localStorage inválido | Alterar manualmente `produtos` no localStorage para valor inválido | Aplicação não quebra, limpa os dados inválidos e inicia lista vazia | OK |
+
 ## Maiores dificuldades
 
 A maior dificuldade foi entender a integração do JavaScript com a página.
@@ -166,6 +207,9 @@ Durante o desenvolvimento, foram praticados:
 - responsividade básica para telas menores;
 - eventos no JavaScript;
 - manipulação do DOM;
+- criação de elementos da tabela com `createElement`, `textContent` e `appendChild`;
+- separação do JavaScript em arquivos por responsabilidade;
+- tratamento de erro no carregamento de dados com `try/catch`;
 - armazenamento local com `localStorage`;
 - versionamento com Git e envio para o GitHub.
 
