@@ -74,7 +74,7 @@ function inicializarProdutoController() {
     });
 
     function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, preco, quantidade) {
-        if (codigoTexto === "" || codigo <= 0) {
+        if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
             exibirMensagem("Informe um código válido.", "erro");
             elementos.campoCodigo.focus();
             return false;
@@ -86,13 +86,13 @@ function inicializarProdutoController() {
             return false;
         }
 
-        if (precoTexto === "" || preco <= 0) {
+        if (precoTexto === "" || Number.isNaN(preco) || preco <= 0) {
             exibirMensagem("Informe um preço válido.", "erro");
             elementos.campoPreco.focus();
             return false;
         }
 
-        if (quantidadeTexto === "") {
+        if (quantidadeTexto === "" || Number.isNaN(quantidade) || !Number.isInteger(quantidade)) {
             exibirMensagem("Informe a quantidade do produto.", "erro");
             elementos.campoQuantidade.focus();
             return false;
