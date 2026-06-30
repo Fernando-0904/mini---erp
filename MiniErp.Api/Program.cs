@@ -1,12 +1,13 @@
+using MiniErp.Api.Models;
+using MiniErp.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<ProdutoService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -14,28 +15,57 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("/produtos", (ProdutoService produtoService) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    return Results.Ok(produtoService.ListarProdutos());
+});
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    Produto? produto = produtoService.BuscarPorCodigo(codigo);
+
+    if (produto == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(produto);
+});
+
+app.MapPost("/produtos", (Produto produto, ProdutoService produtoService) =>
+{
+    bool cadastrado = produtoService.CadastrarProduto(produto);
+
+    if (!cadastrado)
+    {
+        return Results.Conflict("Já existe um produto com esse código.");
+    }
+
+    return Results.Created($"/produtos/{produto.Codigo}", produto);
+});
+
+app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService) =>
+{
+    bool editado = produtoService.EditarProduto(codigo, produtoAtualizado);
+
+    if (!editado)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(produtoAtualizado);
+});
+
+app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
+{
+    bool removido = produtoService.RemoverProduto(codigo);
+
+    if (!removido)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.NoContent();
+});
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
