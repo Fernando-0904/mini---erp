@@ -1,6 +1,39 @@
 @MiniErp.Api_HostAddress = http://localhost:5208
 
-GET {{MiniErp.Api_HostAddress}}/weatherforecast/
+GET {{MiniErp.Api_HostAddress}}/produtos
 Accept: application/json
+
+###
+
+GET {{MiniErp.Api_HostAddress}}/produtos/101
+Accept: application/json
+
+###
+
+POST {{MiniErp.Api_HostAddress}}/produtos
+Content-Type: application/json
+
+{
+  "codigo": 101,
+  "nome": "Teclado",
+  "precoUnitario": 120,
+  "quantidadeEstoque": 5
+}
+
+###
+
+PUT {{MiniErp.Api_HostAddress}}/produtos/101
+Content-Type: application/json
+
+{
+  "codigo": 101,
+  "nome": "Teclado Mecânico",
+  "precoUnitario": 250,
+  "quantidadeEstoque": 3
+}
+
+###
+
+DELETE {{MiniErp.Api_HostAddress}}/produtos/101
 
 ###
