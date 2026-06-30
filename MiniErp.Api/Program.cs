@@ -34,6 +34,13 @@ app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService)
 
 app.MapPost("/produtos", (Produto produto, ProdutoService produtoService) =>
 {
+    List<string> erros = ValidarProduto(produto);
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
     bool cadastrado = produtoService.CadastrarProduto(produto);
 
     if (!cadastrado)
@@ -46,6 +53,18 @@ app.MapPost("/produtos", (Produto produto, ProdutoService produtoService) =>
 
 app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService) =>
 {
+    List<string> erros = ValidarProduto(produtoAtualizado);
+
+    if (codigo != produtoAtualizado.Codigo)
+    {
+        erros.Add("O código da URL deve ser igual ao código do produto.");
+    }
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
     bool editado = produtoService.EditarProduto(codigo, produtoAtualizado);
 
     if (!editado)
@@ -69,3 +88,30 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
 });
 
 app.Run();
+
+static List<string> ValidarProduto(Produto produto)
+{
+    List<string> erros = new List<string>();
+
+    if (produto.Codigo <= 0)
+    {
+        erros.Add("O código deve ser maior que zero.");
+    }
+
+    if (string.IsNullOrWhiteSpace(produto.Nome))
+    {
+        erros.Add("O nome é obrigatório.");
+    }
+
+    if (produto.PrecoUnitario <= 0)
+    {
+        erros.Add("O preço unitário deve ser maior que zero.");
+    }
+
+    if (produto.QuantidadeEstoque < 0)
+    {
+        erros.Add("A quantidade em estoque não pode ser negativa.");
+    }
+
+    return erros;
+}
