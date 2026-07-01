@@ -218,7 +218,7 @@ function inicializarProdutoController() {
         elementos.botaoSalvarProduto.textContent = "Cadastrar produto";
     }
 
-    function removerProduto(codigo) {
+    async function removerProduto(codigo) {
         const confirmarRemocao = confirm("Deseja realmente remover este produto?");
 
         if (!confirmarRemocao) {
@@ -234,11 +234,24 @@ function inicializarProdutoController() {
             return;
         }
 
-        produtos.splice(indiceProduto, 1);
+        try {
+            await removerProdutoApi(codigo);
+
+            produtos.splice(indiceProduto, 1);
+            exibirMensagem("Produto removido com sucesso pela API.", "sucesso");
+        } catch (erro) {
+            if (!(erro instanceof TypeError)) {
+                exibirMensagem(erro.message, "erro");
+                return;
+            }
+
+            produtos.splice(indiceProduto, 1);
+            exibirMensagem("API indisponível. Produto removido no navegador.", "erro");
+        }
+
         salvarProdutos();
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
-        exibirMensagem("Produto removido com sucesso.", "sucesso");
     }
 
     function salvarProdutos() {
