@@ -4,7 +4,7 @@ function inicializarProdutoController() {
 
     carregarProdutos();
 
-    elementos.formulario.addEventListener("submit", function (event) {
+    elementos.formulario.addEventListener("submit", async function (event) {
         event.preventDefault();
 
         const codigoTexto = elementos.campoCodigo.value.trim();
@@ -28,8 +28,20 @@ function inicializarProdutoController() {
                 quantidade: quantidade
             };
 
-            produtos.push(produto);
-            exibirMensagem("Produto cadastrado com sucesso.", "sucesso");
+            try {
+                const produtoCadastrado = await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
+
+                produtos.push(converterProdutoApiParaTela(produtoCadastrado));
+                exibirMensagem("Produto cadastrado com sucesso pela API.", "sucesso");
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    exibirMensagem(erro.message, "erro");
+                    return;
+                }
+
+                produtos.push(produto);
+                exibirMensagem("API indisponível. Produto cadastrado no navegador.", "erro");
+            }
         } else {
             const produtoParaEditar = produtos.find(function (produto) {
                 return produto.codigo === codigoProdutoEmEdicao;
@@ -244,6 +256,15 @@ function inicializarProdutoController() {
             nome: produtoApi.nome,
             preco: produtoApi.precoUnitario,
             quantidade: produtoApi.quantidadeEstoque
+        };
+    }
+
+    function converterProdutoTelaParaApi(produto) {
+        return {
+            codigo: produto.codigo,
+            nome: produto.nome,
+            precoUnitario: produto.preco,
+            quantidadeEstoque: produto.quantidade
         };
     }
 }
