@@ -1,0 +1,71 @@
+const API_BASE_URL = "http://localhost:5208";
+
+async function tratarRespostaApi(resposta, mensagemErroPadrao) {
+    if (resposta.ok) {
+        if (resposta.status === 204) {
+            return null;
+        }
+
+        return resposta.json();
+    }
+
+    let mensagemErro = mensagemErroPadrao;
+
+    try {
+        const erro = await resposta.json();
+
+        if (Array.isArray(erro)) {
+            mensagemErro = erro.join(" ");
+        } else if (typeof erro === "string") {
+            mensagemErro = erro;
+        }
+    } catch {
+        // Mantém a mensagem padrão se a API não retornar JSON.
+    }
+
+    throw new Error(mensagemErro);
+}
+
+async function listarProdutosApi() {
+    const resposta = await fetch(`${API_BASE_URL}/produtos`);
+
+    return tratarRespostaApi(resposta, "Erro ao listar produtos na API.");
+}
+
+async function buscarProdutoPorCodigoApi(codigo) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`);
+
+    return tratarRespostaApi(resposta, "Produto não encontrado na API.");
+}
+
+async function cadastrarProdutoApi(produto) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(produto),
+    });
+
+    return tratarRespostaApi(resposta, "Erro ao cadastrar produto na API.");
+}
+
+async function editarProdutoApi(codigo, produto) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(produto),
+    });
+
+    return tratarRespostaApi(resposta, "Erro ao editar produto na API.");
+}
+
+async function removerProdutoApi(codigo) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`, {
+        method: "DELETE",
+    });
+
+    return tratarRespostaApi(resposta, "Erro ao remover produto na API.");
+}
