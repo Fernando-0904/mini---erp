@@ -2,7 +2,7 @@
 
 ## Sobre o projeto
 
-Este projeto é um Mini ERP simples para controle de produtos e estoque. Ele foi construído em duas partes: primeiro uma versão em console com C# e depois uma versão web usando HTML, CSS e JavaScript.
+Este projeto é um Mini ERP simples para controle de produtos e estoque. Ele foi construído em três partes: primeiro uma versão em console com C#, depois uma versão web usando HTML, CSS e JavaScript e, por fim, uma API com ASP.NET Core.
 
 A ideia principal foi criar um sistema pequeno, mas completo o suficiente para praticar cadastro, listagem, busca, validações, cálculos de estoque e manipulação de dados na tela.
 
@@ -106,10 +106,58 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 
 A quantidade igual a zero é permitida, pois representa um produto cadastrado, mas sem unidades em estoque.
 
+## API de produtos
+
+Além da versão em console e da versão web, o projeto também possui uma API criada com ASP.NET Core Minimal API.
+
+Por enquanto, a API trabalha com os produtos em memória. Isso significa que os dados existem enquanto a aplicação está rodando, mas são apagados quando a API é encerrada. Nesta etapa ainda não foi usado banco de dados, Entity Framework ou integração com a tela web.
+
+A API possui os seguintes endpoints:
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/produtos` | Lista todos os produtos cadastrados |
+| GET | `/produtos/{codigo}` | Busca um produto pelo código |
+| POST | `/produtos` | Cadastra um novo produto |
+| PUT | `/produtos/{codigo}` | Edita um produto existente |
+| DELETE | `/produtos/{codigo}` | Remove um produto existente |
+
+Exemplo de JSON usado no cadastro e na edição:
+
+```json
+{
+  "codigo": 101,
+  "nome": "Teclado",
+  "precoUnitario": 120,
+  "quantidadeEstoque": 5
+}
+```
+
+A API também possui validações para evitar dados inválidos:
+
+- o código precisa ser maior que zero;
+- o nome do produto não pode ficar vazio;
+- o preço unitário precisa ser maior que zero;
+- a quantidade em estoque não pode ser negativa;
+- não pode haver dois produtos com o mesmo código;
+- na edição, o código da URL precisa ser igual ao código enviado no corpo da requisição.
+
+Algumas respostas esperadas da API:
+
+| Situação | Resposta |
+|---|---|
+| Produto cadastrado com sucesso | `201 Created` |
+| Produto editado com sucesso | `200 OK` |
+| Produto removido com sucesso | `204 No Content` |
+| Produto não encontrado | `404 Not Found` |
+| Código duplicado no cadastro | `409 Conflict` |
+| Dados inválidos | `400 Bad Request` |
+
 ## Tecnologias utilizadas
 
 - C#
 - .NET 10
+- ASP.NET Core Minimal API
 - HTML
 - CSS
 - JavaScript
@@ -124,7 +172,15 @@ projeto erp/
 ├── ProjetoErp.csproj
 ├── index.html
 ├── README.md
-├── MiniErpWeb/
+├── MiniErp.Api/
+│   ├── Models/
+│   │   └── Produto.cs
+│   ├── Services/
+│   │   └── ProdutoService.cs
+│   ├── Program.cs
+│   ├── MiniErp.Api.csproj
+│   └── MiniErp.Api.http
+├── miniErpWeb/
 │   ├── index.html
 │   ├── css/
 │   │   └── style.css
@@ -147,6 +203,22 @@ dotnet build
 dotnet run
 ```
 
+## Como executar a API
+
+No terminal, dentro da pasta do projeto, execute:
+
+```bash
+dotnet run --project MiniErp.Api
+```
+
+Por padrão, a API pode ser acessada localmente em:
+
+```text
+http://localhost:5208
+```
+
+O arquivo `MiniErp.Api/MiniErp.Api.http` possui exemplos de requisições para listar, buscar, cadastrar, editar e remover produtos.
+
 ## Como abrir a versão web
 
 Depois que o GitHub Pages estiver ativado, a versão web poderá ser acessada por este link:
@@ -161,7 +233,7 @@ Para abrir localmente, use o arquivo abaixo diretamente no navegador:
 
 No GitHub, o link local acima abre o arquivo HTML dentro do repositório. O link do GitHub Pages abre a aplicação funcionando como página web.
 
-Não é necessário instalar pacotes, rodar servidor, usar banco de dados ou configurar API.
+Para abrir somente a versão web localmente, não é necessário instalar pacotes, rodar servidor, usar banco de dados ou configurar a API.
 
 ## Testes manuais realizados
 
@@ -211,13 +283,17 @@ Durante o desenvolvimento, foram praticados:
 - separação do JavaScript em arquivos por responsabilidade;
 - tratamento de erro no carregamento de dados com `try/catch`;
 - armazenamento local com `localStorage`;
+- criação de API com ASP.NET Core Minimal API;
+- criação de endpoints HTTP para produtos;
+- validação de dados recebidos pela API;
 - versionamento com Git e envio para o GitHub.
 
 ## Próximos passos possíveis
 
-- melhorar a organização do código C# separando partes em métodos;
 - melhorar alguns detalhes visuais da interface;
-- futuramente conectar a interface web com uma API.
+- conectar a interface web com a API;
+- adicionar banco de dados futuramente;
+- criar testes automatizados para a API.
 
 ---
 
