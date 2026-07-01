@@ -156,7 +156,7 @@ function inicializarProdutoController() {
         elementos.campoCodigoBusca.focus();
     }
 
-    function buscarProduto() {
+    async function buscarProduto() {
         const termoBusca = elementos.campoCodigoBusca.value.trim().toLowerCase();
 
         if (termoBusca === "") {
@@ -167,6 +167,23 @@ function inicializarProdutoController() {
 
         const codigoBuscado = Number(termoBusca);
         const buscaPorCodigo = !Number.isNaN(codigoBuscado) && codigoBuscado > 0;
+
+        if (buscaPorCodigo) {
+            try {
+                const produtoApi = await buscarProdutoPorCodigoApi(codigoBuscado);
+                const produtoEncontrado = converterProdutoApiParaTela(produtoApi);
+
+                atualizarTabela([produtoEncontrado], editarProduto, removerProduto);
+                exibirMensagem("Busca concluída: 1 resultado(s).", "sucesso");
+                return;
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    atualizarTabela([], editarProduto, removerProduto);
+                    exibirMensagem("Nenhum produto encontrado.", "erro");
+                    return;
+                }
+            }
+        }
 
         const resultados = produtos.filter(function (produto) {
             const nomeProduto = produto.nome.toLowerCase();
