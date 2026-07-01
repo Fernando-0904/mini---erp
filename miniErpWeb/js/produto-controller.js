@@ -213,7 +213,21 @@ function inicializarProdutoController() {
         salvarProdutosNoStorage(produtos);
     }
 
-    function carregarProdutos() {
+    async function carregarProdutos() {
+        try {
+            const produtosApi = await listarProdutosApi();
+
+            for (const produto of produtosApi) {
+                produtos.push(converterProdutoApiParaTela(produto));
+            }
+
+            atualizarTabela(produtos, editarProduto, removerProduto);
+            atualizarIndicadores(produtos);
+            return;
+        } catch {
+            exibirMensagem("API indisponível. Os dados foram carregados do navegador.", "erro");
+        }
+
         const produtosSalvos = carregarProdutosDoStorage();
 
         for (const produto of produtosSalvos) {
@@ -222,5 +236,14 @@ function inicializarProdutoController() {
 
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
+    }
+
+    function converterProdutoApiParaTela(produtoApi) {
+        return {
+            codigo: produtoApi.codigo,
+            nome: produtoApi.nome,
+            preco: produtoApi.precoUnitario,
+            quantidade: produtoApi.quantidadeEstoque
+        };
     }
 }

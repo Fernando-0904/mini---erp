@@ -4,6 +4,7 @@ using MiniErp.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddCors();
 builder.Services.AddSingleton<ProdutoService>();
 
 var app = builder.Build();
@@ -14,6 +15,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 app.MapGet("/produtos", (ProdutoService produtoService) =>
 {
