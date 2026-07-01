@@ -52,12 +52,32 @@ function inicializarProdutoController() {
                 return;
             }
 
-            produtoParaEditar.nome = nome;
-            produtoParaEditar.preco = preco;
-            produtoParaEditar.quantidade = quantidade;
+            const produtoAtualizado = {
+                codigo: codigo,
+                nome: nome,
+                preco: preco,
+                quantidade: quantidade
+            };
+
+            try {
+                const produtoEditado = await editarProdutoApi(
+                    codigoProdutoEmEdicao,
+                    converterProdutoTelaParaApi(produtoAtualizado)
+                );
+
+                aplicarDadosProduto(produtoParaEditar, converterProdutoApiParaTela(produtoEditado));
+                exibirMensagem("Produto editado com sucesso pela API.", "sucesso");
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    exibirMensagem(erro.message, "erro");
+                    return;
+                }
+
+                aplicarDadosProduto(produtoParaEditar, produtoAtualizado);
+                exibirMensagem("API indisponível. Produto editado no navegador.", "erro");
+            }
 
             limparModoEdicao();
-            exibirMensagem("Produto editado com sucesso.", "sucesso");
         }
 
         salvarProdutos();
@@ -266,5 +286,11 @@ function inicializarProdutoController() {
             precoUnitario: produto.preco,
             quantidadeEstoque: produto.quantidade
         };
+    }
+
+    function aplicarDadosProduto(produto, novosDados) {
+        produto.nome = novosDados.nome;
+        produto.preco = novosDados.preco;
+        produto.quantidade = novosDados.quantidade;
     }
 }
