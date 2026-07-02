@@ -4,7 +4,7 @@ function inicializarProdutoController() {
 
     carregarProdutos();
 
-    elementos.formulario.addEventListener("submit", function (event) {
+    elementos.formulario.addEventListener("submit", async function (event) {
         event.preventDefault();
 
         const codigoTexto = elementos.campoCodigo.value.trim();
@@ -28,8 +28,20 @@ function inicializarProdutoController() {
                 quantidade: quantidade
             };
 
-            produtos.push(produto);
-            exibirMensagem("Produto cadastrado com sucesso.", "sucesso");
+            try {
+                const produtoCadastrado = await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
+
+                produtos.push(converterProdutoApiParaTela(produtoCadastrado));
+                exibirMensagem("Produto cadastrado com sucesso pela API.", "sucesso");
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    exibirMensagem(erro.message, "erro");
+                    return;
+                }
+
+                produtos.push(produto);
+                exibirMensagem("API indisponível. Produto cadastrado no navegador.", "erro");
+            }
         } else {
             const produtoParaEditar = produtos.find(function (produto) {
                 return produto.codigo === codigoProdutoEmEdicao;
@@ -40,12 +52,32 @@ function inicializarProdutoController() {
                 return;
             }
 
-            produtoParaEditar.nome = nome;
-            produtoParaEditar.preco = preco;
-            produtoParaEditar.quantidade = quantidade;
+            const produtoAtualizado = {
+                codigo: codigo,
+                nome: nome,
+                preco: preco,
+                quantidade: quantidade
+            };
+
+            try {
+                const produtoEditado = await editarProdutoApi(
+                    codigoProdutoEmEdicao,
+                    converterProdutoTelaParaApi(produtoAtualizado)
+                );
+
+                aplicarDadosProduto(produtoParaEditar, converterProdutoApiParaTela(produtoEditado));
+                exibirMensagem("Produto editado com sucesso pela API.", "sucesso");
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    exibirMensagem(erro.message, "erro");
+                    return;
+                }
+
+                aplicarDadosProduto(produtoParaEditar, produtoAtualizado);
+                exibirMensagem("API indisponível. Produto editado no navegador.", "erro");
+            }
 
             limparModoEdicao();
-            exibirMensagem("Produto editado com sucesso.", "sucesso");
         }
 
         salvarProdutos();
@@ -124,7 +156,7 @@ function inicializarProdutoController() {
         elementos.campoCodigoBusca.focus();
     }
 
-    function buscarProduto() {
+    async function buscarProduto() {
         const termoBusca = elementos.campoCodigoBusca.value.trim().toLowerCase();
 
         if (termoBusca === "") {
@@ -135,6 +167,23 @@ function inicializarProdutoController() {
 
         const codigoBuscado = Number(termoBusca);
         const buscaPorCodigo = !Number.isNaN(codigoBuscado) && codigoBuscado > 0;
+
+        if (buscaPorCodigo) {
+            try {
+                const produtoApi = await buscarProdutoPorCodigoApi(codigoBuscado);
+                const produtoEncontrado = converterProdutoApiParaTela(produtoApi);
+
+                atualizarTabela([produtoEncontrado], editarProduto, removerProduto);
+                exibirMensagem("Busca concluída: 1 resultado(s).", "sucesso");
+                return;
+            } catch (erro) {
+                if (!(erro instanceof TypeError)) {
+                    atualizarTabela([], editarProduto, removerProduto);
+                    exibirMensagem("Nenhum produto encontrado.", "erro");
+                    return;
+                }
+            }
+        }
 
         const resultados = produtos.filter(function (produto) {
             const nomeProduto = produto.nome.toLowerCase();
@@ -186,7 +235,7 @@ function inicializarProdutoController() {
         elementos.botaoSalvarProduto.textContent = "Cadastrar produto";
     }
 
-    function removerProduto(codigo) {
+    async function removerProduto(codigo) {
         const confirmarRemocao = confirm("Deseja realmente remover este produto?");
 
         if (!confirmarRemocao) {
@@ -202,18 +251,45 @@ function inicializarProdutoController() {
             return;
         }
 
-        produtos.splice(indiceProduto, 1);
+        try {
+            await removerProdutoApi(codigo);
+
+            produtos.splice(indiceProduto, 1);
+            exibirMensagem("Produto removido com sucesso pela API.", "sucesso");
+        } catch (erro) {
+            if (!(erro instanceof TypeError)) {
+                exibirMensagem(erro.message, "erro");
+                return;
+            }
+
+            produtos.splice(indiceProduto, 1);
+            exibirMensagem("API indisponível. Produto removido no navegador.", "erro");
+        }
+
         salvarProdutos();
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
-        exibirMensagem("Produto removido com sucesso.", "sucesso");
     }
 
     function salvarProdutos() {
         salvarProdutosNoStorage(produtos);
     }
 
-    function carregarProdutos() {
+    async function carregarProdutos() {
+        try {
+            const produtosApi = await listarProdutosApi();
+
+            for (const produto of produtosApi) {
+                produtos.push(converterProdutoApiParaTela(produto));
+            }
+
+            atualizarTabela(produtos, editarProduto, removerProduto);
+            atualizarIndicadores(produtos);
+            return;
+        } catch {
+            exibirMensagem("API indisponível. Os dados foram carregados do navegador.", "erro");
+        }
+
         const produtosSalvos = carregarProdutosDoStorage();
 
         for (const produto of produtosSalvos) {
@@ -222,5 +298,29 @@ function inicializarProdutoController() {
 
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
+    }
+
+    function converterProdutoApiParaTela(produtoApi) {
+        return {
+            codigo: produtoApi.codigo,
+            nome: produtoApi.nome,
+            preco: produtoApi.precoUnitario,
+            quantidade: produtoApi.quantidadeEstoque
+        };
+    }
+
+    function converterProdutoTelaParaApi(produto) {
+        return {
+            codigo: produto.codigo,
+            nome: produto.nome,
+            precoUnitario: produto.preco,
+            quantidadeEstoque: produto.quantidade
+        };
+    }
+
+    function aplicarDadosProduto(produto, novosDados) {
+        produto.nome = novosDados.nome;
+        produto.preco = novosDados.preco;
+        produto.quantidade = novosDados.quantidade;
     }
 }
