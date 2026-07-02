@@ -256,6 +256,44 @@ Para abrir somente a versão web localmente, não é necessário instalar pacote
 | Persistência após atualizar página | Cadastrar produto e pressionar F5 | Produto continua listado após recarregar a página | OK |
 | localStorage inválido | Alterar manualmente `produtos` no localStorage para valor inválido | Aplicação não quebra, limpa os dados inválidos e inicia lista vazia | OK |
 
+## Testes manuais da integração com API
+
+Depois da criação da API, a versão web passou a tentar usar os endpoints do back-end para listar, cadastrar, editar, remover e buscar produtos por código. O `localStorage` foi mantido como fallback para quando a API estiver indisponível.
+
+Testes com a API ligada:
+
+| Cenário | Entrada | Resultado esperado | Status |
+|---|---|---|---|
+| Listagem pela API | Abrir a tela com a API rodando | Sistema carrega os produtos usando `GET /produtos` | OK |
+| Cadastro pela API | Código 101, nome Teclado, preço 120, quantidade 5 | Produto cadastrado usando `POST /produtos` e exibido na tabela | OK |
+| Código duplicado pela API | Cadastrar outro produto com código 101 | API retorna conflito e o produto não é cadastrado novamente | OK |
+| Cadastro inválido pela API | Nome vazio, preço zero ou quantidade negativa | API retorna erro de validação e o produto não é cadastrado | OK |
+| Edição pela API | Editar nome, preço e quantidade de produto existente | Produto atualizado usando `PUT /produtos/{codigo}` | OK |
+| Remoção pela API | Remover produto existente e confirmar | Produto removido usando `DELETE /produtos/{codigo}` | OK |
+| Busca por código pela API | Buscar código 101 | Produto encontrado usando `GET /produtos/{codigo}` | OK |
+| Busca por código inexistente | Buscar código 999 | Sistema informa que nenhum produto foi encontrado | OK |
+| Busca por nome | Buscar parte do nome do produto | Sistema mantém a busca local por nome usando os dados carregados | OK |
+| CORS da API | Frontend chamar `http://localhost:5208` | API permite a chamada do navegador | OK |
+
+Testes com a API desligada:
+
+| Cenário | Entrada | Resultado esperado | Status |
+|---|---|---|---|
+| Carregamento sem API | Abrir a tela com a API desligada | Sistema carrega os produtos salvos no `localStorage` | OK |
+| Cadastro local | Cadastrar produto com a API desligada | Produto é salvo no navegador e exibido na tabela | OK |
+| Edição local | Editar produto com a API desligada | Produto é editado no navegador e salvo no `localStorage` | OK |
+| Remoção local | Remover produto com a API desligada | Produto é removido no navegador e o `localStorage` é atualizado | OK |
+| Busca por código local | Buscar código de produto salvo localmente | Sistema encontra o produto usando os dados locais | OK |
+| Busca por nome local | Buscar parte do nome com a API desligada | Sistema encontra produtos usando os dados locais | OK |
+| Persistência local | Recarregar a página depois de alterações locais | Dados continuam disponíveis pelo `localStorage` | OK |
+
+Observações da integração:
+
+- a API ainda usa dados em memória, então os produtos cadastrados nela são perdidos quando a API é encerrada;
+- o `localStorage` funciona como fallback quando a API está indisponível;
+- ainda não existe sincronização automática entre dados locais e dados da API;
+- a busca por nome continua local porque a API atual possui busca apenas por código.
+
 ## Maiores dificuldades
 
 A maior dificuldade foi entender a integração do JavaScript com a página.
@@ -291,7 +329,7 @@ Durante o desenvolvimento, foram praticados:
 ## Próximos passos possíveis
 
 - melhorar alguns detalhes visuais da interface;
-- conectar a interface web com a API;
+- melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
 - adicionar banco de dados futuramente;
 - criar testes automatizados para a API.
 
