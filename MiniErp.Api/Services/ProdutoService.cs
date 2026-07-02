@@ -1,10 +1,29 @@
+using System.Text.Json;
 using MiniErp.Api.Models;
 
 namespace MiniErp.Api.Services;
 
 public class ProdutoService
 {
-    private readonly List<Produto> produtos = new List<Produto>();
+    private readonly string caminhoArquivo;
+    private readonly List<Produto> produtos;
+
+    public ProdutoService(IWebHostEnvironment ambiente)
+    {
+        string pastaBaseApi = ambiente.ContentRootPath;
+
+        if (!Directory.Exists(Path.Combine(pastaBaseApi, "Services")))
+        {
+            pastaBaseApi = Path.Combine(pastaBaseApi, "MiniErp.Api");
+        }
+
+        string pastaDados = Path.Combine(pastaBaseApi, "Dados");
+
+        Directory.CreateDirectory(pastaDados);
+
+        caminhoArquivo = Path.Combine(pastaDados, "produtos.json");
+        produtos = CarregarProdutosDoArquivo();
+    }
 
     public List<Produto> ListarProdutos()
     {
@@ -32,6 +51,8 @@ public class ProdutoService
         }
 
         produtos.Add(produto);
+        SalvarProdutosNoArquivo();
+
         return true;
     }
 
@@ -48,6 +69,8 @@ public class ProdutoService
         produto.PrecoUnitario = produtoAtualizado.PrecoUnitario;
         produto.QuantidadeEstoque = produtoAtualizado.QuantidadeEstoque;
 
+        SalvarProdutosNoArquivo();
+
         return true;
     }
 
@@ -61,6 +84,39 @@ public class ProdutoService
         }
 
         produtos.Remove(produto);
+        SalvarProdutosNoArquivo();
+
         return true;
+    }
+
+    private List<Produto> CarregarProdutosDoArquivo()
+    {
+        if (!File.Exists(caminhoArquivo))
+        {
+            return new List<Produto>();
+        }
+
+        try
+        {
+            string json = File.ReadAllText(caminhoArquivo);
+            List<Produto>? produtosSalvos = JsonSerializer.Deserialize<List<Produto>>(json);
+
+            return produtosSalvos ?? new List<Produto>();
+        }
+        catch
+        {
+            return new List<Produto>();
+        }
+    }
+
+    private void SalvarProdutosNoArquivo()
+    {
+        JsonSerializerOptions opcoes = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        string json = JsonSerializer.Serialize(produtos, opcoes);
+        File.WriteAllText(caminhoArquivo, json);
     }
 }
