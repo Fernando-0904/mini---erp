@@ -7,4 +7,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="MiniErp.Api\**" />
+    <EmbeddedResource Remove="MiniErp.Api\**" />
+    <None Remove="MiniErp.Api\**" />
+  </ItemGroup>
+
 </Project>
