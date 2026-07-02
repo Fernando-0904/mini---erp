@@ -86,6 +86,7 @@ Hoje a parte web está organizada assim:
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
 - `storage.js`: cuida da persistência, ou seja, salvar e carregar os produtos no `localStorage`;
+- `api.js`: centraliza as chamadas HTTP para a API de produtos;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
 
@@ -110,7 +111,7 @@ A quantidade igual a zero é permitida, pois representa um produto cadastrado, m
 
 Além da versão em console e da versão web, o projeto também possui uma API criada com ASP.NET Core Minimal API.
 
-Por enquanto, a API trabalha com os produtos em memória. Isso significa que os dados existem enquanto a aplicação está rodando, mas são apagados quando a API é encerrada. Nesta etapa ainda não foi usado banco de dados, Entity Framework ou integração com a tela web.
+Por enquanto, a API trabalha com os produtos em memória. Isso significa que os dados existem enquanto a aplicação está rodando, mas são apagados quando a API é encerrada. A versão web já consome a API e mantém o `localStorage` como fallback quando a API está indisponível.
 
 A API possui os seguintes endpoints:
 
@@ -186,6 +187,7 @@ projeto erp/
 │   │   └── style.css
 │   ├── js/
 │   │   ├── app.js
+│   │   ├── api.js
 │   │   ├── dom-elements.js
 │   │   ├── produto-controller.js
 │   │   ├── storage.js
