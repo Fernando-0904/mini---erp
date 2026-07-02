@@ -154,6 +154,29 @@ Algumas respostas esperadas da API:
 | Código duplicado no cadastro | `409 Conflict` |
 | Dados inválidos | `400 Bad Request` |
 
+## Persistência em arquivo JSON
+
+A API também possui persistência simples em arquivo JSON. Os produtos são mantidos em memória durante a execução da API, mas a lista é carregada de um arquivo ao iniciar e salva novamente após alterações.
+
+O arquivo usado pela API é:
+
+```text
+MiniErp.Api/Dados/produtos.json
+```
+
+Esse arquivo é criado automaticamente pela aplicação quando necessário e não é versionado no Git, pois representa dados gerados durante o uso do sistema.
+
+Comportamento atual da persistência:
+
+- ao iniciar a API, os produtos são carregados de `produtos.json`, se o arquivo existir;
+- se o arquivo não existir, a API inicia com uma lista vazia;
+- ao cadastrar um produto, a lista atualizada é salva no arquivo;
+- ao editar um produto, a lista atualizada é salva no arquivo;
+- ao remover um produto, a lista atualizada é salva no arquivo;
+- ao reiniciar a API, os produtos salvos continuam disponíveis.
+
+Essa etapa ainda não usa banco de dados. A persistência em arquivo JSON serve como uma evolução intermediária antes de usar SQLite, SQL Server ou Entity Framework Core.
+
 ## Tecnologias utilizadas
 
 - C#
@@ -291,10 +314,35 @@ Testes com a API desligada:
 
 Observações da integração:
 
-- a API ainda usa dados em memória, então os produtos cadastrados nela são perdidos quando a API é encerrada;
+- a API salva os produtos em arquivo JSON, então os dados continuam disponíveis após reiniciar;
 - o `localStorage` funciona como fallback quando a API está indisponível;
 - ainda não existe sincronização automática entre dados locais e dados da API;
 - a busca por nome continua local porque a API atual possui busca apenas por código.
+
+## Testes manuais da persistência em JSON
+
+Depois da persistência em arquivo JSON, foram testados cenários para confirmar que os dados continuam disponíveis mesmo após reiniciar a API.
+
+| Cenário | Entrada | Resultado esperado | Status |
+|---|---|---|---|
+| Build da API | Executar build do projeto `MiniErp.Api` | Compilação concluída sem avisos e sem erros | OK |
+| Cadastro persistido | Cadastrar produto com código 9901 | API retorna `201 Created` e salva o produto no arquivo JSON | OK |
+| Carregamento após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `200 OK` e encontra o produto cadastrado antes do reinício | OK |
+| Edição persistida | Editar nome, preço e quantidade do produto 9901 | API retorna `200 OK` e salva os novos dados no arquivo JSON | OK |
+| Carregamento da edição após reiniciar | Reiniciar a API e buscar novamente o código 9901 | API retorna o produto com os dados editados | OK |
+| Remoção persistida | Remover o produto 9901 | API retorna `204 No Content` e atualiza o arquivo JSON | OK |
+| Remoção após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `404 Not Found`, confirmando que o produto não voltou | OK |
+
+Resultado observado nos testes:
+
+```text
+Cadastro inicial: HTTP 201
+Busca após reiniciar: HTTP 200, Produto Persistência
+Edição: HTTP 200
+Busca após reiniciar edição: HTTP 200, Produto Persistência Editado, R$ 150, qtd 7
+Remoção: HTTP 204
+Busca após reiniciar remoção: HTTP 404
+```
 
 ## Maiores dificuldades
 
