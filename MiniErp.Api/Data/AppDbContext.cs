@@ -10,4 +10,9 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Produto> Produtos => Set<Produto>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Produto>().HasKey(produto => produto.Codigo);
+    }
 }
