@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=Dados/mini-erp.db"));
-builder.Services.AddSingleton<ProdutoService>();
+builder.Services.AddScoped<ProdutoService>();
 
 var app = builder.Build();
 
