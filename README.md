@@ -175,13 +175,41 @@ Comportamento atual da persistência:
 - ao remover um produto, a lista atualizada é salva no arquivo;
 - ao reiniciar a API, os produtos salvos continuam disponíveis.
 
-Essa etapa ainda não usa banco de dados. A persistência em arquivo JSON serve como uma evolução intermediária antes de usar SQLite, SQL Server ou Entity Framework Core.
+A persistência em arquivo JSON foi uma etapa intermediária. Atualmente a API utiliza SQLite com Entity Framework Core como banco de dados.
+
+## Banco de dados SQLite
+
+A API utiliza SQLite com Entity Framework Core para persistir os produtos. Os dados ficam armazenados no arquivo:
+
+```text
+MiniErp.Api/Dados/mini-erp.db
+```
+
+Esse arquivo é criado automaticamente ao executar a migration e não é versionado no Git.
+
+O contexto de banco está definido em `MiniErp.Api/Data/AppDbContext.cs` e os arquivos de migration ficam em `MiniErp.Api/Migrations/`.
+
+Para criar ou atualizar o banco após clonar o repositório, execute:
+
+```bash
+dotnet ef database update --project MiniErp.Api --startup-project MiniErp.Api
+```
+
+Comportamento atual da persistência com SQLite:
+
+- ao iniciar a API, os dados são carregados diretamente do banco SQLite;
+- ao cadastrar um produto, o registro é inserido no banco;
+- ao editar um produto, os dados são atualizados no banco;
+- ao remover um produto, o registro é excluído do banco;
+- ao reiniciar a API, todos os dados continuam disponíveis.
 
 ## Tecnologias utilizadas
 
 - C#
 - .NET 10
 - ASP.NET Core Minimal API
+- Entity Framework Core
+- SQLite
 - HTML
 - CSS
 - JavaScript
@@ -197,6 +225,9 @@ projeto erp/
 ├── index.html
 ├── README.md
 ├── MiniErp.Api/
+│   ├── Data/
+│   │   └── AppDbContext.cs
+│   ├── Migrations/
 │   ├── Models/
 │   │   └── Produto.cs
 │   ├── Services/
@@ -230,7 +261,13 @@ dotnet run
 
 ## Como executar a API
 
-No terminal, dentro da pasta do projeto, execute:
+Antes de subir a API pela primeira vez, crie o banco de dados executando a migration:
+
+```bash
+dotnet ef database update --project MiniErp.Api --startup-project MiniErp.Api
+```
+
+Depois, no terminal, dentro da pasta do projeto, execute:
 
 ```bash
 dotnet run --project MiniErp.Api

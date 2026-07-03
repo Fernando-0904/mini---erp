@@ -11,3 +11,5 @@ Feedback_e_Proximos_Passos_Mini_ERP_FORMATADO.md
 MiniErp.Api/Dados/produtos.json
 mini-erp.db
 MiniErp.Api/Dados/mini-erp.db
+MiniErp.Api/Dados/mini-erp.db-shm
+MiniErp.Api/Dados/mini-erp.db-wal
