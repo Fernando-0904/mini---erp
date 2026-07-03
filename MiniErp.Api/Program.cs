@@ -1,10 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using MiniErp.Api.Data;
 using MiniErp.Api.Models;
 using MiniErp.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors();
-builder.Services.AddSingleton<ProdutoService>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=Dados/mini-erp.db"));
+builder.Services.AddScoped<ProdutoService>();
 
 var app = builder.Build();
 

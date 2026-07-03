@@ -1,46 +1,30 @@
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using MiniErp.Api.Data;
 using MiniErp.Api.Models;
 
 namespace MiniErp.Api.Services;
 
 public class ProdutoService
 {
-    private readonly string caminhoArquivo;
-    private readonly List<Produto> produtos;
+    private readonly AppDbContext contexto;
 
-    public ProdutoService(IWebHostEnvironment ambiente)
+    public ProdutoService(AppDbContext contexto)
     {
-        string pastaBaseApi = ambiente.ContentRootPath;
-
-        if (!Directory.Exists(Path.Combine(pastaBaseApi, "Services")))
-        {
-            pastaBaseApi = Path.Combine(pastaBaseApi, "MiniErp.Api");
-        }
-
-        string pastaDados = Path.Combine(pastaBaseApi, "Dados");
-
-        Directory.CreateDirectory(pastaDados);
-
-        caminhoArquivo = Path.Combine(pastaDados, "produtos.json");
-        produtos = CarregarProdutosDoArquivo();
+        this.contexto = contexto;
     }
 
     public List<Produto> ListarProdutos()
     {
-        return produtos;
+        return contexto.Produtos
+            .AsNoTracking()
+            .OrderBy(p => p.Codigo)
+            .ToList();
     }
 
     public Produto? BuscarPorCodigo(int codigo)
     {
-        foreach (Produto produto in produtos)
-        {
-            if (produto.Codigo == codigo)
-            {
-                return produto;
-            }
-        }
-
-        return null;
+        return contexto.Produtos
+            .FirstOrDefault(p => p.Codigo == codigo);
     }
 
     public bool CadastrarProduto(Produto produto)
@@ -50,73 +34,40 @@ public class ProdutoService
             return false;
         }
 
-        produtos.Add(produto);
-        SalvarProdutosNoArquivo();
-
+        contexto.Produtos.Add(produto);
+        contexto.SaveChanges();
         return true;
     }
 
     public bool EditarProduto(int codigo, Produto produtoAtualizado)
     {
-        Produto? produto = BuscarPorCodigo(codigo);
+        Produto? produtoExistente = BuscarPorCodigo(codigo);
 
-        if (produto == null)
+        if (produtoExistente == null)
         {
             return false;
         }
 
-        produto.Nome = produtoAtualizado.Nome;
-        produto.PrecoUnitario = produtoAtualizado.PrecoUnitario;
-        produto.QuantidadeEstoque = produtoAtualizado.QuantidadeEstoque;
+        produtoExistente.Nome = produtoAtualizado.Nome;
+        produtoExistente.PrecoUnitario = produtoAtualizado.PrecoUnitario;
+        produtoExistente.QuantidadeEstoque = produtoAtualizado.QuantidadeEstoque;
 
-        SalvarProdutosNoArquivo();
-
+        contexto.SaveChanges();
         return true;
     }
 
     public bool RemoverProduto(int codigo)
     {
-        Produto? produto = BuscarPorCodigo(codigo);
+        Produto? produtoExistente = BuscarPorCodigo(codigo);
 
-        if (produto == null)
+        if (produtoExistente == null)
         {
             return false;
         }
 
-        produtos.Remove(produto);
-        SalvarProdutosNoArquivo();
-
+        contexto.Produtos.Remove(produtoExistente);
+        contexto.SaveChanges();
         return true;
     }
-
-    private List<Produto> CarregarProdutosDoArquivo()
-    {
-        if (!File.Exists(caminhoArquivo))
-        {
-            return new List<Produto>();
-        }
-
-        try
-        {
-            string json = File.ReadAllText(caminhoArquivo);
-            List<Produto>? produtosSalvos = JsonSerializer.Deserialize<List<Produto>>(json);
-
-            return produtosSalvos ?? new List<Produto>();
-        }
-        catch
-        {
-            return new List<Produto>();
-        }
-    }
-
-    private void SalvarProdutosNoArquivo()
-    {
-        JsonSerializerOptions opcoes = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        string json = JsonSerializer.Serialize(produtos, opcoes);
-        File.WriteAllText(caminhoArquivo, json);
-    }
+    
 }
