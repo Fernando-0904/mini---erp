@@ -1,4 +1,16 @@
-const API_BASE_URL = "http://localhost:5208";
+function obterApiBaseUrl() {
+    if (typeof window !== "undefined" && typeof window.MINIERP_API_URL === "string" && window.MINIERP_API_URL.trim() !== "") {
+        return window.MINIERP_API_URL.trim().replace(/\/$/, "");
+    }
+
+    if (typeof window !== "undefined" && window.location && /^https?:$/i.test(window.location.protocol)) {
+        return `${window.location.protocol}//${window.location.hostname}:5208`;
+    }
+
+    return "http://localhost:5208";
+}
+
+const API_BASE_URL = obterApiBaseUrl();
 
 async function tratarRespostaApi(resposta, mensagemErroPadrao) {
     if (resposta.ok) {
