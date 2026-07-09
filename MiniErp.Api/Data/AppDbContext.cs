@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiniErp.Api.Models;
 
 namespace MiniErp.Api.Data;
