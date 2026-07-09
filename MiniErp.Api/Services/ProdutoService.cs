@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.Api.Data;
 using MiniErp.Api.Models;
@@ -35,8 +36,16 @@ public class ProdutoService
         }
 
         contexto.Produtos.Add(produto);
-        contexto.SaveChanges();
-        return true;
+
+        try
+        {
+            contexto.SaveChanges();
+            return true;
+        }
+        catch (DbUpdateException ex) when (IsDuplicateKeyException(ex))
+        {
+            return false;
+        }
     }
 
     public bool EditarProduto(int codigo, Produto produtoAtualizado)
@@ -69,5 +78,15 @@ public class ProdutoService
         contexto.SaveChanges();
         return true;
     }
-    
+
+    private static bool IsDuplicateKeyException(DbUpdateException ex)
+    {
+        if (ex.InnerException is not SqliteException sqliteEx)
+        {
+            return false;
+        }
+
+        // SQLite uses constraint violation (19) for duplicate primary key.
+        return sqliteEx.SqliteErrorCode == 19;
+    }
 }

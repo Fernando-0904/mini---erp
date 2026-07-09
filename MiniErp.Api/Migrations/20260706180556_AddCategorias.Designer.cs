@@ -10,14 +10,32 @@ using MiniErp.Api.Data;
 namespace MiniErp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260702200440_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260706180556_AddCategorias")]
+    partial class AddCategorias
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+
+            modelBuilder.Entity("MiniErp.Api.Models.Categoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nome")
+                        .IsUnique();
+
+                    b.ToTable("Categorias");
+                });
 
             modelBuilder.Entity("MiniErp.Api.Models.Produto", b =>
                 {

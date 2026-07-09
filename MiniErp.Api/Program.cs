@@ -5,15 +5,38 @@ using MiniErp.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCors();
+string[] allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?? new[]
+    {
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "https://fernando-0904.github.io"
+    };
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MiniErpCors", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=Dados/mini-erp.db"));
 builder.Services.AddScoped<ProdutoService>();
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors("MiniErpCors");
 
 app.MapGet("/produtos", (ProdutoService produtoService) =>
 {

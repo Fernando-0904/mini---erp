@@ -5,32 +5,36 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MiniErp.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddCategorias : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Produtos",
+                name: "Categorias",
                 columns: table => new
                 {
-                    Codigo = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Nome = table.Column<string>(type: "TEXT", nullable: false),
-                    PrecoUnitario = table.Column<decimal>(type: "TEXT", nullable: false),
-                    QuantidadeEstoque = table.Column<int>(type: "INTEGER", nullable: false)
+                    Nome = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Produtos", x => x.Codigo);
+                    table.PrimaryKey("PK_Categorias", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Categorias_Nome",
+                table: "Categorias",
+                column: "Nome",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Produtos");
+                name: "Categorias");
         }
     }
 }

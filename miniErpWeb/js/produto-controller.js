@@ -31,7 +31,7 @@ function inicializarProdutoController() {
             try {
                 const produtoCadastrado = await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
 
-                produtos.push(converterProdutoApiParaTela(produtoCadastrado));
+                upsertProdutoNoArray(converterProdutoApiParaTela(produtoCadastrado));
                 exibirMensagem("Produto cadastrado com sucesso pela API.", "sucesso");
             } catch (erro) {
                 if (!(erro instanceof TypeError)) {
@@ -172,8 +172,9 @@ function inicializarProdutoController() {
             try {
                 const produtoApi = await buscarProdutoPorCodigoApi(codigoBuscado);
                 const produtoEncontrado = converterProdutoApiParaTela(produtoApi);
+                const produtoSincronizado = upsertProdutoNoArray(produtoEncontrado);
 
-                atualizarTabela([produtoEncontrado], editarProduto, removerProduto);
+                atualizarTabela([produtoSincronizado], editarProduto, removerProduto);
                 exibirMensagem("Busca concluída: 1 resultado(s).", "sucesso");
                 return;
             } catch (erro) {
@@ -277,11 +278,16 @@ function inicializarProdutoController() {
 
     async function carregarProdutos() {
         try {
+            await sincronizarProdutosLocaisComApi();
             const produtosApi = await listarProdutosApi();
+
+            produtos.length = 0;
 
             for (const produto of produtosApi) {
                 produtos.push(converterProdutoApiParaTela(produto));
             }
+
+            salvarProdutosNoStorage(produtos);
 
             atualizarTabela(produtos, editarProduto, removerProduto);
             atualizarIndicadores(produtos);
@@ -322,5 +328,60 @@ function inicializarProdutoController() {
         produto.nome = novosDados.nome;
         produto.preco = novosDados.preco;
         produto.quantidade = novosDados.quantidade;
+    }
+
+    function upsertProdutoNoArray(produto) {
+        const produtoExistente = produtos.find(function (item) {
+            return item.codigo === produto.codigo;
+        });
+
+        if (produtoExistente !== undefined) {
+            aplicarDadosProduto(produtoExistente, produto);
+            return produtoExistente;
+        }
+
+        produtos.push(produto);
+        return produto;
+    }
+
+    async function sincronizarProdutosLocaisComApi() {
+        const produtosLocais = carregarProdutosDoStorage();
+
+        if (produtosLocais.length === 0) {
+            return;
+        }
+
+        const pendentes = [];
+
+        for (const produto of produtosLocais) {
+            try {
+                await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
+                continue;
+            } catch (erro) {
+                if (erro instanceof TypeError) {
+                    throw erro;
+                }
+
+                const mensagemErro = typeof erro.message === "string" ? erro.message.toLowerCase() : "";
+                const codigoDuplicado = mensagemErro.includes("já existe") || mensagemErro.includes("codigo") || mensagemErro.includes("código");
+
+                if (!codigoDuplicado) {
+                    pendentes.push(produto);
+                    continue;
+                }
+            }
+
+            try {
+                await editarProdutoApi(produto.codigo, converterProdutoTelaParaApi(produto));
+            } catch (erroEdicao) {
+                if (erroEdicao instanceof TypeError) {
+                    throw erroEdicao;
+                }
+
+                pendentes.push(produto);
+            }
+        }
+
+        salvarProdutosNoStorage(pendentes);
     }
 }
