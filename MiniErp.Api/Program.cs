@@ -28,6 +28,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=Dados/mini-erp.db"));
 builder.Services.AddScoped<ProdutoService>();
+builder.Services.AddScoped<CategoriaService>();
 
 var app = builder.Build();
 
@@ -110,6 +111,78 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
     return Results.NoContent();
 });
 
+app.MapGet("/categorias", (CategoriaService categoriaService) =>
+{
+    return Results.Ok(categoriaService.ListarCategorias());
+});
+
+app.MapGet("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
+{
+    Categoria? categoria = categoriaService.BuscarPorId(id);
+
+    if (categoria == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(categoria);
+});
+
+app.MapPost("/categorias", (Categoria categoria, CategoriaService categoriaService) =>
+{
+    List<string> erros = ValidarCategoria(categoria);
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
+    bool cadastrada = categoriaService.CadastrarCategoria(categoria);
+
+    if (!cadastrada)
+    {
+        return Results.Conflict("Já existe uma categoria com esse nome.");
+    }
+
+    return Results.Created($"/categorias/{categoria.Id}", categoria);
+});
+
+app.MapPut("/categorias/{id:int}", (int id, Categoria categoriaAtualizada, CategoriaService categoriaService) =>
+{
+    List<string> erros = ValidarCategoria(categoriaAtualizada);
+
+    if (id != categoriaAtualizada.Id)
+    {
+        erros.Add("O id da URL deve ser igual ao id da categoria.");
+    }
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
+    bool editada = categoriaService.EditarCategoria(id, categoriaAtualizada);
+
+    if (!editada)
+    {
+        return Results.NotFound("Categoria não encontrada ou nome já está em uso.");
+    }
+
+    return Results.Ok(categoriaAtualizada);
+});
+
+app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
+{
+    bool removida = categoriaService.RemoverCategoria(id);
+
+    if (!removida)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.NoContent();
+});
+
 app.Run();
 
 static List<string> ValidarProduto(Produto produto)
@@ -134,6 +207,23 @@ static List<string> ValidarProduto(Produto produto)
     if (produto.QuantidadeEstoque < 0)
     {
         erros.Add("A quantidade em estoque não pode ser negativa.");
+    }
+
+    return erros;
+}
+
+static List<string> ValidarCategoria(Categoria categoria)
+{
+    List<string> erros = new List<string>();
+
+    if (categoria.Id < 0)
+    {
+        erros.Add("O id não pode ser negativo.");
+    }
+
+    if (string.IsNullOrWhiteSpace(categoria.Nome))
+    {
+        erros.Add("O nome é obrigatório.");
     }
 
     return erros;
