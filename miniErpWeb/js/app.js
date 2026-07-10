@@ -1,1 +1,2 @@
 inicializarProdutoController();
+inicializarCategoriaController();
