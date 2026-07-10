@@ -6,6 +6,7 @@ public class Produto
     public string Nome { get; set; } = string.Empty;
     public decimal PrecoUnitario { get; set; }
     public int QuantidadeEstoque { get; set; }
+    public int EstoqueMinimo { get; set; }
 
     public decimal CalcularValorTotal()
     {
