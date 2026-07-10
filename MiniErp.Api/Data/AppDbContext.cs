@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Produto> Produtos => Set<Produto>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<MovimentacaoEstoque> MovimentacoesEstoque => Set<MovimentacaoEstoque>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +24,22 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Categoria>()
             .HasIndex(categoria => categoria.Nome)
             .IsUnique();
+
+        modelBuilder.Entity<MovimentacaoEstoque>().HasKey(movimentacao => movimentacao.Id);
+        modelBuilder.Entity<MovimentacaoEstoque>()
+            .Property(movimentacao => movimentacao.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<MovimentacaoEstoque>()
+            .Property(movimentacao => movimentacao.Tipo)
+            .HasConversion<string>();
+        modelBuilder.Entity<MovimentacaoEstoque>()
+            .HasOne(movimentacao => movimentacao.Produto)
+            .WithMany()
+            .HasForeignKey(movimentacao => movimentacao.ProdutoCodigo)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<MovimentacaoEstoque>()
+            .HasIndex(movimentacao => movimentacao.ProdutoCodigo);
+        modelBuilder.Entity<MovimentacaoEstoque>()
+            .HasIndex(movimentacao => movimentacao.DataMovimentacaoUtc);
     }
 }

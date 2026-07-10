@@ -22,6 +22,15 @@ public class ProdutoService
             .ToList();
     }
 
+    public List<Produto> ListarProdutosComEstoqueBaixo()
+    {
+        return contexto.Produtos
+            .AsNoTracking()
+            .Where(produto => produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
+            .OrderBy(produto => produto.QuantidadeEstoque)
+            .ToList();
+    }
+
     public Produto? BuscarPorCodigo(int codigo)
     {
         return contexto.Produtos
@@ -60,6 +69,7 @@ public class ProdutoService
         produtoExistente.Nome = produtoAtualizado.Nome;
         produtoExistente.PrecoUnitario = produtoAtualizado.PrecoUnitario;
         produtoExistente.QuantidadeEstoque = produtoAtualizado.QuantidadeEstoque;
+        produtoExistente.EstoqueMinimo = produtoAtualizado.EstoqueMinimo;
 
         contexto.SaveChanges();
         return true;

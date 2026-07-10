@@ -29,6 +29,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=Dados/mini-erp.db"));
 builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
+builder.Services.AddScoped<MovimentacaoEstoqueService>();
 
 var app = builder.Build();
 
@@ -42,6 +43,11 @@ app.UseCors("MiniErpCors");
 app.MapGet("/produtos", (ProdutoService produtoService) =>
 {
     return Results.Ok(produtoService.ListarProdutos());
+});
+
+app.MapGet("/produtos/estoque-baixo", (ProdutoService produtoService) =>
+{
+    return Results.Ok(produtoService.ListarProdutosComEstoqueBaixo());
 });
 
 app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
@@ -110,6 +116,58 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
 
     return Results.NoContent();
 });
+
+app.MapGet(
+    "/produtos/{codigo:int}/movimentacoes",
+    (int codigo, ProdutoService produtoService, MovimentacaoEstoqueService movimentacaoService) =>
+    {
+        Produto? produto = produtoService.BuscarPorCodigo(codigo);
+
+        if (produto == null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(movimentacaoService.ListarMovimentacoesPorProduto(codigo));
+    });
+
+app.MapPost(
+    "/produtos/{codigo:int}/movimentacoes/entrada",
+    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService) =>
+    {
+        bool movimentado = movimentacaoService.RegistrarEntrada(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
+
+        if (!movimentado)
+        {
+            if (erro == "Produto não encontrado.")
+            {
+                return Results.NotFound(erro);
+            }
+
+            return Results.BadRequest(erro);
+        }
+
+        return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
+    });
+
+app.MapPost(
+    "/produtos/{codigo:int}/movimentacoes/saida",
+    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService) =>
+    {
+        bool movimentado = movimentacaoService.RegistrarSaida(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
+
+        if (!movimentado)
+        {
+            if (erro == "Produto não encontrado.")
+            {
+                return Results.NotFound(erro);
+            }
+
+            return Results.BadRequest(erro);
+        }
+
+        return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
+    });
 
 app.MapGet("/categorias", (CategoriaService categoriaService) =>
 {
@@ -207,6 +265,11 @@ static List<string> ValidarProduto(Produto produto)
     if (produto.QuantidadeEstoque < 0)
     {
         erros.Add("A quantidade em estoque não pode ser negativa.");
+    }
+
+    if (produto.EstoqueMinimo < 0)
+    {
+        erros.Add("O estoque mínimo não pode ser negativo.");
     }
 
     return erros;
