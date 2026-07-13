@@ -35,8 +35,8 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
     for (const produto of listaProdutos) {
         const linha = document.createElement("tr");
         const valorTotal = produto.preco * produto.quantidade;
-        const situacao = obterSituacaoEstoque(produto.quantidade);
-        const classeSituacao = obterClasseSituacaoEstoque(produto.quantidade);
+        const situacao = obterSituacaoEstoque(produto.quantidade, produto.estoqueMinimo);
+        const classeSituacao = obterClasseSituacaoEstoque(produto.quantidade, produto.estoqueMinimo);
 
         linha.appendChild(criarCelula(produto.codigo));
         linha.appendChild(criarCelula(produto.nome));
@@ -105,24 +105,24 @@ function atualizarIndicadores(produtos) {
     elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
-function obterSituacaoEstoque(quantidade) {
+function obterSituacaoEstoque(quantidade, estoqueMinimo) {
     if (quantidade === 0) {
         return "Sem estoque";
     }
 
-    if (quantidade <= 5) {
+    if (typeof estoqueMinimo === "number" && estoqueMinimo > 0 && quantidade <= estoqueMinimo) {
         return "Estoque baixo";
     }
 
     return "Estoque disponível";
 }
 
-function obterClasseSituacaoEstoque(quantidade) {
+function obterClasseSituacaoEstoque(quantidade, estoqueMinimo) {
     if (quantidade === 0) {
         return "status-sem-estoque";
     }
 
-    if (quantidade <= 5) {
+    if (typeof estoqueMinimo === "number" && estoqueMinimo > 0 && quantidade <= estoqueMinimo) {
         return "status-estoque-baixo";
     }
 

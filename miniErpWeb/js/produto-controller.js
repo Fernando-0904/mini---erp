@@ -11,12 +11,14 @@ function inicializarProdutoController() {
         const nome = elementos.campoNome.value.trim();
         const precoTexto = elementos.campoPreco.value.trim();
         const quantidadeTexto = elementos.campoQuantidade.value.trim();
+        const estoqueMinimoTexto = elementos.campoEstoqueMinimo.value.trim();
 
         const codigo = Number(codigoTexto);
         const preco = Number(precoTexto);
         const quantidade = Number(quantidadeTexto);
+        const estoqueMinimo = estoqueMinimoTexto === "" ? 0 : Number(estoqueMinimoTexto);
 
-        if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, preco, quantidade)) {
+        if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, codigo, preco, quantidade, estoqueMinimo)) {
             return;
         }
 
@@ -25,7 +27,8 @@ function inicializarProdutoController() {
                 codigo: codigo,
                 nome: nome,
                 preco: preco,
-                quantidade: quantidade
+                quantidade: quantidade,
+                estoqueMinimo: estoqueMinimo
             };
 
             try {
@@ -56,7 +59,8 @@ function inicializarProdutoController() {
                 codigo: codigo,
                 nome: nome,
                 preco: preco,
-                quantidade: quantidade
+                quantidade: quantidade,
+                estoqueMinimo: estoqueMinimo
             };
 
             try {
@@ -105,7 +109,7 @@ function inicializarProdutoController() {
         limparBusca();
     });
 
-    function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, codigo, preco, quantidade) {
+    function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, codigo, preco, quantidade, estoqueMinimo) {
         if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
             exibirMensagem("Informe um código válido.", "erro");
             elementos.campoCodigo.focus();
@@ -133,6 +137,18 @@ function inicializarProdutoController() {
         if (quantidade < 0) {
             exibirMensagem("A quantidade não pode ser negativa.", "erro");
             elementos.campoQuantidade.focus();
+            return false;
+        }
+
+        if (estoqueMinimoTexto !== "" && (Number.isNaN(estoqueMinimo) || !Number.isInteger(estoqueMinimo))) {
+            exibirMensagem("Informe um estoque mínimo válido.", "erro");
+            elementos.campoEstoqueMinimo.focus();
+            return false;
+        }
+
+        if (estoqueMinimo < 0) {
+            exibirMensagem("O estoque mínimo não pode ser negativo.", "erro");
+            elementos.campoEstoqueMinimo.focus();
             return false;
         }
 
@@ -222,6 +238,7 @@ function inicializarProdutoController() {
         elementos.campoNome.value = produtoEncontrado.nome;
         elementos.campoPreco.value = produtoEncontrado.preco;
         elementos.campoQuantidade.value = produtoEncontrado.quantidade;
+        elementos.campoEstoqueMinimo.value = produtoEncontrado.estoqueMinimo;
 
         elementos.campoCodigo.disabled = true;
         elementos.botaoSalvarProduto.textContent = "Salvar alteração";
@@ -299,7 +316,7 @@ function inicializarProdutoController() {
         const produtosSalvos = carregarProdutosDoStorage();
 
         for (const produto of produtosSalvos) {
-            produtos.push(produto);
+            produtos.push(normalizarProdutoStorage(produto));
         }
 
         atualizarTabela(produtos, editarProduto, removerProduto);
@@ -311,7 +328,8 @@ function inicializarProdutoController() {
             codigo: produtoApi.codigo,
             nome: produtoApi.nome,
             preco: produtoApi.precoUnitario,
-            quantidade: produtoApi.quantidadeEstoque
+            quantidade: produtoApi.quantidadeEstoque,
+            estoqueMinimo: typeof produtoApi.estoqueMinimo === "number" ? produtoApi.estoqueMinimo : 0
         };
     }
 
@@ -320,7 +338,8 @@ function inicializarProdutoController() {
             codigo: produto.codigo,
             nome: produto.nome,
             precoUnitario: produto.preco,
-            quantidadeEstoque: produto.quantidade
+            quantidadeEstoque: produto.quantidade,
+            estoqueMinimo: produto.estoqueMinimo
         };
     }
 
@@ -328,6 +347,7 @@ function inicializarProdutoController() {
         produto.nome = novosDados.nome;
         produto.preco = novosDados.preco;
         produto.quantidade = novosDados.quantidade;
+        produto.estoqueMinimo = typeof novosDados.estoqueMinimo === "number" ? novosDados.estoqueMinimo : 0;
     }
 
     function upsertProdutoNoArray(produto) {
@@ -355,7 +375,7 @@ function inicializarProdutoController() {
 
         for (const produto of produtosLocais) {
             try {
-                await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
+                await cadastrarProdutoApi(converterProdutoTelaParaApi(normalizarProdutoStorage(produto)));
                 continue;
             } catch (erro) {
                 if (erro instanceof TypeError) {
@@ -372,7 +392,7 @@ function inicializarProdutoController() {
             }
 
             try {
-                await editarProdutoApi(produto.codigo, converterProdutoTelaParaApi(produto));
+                await editarProdutoApi(produto.codigo, converterProdutoTelaParaApi(normalizarProdutoStorage(produto)));
             } catch (erroEdicao) {
                 if (erroEdicao instanceof TypeError) {
                     throw erroEdicao;
@@ -383,5 +403,15 @@ function inicializarProdutoController() {
         }
 
         salvarProdutosNoStorage(pendentes);
+    }
+
+    function normalizarProdutoStorage(produto) {
+        return {
+            codigo: produto.codigo,
+            nome: produto.nome,
+            preco: produto.preco,
+            quantidade: produto.quantidade,
+            estoqueMinimo: typeof produto.estoqueMinimo === "number" ? produto.estoqueMinimo : 0
+        };
     }
 }
