@@ -105,6 +105,56 @@ function atualizarIndicadores(produtos) {
     elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
+function atualizarTabelaMovimentacoes(movimentacoes) {
+    elementos.tabelaMovimentacoes.innerHTML = "";
+
+    if (movimentacoes.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 6;
+        celulaVazia.textContent = "Nenhuma movimentação registrada.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaMovimentacoes.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const movimentacao of movimentacoes) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(formatarDataMovimentacao(movimentacao.dataMovimentacaoUtc)));
+        linha.appendChild(criarCelula(movimentacao.produtoCodigo));
+        linha.appendChild(criarCelula(formatarTipoMovimentacao(movimentacao.tipo)));
+        linha.appendChild(criarCelula(movimentacao.quantidade));
+        linha.appendChild(criarCelula(movimentacao.saldoAnterior));
+        linha.appendChild(criarCelula(movimentacao.saldoNovo));
+
+        elementos.tabelaMovimentacoes.appendChild(linha);
+    }
+}
+
+function formatarDataMovimentacao(dataMovimentacaoUtc) {
+    const data = new Date(dataMovimentacaoUtc);
+
+    if (Number.isNaN(data.getTime())) {
+        return "Data indisponível";
+    }
+
+    return data.toLocaleString("pt-BR");
+}
+
+function formatarTipoMovimentacao(tipo) {
+    if (tipo === 1 || tipo === "Entrada") {
+        return "Entrada";
+    }
+
+    if (tipo === 2 || tipo === "Saida") {
+        return "Saída";
+    }
+
+    return "Tipo desconhecido";
+}
+
 function obterSituacaoEstoque(quantidade, estoqueMinimo) {
     if (quantidade === 0) {
         return "Sem estoque";

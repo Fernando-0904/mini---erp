@@ -95,6 +95,48 @@
             <button type="reset" id="botaoLimparCategoria">Limpar</button>
         </form>
     </section>
+    <section aria-label="Movimentação de estoque">
+        <h3>Movimentação de estoque</h3>
+
+        <form id="formMovimentacaoEstoque">
+            <div>
+                <label for="movimentacaoCodigo">Código do produto</label>
+                <input type="number" id="movimentacaoCodigo" name="movimentacaoCodigo">
+            </div>
+
+            <div>
+                <label for="movimentacaoQuantidade">Quantidade</label>
+                <input type="number" id="movimentacaoQuantidade" name="movimentacaoQuantidade">
+            </div>
+
+            <button type="button" id="botaoRegistrarEntrada">Registrar entrada</button>
+            <button type="button" id="botaoRegistrarSaida">Registrar saída</button>
+            <button type="button" id="botaoBuscarHistorico">Ver histórico</button>
+            <button type="reset">Limpar</button>
+        </form>
+    </section>
+    <section class="tabela-movimentacoes" aria-label="Histórico de movimentações">
+        <h3>Histórico de movimentações</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th>Quantidade</th>
+                    <th>Saldo anterior</th>
+                    <th>Saldo novo</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabelaMovimentacoes">
+                <tr>
+                    <td colspan="6">Nenhuma movimentação registrada.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
     <section class="tabela-categorias" aria-label="Lista de categorias">
         <h3>Lista de categorias</h3>
 
@@ -148,6 +190,7 @@
 <script src="js/ui.js?v=2"></script>
 <script src="js/produto-controller.js?v=2"></script>
 <script src="js/categoria-controller.js?v=2"></script>
+<script src="js/movimentacao-controller.js?v=2"></script>
 <script src="js/app.js?v=2"></script>
 </body>
 </html>

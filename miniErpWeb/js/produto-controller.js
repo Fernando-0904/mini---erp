@@ -2,6 +2,8 @@ function inicializarProdutoController() {
     const produtos = [];
     let codigoProdutoEmEdicao = null;
 
+    window.recarregarProdutosNaTela = atualizarProdutosDaApi;
+
     carregarProdutos();
 
     elementos.formulario.addEventListener("submit", async function (event) {
@@ -296,18 +298,7 @@ function inicializarProdutoController() {
     async function carregarProdutos() {
         try {
             await sincronizarProdutosLocaisComApi();
-            const produtosApi = await listarProdutosApi();
-
-            produtos.length = 0;
-
-            for (const produto of produtosApi) {
-                produtos.push(converterProdutoApiParaTela(produto));
-            }
-
-            salvarProdutosNoStorage(produtos);
-
-            atualizarTabela(produtos, editarProduto, removerProduto);
-            atualizarIndicadores(produtos);
+            await atualizarProdutosDaApi();
             return;
         } catch {
             exibirMensagem("API indisponível. Os dados foram carregados do navegador.", "erro");
@@ -319,6 +310,20 @@ function inicializarProdutoController() {
             produtos.push(normalizarProdutoStorage(produto));
         }
 
+        atualizarTabela(produtos, editarProduto, removerProduto);
+        atualizarIndicadores(produtos);
+    }
+
+    async function atualizarProdutosDaApi() {
+        const produtosApi = await listarProdutosApi();
+
+        produtos.length = 0;
+
+        for (const produto of produtosApi) {
+            produtos.push(converterProdutoApiParaTela(produto));
+        }
+
+        salvarProdutosNoStorage(produtos);
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
     }
