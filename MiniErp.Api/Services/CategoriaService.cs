@@ -97,6 +97,11 @@ public class CategoriaService
         return true;
     }
 
+    public bool PossuiProdutosVinculados(int categoriaId)
+    {
+        return contexto.Produtos.Any(produto => produto.CategoriaId == categoriaId);
+    }
+
     private bool ExisteCategoriaComNome(string nome)
     {
         return contexto.Categorias

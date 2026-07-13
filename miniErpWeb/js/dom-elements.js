@@ -5,6 +5,7 @@ const elementos = {
     campoPreco: document.getElementById("preco"),
     campoQuantidade: document.getElementById("quantidade"),
     campoEstoqueMinimo: document.getElementById("estoqueMinimo"),
+    campoCategoriaProduto: document.getElementById("categoriaProduto"),
     botaoSalvarProduto: document.getElementById("botaoSalvarProduto"),
     tabelaProdutos: document.getElementById("tabelaProdutos"),
     quantidadeProdutos: document.getElementById("quantidadeProdutos"),

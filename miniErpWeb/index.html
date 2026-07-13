@@ -56,6 +56,13 @@
             </div>
 
             <div>
+                <label for="categoriaProduto">Categoria</label>
+                <select id="categoriaProduto" name="categoriaProduto">
+                    <option value="">Selecione uma categoria</option>
+                </select>
+            </div>
+
+            <div>
                 <label for="quantidade">Quantidade</label>
                 <input type="number" id="quantidade" name="quantidade">
             </div>
@@ -165,6 +172,7 @@
                 <tr>
                     <th>Código</th>
                     <th>Nome</th>
+                    <th>Categoria</th>
                     <th>Preço Unitário</th>
                     <th>Quantidade</th>
                     <th>Valor Total</th>
@@ -175,7 +183,7 @@
 
             <tbody id="tabelaProdutos">
                 <tr>
-                    <td colspan="7">Nenhum produto cadastrado.</td>
+                    <td colspan="8">Nenhum produto cadastrado.</td>
                 </tr>
             </tbody>
         </table>

@@ -25,7 +25,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
         const linhaVazia = document.createElement("tr");
         const celulaVazia = document.createElement("td");
 
-        celulaVazia.colSpan = 7;
+        celulaVazia.colSpan = 8;
         celulaVazia.textContent = "Nenhum produto cadastrado.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaProdutos.appendChild(linhaVazia);
@@ -40,6 +40,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
 
         linha.appendChild(criarCelula(produto.codigo));
         linha.appendChild(criarCelula(produto.nome));
+        linha.appendChild(criarCelula(produto.categoriaNome));
         linha.appendChild(criarCelula(formatarMoeda(produto.preco)));
         linha.appendChild(criarCelula(produto.quantidade));
         linha.appendChild(criarCelula(formatarMoeda(valorTotal)));
@@ -48,6 +49,25 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
 
         elementos.tabelaProdutos.appendChild(linha);
     }
+}
+
+function atualizarSelectCategorias(categorias, categoriaSelecionadaId) {
+    elementos.campoCategoriaProduto.innerHTML = "";
+
+    const opcaoPadrao = document.createElement("option");
+    opcaoPadrao.value = "";
+    opcaoPadrao.textContent = "Selecione uma categoria";
+    elementos.campoCategoriaProduto.appendChild(opcaoPadrao);
+
+    for (const categoria of categorias) {
+        const opcao = document.createElement("option");
+
+        opcao.value = categoria.id;
+        opcao.textContent = categoria.nome;
+        elementos.campoCategoriaProduto.appendChild(opcao);
+    }
+
+    elementos.campoCategoriaProduto.value = categoriaSelecionadaId || "";
 }
 
 function criarCelula(texto) {

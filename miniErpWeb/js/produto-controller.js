@@ -3,8 +3,10 @@ function inicializarProdutoController() {
     let codigoProdutoEmEdicao = null;
 
     window.recarregarProdutosNaTela = atualizarProdutosDaApi;
+    window.recarregarCategoriasDoProduto = carregarCategoriasDoProduto;
 
     carregarProdutos();
+    carregarCategoriasDoProduto();
 
     elementos.formulario.addEventListener("submit", async function (event) {
         event.preventDefault();
@@ -14,13 +16,15 @@ function inicializarProdutoController() {
         const precoTexto = elementos.campoPreco.value.trim();
         const quantidadeTexto = elementos.campoQuantidade.value.trim();
         const estoqueMinimoTexto = elementos.campoEstoqueMinimo.value.trim();
+        const categoriaIdTexto = elementos.campoCategoriaProduto.value;
 
         const codigo = Number(codigoTexto);
         const preco = Number(precoTexto);
         const quantidade = Number(quantidadeTexto);
         const estoqueMinimo = estoqueMinimoTexto === "" ? 0 : Number(estoqueMinimoTexto);
+        const categoriaId = Number(categoriaIdTexto);
 
-        if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, codigo, preco, quantidade, estoqueMinimo)) {
+        if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId)) {
             return;
         }
 
@@ -30,7 +34,8 @@ function inicializarProdutoController() {
                 nome: nome,
                 preco: preco,
                 quantidade: quantidade,
-                estoqueMinimo: estoqueMinimo
+                estoqueMinimo: estoqueMinimo,
+                categoriaId: categoriaId
             };
 
             try {
@@ -62,7 +67,8 @@ function inicializarProdutoController() {
                 nome: nome,
                 preco: preco,
                 quantidade: quantidade,
-                estoqueMinimo: estoqueMinimo
+                estoqueMinimo: estoqueMinimo,
+                categoriaId: categoriaId
             };
 
             try {
@@ -111,7 +117,7 @@ function inicializarProdutoController() {
         limparBusca();
     });
 
-    function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, codigo, preco, quantidade, estoqueMinimo) {
+    function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId) {
         if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
             exibirMensagem("Informe um código válido.", "erro");
             elementos.campoCodigo.focus();
@@ -151,6 +157,12 @@ function inicializarProdutoController() {
         if (estoqueMinimo < 0) {
             exibirMensagem("O estoque mínimo não pode ser negativo.", "erro");
             elementos.campoEstoqueMinimo.focus();
+            return false;
+        }
+
+        if (categoriaIdTexto === "" || !Number.isInteger(categoriaId) || categoriaId <= 0) {
+            exibirMensagem("Selecione uma categoria válida.", "erro");
+            elementos.campoCategoriaProduto.focus();
             return false;
         }
 
@@ -241,6 +253,7 @@ function inicializarProdutoController() {
         elementos.campoPreco.value = produtoEncontrado.preco;
         elementos.campoQuantidade.value = produtoEncontrado.quantidade;
         elementos.campoEstoqueMinimo.value = produtoEncontrado.estoqueMinimo;
+        elementos.campoCategoriaProduto.value = produtoEncontrado.categoriaId;
 
         elementos.campoCodigo.disabled = true;
         elementos.botaoSalvarProduto.textContent = "Salvar alteração";
@@ -328,13 +341,24 @@ function inicializarProdutoController() {
         atualizarIndicadores(produtos);
     }
 
+    async function carregarCategoriasDoProduto() {
+        try {
+            const categorias = await listarCategoriasApi();
+            atualizarSelectCategorias(categorias, elementos.campoCategoriaProduto.value);
+        } catch {
+            atualizarSelectCategorias([], "");
+        }
+    }
+
     function converterProdutoApiParaTela(produtoApi) {
         return {
             codigo: produtoApi.codigo,
             nome: produtoApi.nome,
             preco: produtoApi.precoUnitario,
             quantidade: produtoApi.quantidadeEstoque,
-            estoqueMinimo: typeof produtoApi.estoqueMinimo === "number" ? produtoApi.estoqueMinimo : 0
+            estoqueMinimo: typeof produtoApi.estoqueMinimo === "number" ? produtoApi.estoqueMinimo : 0,
+            categoriaId: produtoApi.categoriaId,
+            categoriaNome: produtoApi.categoria ? produtoApi.categoria.nome : "Sem categoria"
         };
     }
 
@@ -344,7 +368,8 @@ function inicializarProdutoController() {
             nome: produto.nome,
             precoUnitario: produto.preco,
             quantidadeEstoque: produto.quantidade,
-            estoqueMinimo: produto.estoqueMinimo
+            estoqueMinimo: produto.estoqueMinimo,
+            categoriaId: produto.categoriaId
         };
     }
 
@@ -353,6 +378,8 @@ function inicializarProdutoController() {
         produto.preco = novosDados.preco;
         produto.quantidade = novosDados.quantidade;
         produto.estoqueMinimo = typeof novosDados.estoqueMinimo === "number" ? novosDados.estoqueMinimo : 0;
+        produto.categoriaId = novosDados.categoriaId;
+        produto.categoriaNome = novosDados.categoriaNome;
     }
 
     function upsertProdutoNoArray(produto) {
@@ -416,7 +443,9 @@ function inicializarProdutoController() {
             nome: produto.nome,
             preco: produto.preco,
             quantidade: produto.quantidade,
-            estoqueMinimo: typeof produto.estoqueMinimo === "number" ? produto.estoqueMinimo : 0
+            estoqueMinimo: typeof produto.estoqueMinimo === "number" ? produto.estoqueMinimo : 0,
+            categoriaId: produto.categoriaId,
+            categoriaNome: produto.categoriaNome || "Sem categoria"
         };
     }
 }

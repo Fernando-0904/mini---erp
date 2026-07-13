@@ -16,6 +16,12 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Produto>().HasKey(produto => produto.Codigo);
+        
+        modelBuilder.Entity<Produto>()
+            .HasOne(produto => produto.Categoria)
+            .WithMany()
+            .HasForeignKey(produto => produto.CategoriaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Categoria>().HasKey(categoria => categoria.Id);
         modelBuilder.Entity<Categoria>()

@@ -24,6 +24,7 @@ function inicializarCategoriaController() {
             try {
                 const categoriaCadastrada = await cadastrarCategoriaFrontend(categoria);
                 upsertCategoriaNoArray(categoriaCadastrada);
+                await recarregarCategoriasDoProduto();
                 exibirMensagem("Categoria cadastrada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -47,6 +48,7 @@ function inicializarCategoriaController() {
             try {
                 const categoriaEditada = await editarCategoriaFrontend(idCategoriaEmEdicao, categoriaAtualizada);
                 aplicarDadosCategoria(categoriaExistente, categoriaEditada);
+                await recarregarCategoriasDoProduto();
                 exibirMensagem("Categoria editada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -148,6 +150,7 @@ function inicializarCategoriaController() {
         try {
             await removerCategoriaFrontend(id);
             categorias.splice(indiceCategoria, 1);
+            await recarregarCategoriasDoProduto();
             exibirMensagem("Categoria removida com sucesso.", "sucesso");
         } catch (erro) {
             exibirMensagem(erro.message, "erro");
