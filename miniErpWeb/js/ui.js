@@ -25,7 +25,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
         const linhaVazia = document.createElement("tr");
         const celulaVazia = document.createElement("td");
 
-        celulaVazia.colSpan = 7;
+        celulaVazia.colSpan = 8;
         celulaVazia.textContent = "Nenhum produto cadastrado.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaProdutos.appendChild(linhaVazia);
@@ -35,11 +35,12 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
     for (const produto of listaProdutos) {
         const linha = document.createElement("tr");
         const valorTotal = produto.preco * produto.quantidade;
-        const situacao = obterSituacaoEstoque(produto.quantidade);
-        const classeSituacao = obterClasseSituacaoEstoque(produto.quantidade);
+        const situacao = obterSituacaoEstoque(produto.quantidade, produto.estoqueMinimo);
+        const classeSituacao = obterClasseSituacaoEstoque(produto.quantidade, produto.estoqueMinimo);
 
         linha.appendChild(criarCelula(produto.codigo));
         linha.appendChild(criarCelula(produto.nome));
+        linha.appendChild(criarCelula(produto.categoriaNome));
         linha.appendChild(criarCelula(formatarMoeda(produto.preco)));
         linha.appendChild(criarCelula(produto.quantidade));
         linha.appendChild(criarCelula(formatarMoeda(valorTotal)));
@@ -48,6 +49,25 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
 
         elementos.tabelaProdutos.appendChild(linha);
     }
+}
+
+function atualizarSelectCategorias(categorias, categoriaSelecionadaId) {
+    elementos.campoCategoriaProduto.innerHTML = "";
+
+    const opcaoPadrao = document.createElement("option");
+    opcaoPadrao.value = "";
+    opcaoPadrao.textContent = "Selecione uma categoria";
+    elementos.campoCategoriaProduto.appendChild(opcaoPadrao);
+
+    for (const categoria of categorias) {
+        const opcao = document.createElement("option");
+
+        opcao.value = categoria.id;
+        opcao.textContent = categoria.nome;
+        elementos.campoCategoriaProduto.appendChild(opcao);
+    }
+
+    elementos.campoCategoriaProduto.value = categoriaSelecionadaId || "";
 }
 
 function criarCelula(texto) {
@@ -105,24 +125,74 @@ function atualizarIndicadores(produtos) {
     elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
-function obterSituacaoEstoque(quantidade) {
+function atualizarTabelaMovimentacoes(movimentacoes) {
+    elementos.tabelaMovimentacoes.innerHTML = "";
+
+    if (movimentacoes.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 6;
+        celulaVazia.textContent = "Nenhuma movimentação registrada.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaMovimentacoes.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const movimentacao of movimentacoes) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(formatarDataMovimentacao(movimentacao.dataMovimentacaoUtc)));
+        linha.appendChild(criarCelula(movimentacao.produtoCodigo));
+        linha.appendChild(criarCelula(formatarTipoMovimentacao(movimentacao.tipo)));
+        linha.appendChild(criarCelula(movimentacao.quantidade));
+        linha.appendChild(criarCelula(movimentacao.saldoAnterior));
+        linha.appendChild(criarCelula(movimentacao.saldoNovo));
+
+        elementos.tabelaMovimentacoes.appendChild(linha);
+    }
+}
+
+function formatarDataMovimentacao(dataMovimentacaoUtc) {
+    const data = new Date(dataMovimentacaoUtc);
+
+    if (Number.isNaN(data.getTime())) {
+        return "Data indisponível";
+    }
+
+    return data.toLocaleString("pt-BR");
+}
+
+function formatarTipoMovimentacao(tipo) {
+    if (tipo === 1 || tipo === "Entrada") {
+        return "Entrada";
+    }
+
+    if (tipo === 2 || tipo === "Saida") {
+        return "Saída";
+    }
+
+    return "Tipo desconhecido";
+}
+
+function obterSituacaoEstoque(quantidade, estoqueMinimo) {
     if (quantidade === 0) {
         return "Sem estoque";
     }
 
-    if (quantidade <= 5) {
+    if (typeof estoqueMinimo === "number" && estoqueMinimo > 0 && quantidade <= estoqueMinimo) {
         return "Estoque baixo";
     }
 
     return "Estoque disponível";
 }
 
-function obterClasseSituacaoEstoque(quantidade) {
+function obterClasseSituacaoEstoque(quantidade, estoqueMinimo) {
     if (quantidade === 0) {
         return "status-sem-estoque";
     }
 
-    if (quantidade <= 5) {
+    if (typeof estoqueMinimo === "number" && estoqueMinimo > 0 && quantidade <= estoqueMinimo) {
         return "status-estoque-baixo";
     }
 

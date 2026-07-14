@@ -44,6 +44,21 @@ Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão we
 - mostrar a situação do estoque;
 - salvar os produtos no navegador usando `localStorage`.
 
+Com a evolução para regras de ERP, a tela também permite:
+
+- cadastrar, editar e remover categorias;
+- vincular obrigatoriamente cada produto a uma categoria;
+- configurar o estoque mínimo de cada produto;
+- registrar entradas e saídas de estoque;
+- consultar o histórico de movimentações;
+- bloquear saídas que deixariam o saldo do produto negativo.
+
+![Cadastro de produto com categoria](miniErpWeb/assets/cadastro-produto.png)
+
+![Tabela de produtos com categoria e situação de estoque](miniErpWeb/assets/tabela-produtos.png)
+
+![Cadastro e lista de categorias](miniErpWeb/assets/categorias.png)
+
 ### Atualizações recentes das funções da tela
 
 Além das funções já existentes, a versão web recebeu melhorias no fluxo de ações da tabela e do formulário:
@@ -88,6 +103,8 @@ Hoje a parte web está organizada assim:
 - `storage.js`: cuida da persistência, ou seja, salvar e carregar os produtos no `localStorage`;
 - `api.js`: centraliza as chamadas HTTP para a API de produtos;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
+- `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
+- `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
@@ -104,14 +121,20 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 - o preço precisa ser maior que zero;
 - a quantidade não pode ficar vazia;
 - a quantidade não pode ser negativa.
+- todo produto deve possuir uma categoria existente;
+- não é possível remover uma categoria vinculada a produtos;
+- uma saída de estoque não pode ser maior que o saldo disponível;
+- o estoque mínimo não pode ser negativo.
 
 A quantidade igual a zero é permitida, pois representa um produto cadastrado, mas sem unidades em estoque.
 
-## API de produtos
+Quando a quantidade atual é menor ou igual ao estoque mínimo configurado, a tabela exibe o alerta de estoque baixo.
+
+## API e regras de ERP
 
 Além da versão em console e da versão web, o projeto também possui uma API criada com ASP.NET Core Minimal API.
 
-Por enquanto, a API trabalha com os produtos em memória. Isso significa que os dados existem enquanto a aplicação está rodando, mas são apagados quando a API é encerrada. A versão web já consome a API e mantém o `localStorage` como fallback quando a API está indisponível.
+A versão web consome a API usando `fetch`. O `localStorage` foi mantido como fallback quando a API está indisponível, mas a fonte principal de dados é o banco SQLite.
 
 A API possui os seguintes endpoints:
 
@@ -122,6 +145,15 @@ A API possui os seguintes endpoints:
 | POST | `/produtos` | Cadastra um novo produto |
 | PUT | `/produtos/{codigo}` | Edita um produto existente |
 | DELETE | `/produtos/{codigo}` | Remove um produto existente |
+| GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele |
+| GET | `/produtos/{codigo}/movimentacoes` | Lista o histórico de movimentações de um produto |
+| POST | `/produtos/{codigo}/movimentacoes/entrada` | Registra uma entrada de estoque |
+| POST | `/produtos/{codigo}/movimentacoes/saida` | Registra uma saída de estoque |
+| GET | `/categorias` | Lista categorias |
+| GET | `/categorias/{id}` | Busca uma categoria pelo identificador |
+| POST | `/categorias` | Cadastra uma categoria |
+| PUT | `/categorias/{id}` | Edita uma categoria |
+| DELETE | `/categorias/{id}` | Remove uma categoria sem produtos vinculados |
 
 Exemplo de JSON usado no cadastro e na edição:
 
@@ -130,7 +162,9 @@ Exemplo de JSON usado no cadastro e na edição:
   "codigo": 101,
   "nome": "Teclado",
   "precoUnitario": 120,
-  "quantidadeEstoque": 5
+  "quantidadeEstoque": 5,
+  "estoqueMinimo": 2,
+  "categoriaId": 1
 }
 ```
 
@@ -140,8 +174,16 @@ A API também possui validações para evitar dados inválidos:
 - o nome do produto não pode ficar vazio;
 - o preço unitário precisa ser maior que zero;
 - a quantidade em estoque não pode ser negativa;
+- o estoque mínimo não pode ser negativo;
+- a categoria informada deve existir;
 - não pode haver dois produtos com o mesmo código;
 - na edição, o código da URL precisa ser igual ao código enviado no corpo da requisição.
+
+As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
+
+![Formulário de movimentação de estoque](miniErpWeb/assets/movimentacao-estoque.png)
+
+![Histórico de entradas e saídas de estoque](miniErpWeb/assets/historico-movimentacoes.png)
 
 Algumas respostas esperadas da API:
 
@@ -153,29 +195,6 @@ Algumas respostas esperadas da API:
 | Produto não encontrado | `404 Not Found` |
 | Código duplicado no cadastro | `409 Conflict` |
 | Dados inválidos | `400 Bad Request` |
-
-## Persistência em arquivo JSON
-
-A API também possui persistência simples em arquivo JSON. Os produtos são mantidos em memória durante a execução da API, mas a lista é carregada de um arquivo ao iniciar e salva novamente após alterações.
-
-O arquivo usado pela API é:
-
-```text
-MiniErp.Api/Dados/produtos.json
-```
-
-Esse arquivo é criado automaticamente pela aplicação quando necessário e não é versionado no Git, pois representa dados gerados durante o uso do sistema.
-
-Comportamento atual da persistência:
-
-- ao iniciar a API, os produtos são carregados de `produtos.json`, se o arquivo existir;
-- se o arquivo não existir, a API inicia com uma lista vazia;
-- ao cadastrar um produto, a lista atualizada é salva no arquivo;
-- ao editar um produto, a lista atualizada é salva no arquivo;
-- ao remover um produto, a lista atualizada é salva no arquivo;
-- ao reiniciar a API, os produtos salvos continuam disponíveis.
-
-A persistência em arquivo JSON foi uma etapa intermediária. Atualmente a API utiliza SQLite com Entity Framework Core como banco de dados.
 
 ## Banco de dados SQLite
 
@@ -203,6 +222,8 @@ Comportamento atual da persistência com SQLite:
 - ao remover um produto, o registro é excluído do banco;
 - ao reiniciar a API, todos os dados continuam disponíveis.
 
+As migrations também mantêm a evolução do esquema. Quando a relação entre produtos e categorias foi adicionada, os produtos existentes foram associados automaticamente à categoria padrão `Sem categoria`, evitando dados sem vínculo.
+
 ## Tecnologias utilizadas
 
 - C#
@@ -229,8 +250,13 @@ projeto erp/
 │   │   └── AppDbContext.cs
 │   ├── Migrations/
 │   ├── Models/
+│   │   ├── Categoria.cs
+│   │   ├── MovimentacaoEstoque.cs
+│   │   ├── MovimentacaoEstoqueRequest.cs
 │   │   └── Produto.cs
 │   ├── Services/
+│   │   ├── CategoriaService.cs
+│   │   ├── MovimentacaoEstoqueService.cs
 │   │   └── ProdutoService.cs
 │   ├── Program.cs
 │   ├── MiniErp.Api.csproj
@@ -242,7 +268,9 @@ projeto erp/
 │   ├── js/
 │   │   ├── app.js
 │   │   ├── api.js
+│   │   ├── categoria-controller.js
 │   │   ├── dom-elements.js
+│   │   ├── movimentacao-controller.js
 │   │   ├── produto-controller.js
 │   │   ├── storage.js
 │   │   └── ui.js
@@ -295,7 +323,32 @@ Para abrir localmente, use o arquivo abaixo diretamente no navegador:
 
 No GitHub, o link local acima abre o arquivo HTML dentro do repositório. O link do GitHub Pages abre a aplicação funcionando como página web.
 
-Para abrir somente a versão web localmente, não é necessário instalar pacotes, rodar servidor, usar banco de dados ou configurar a API.
+Para testar a integração completa localmente, inicie a API e sirva a pasta `miniErpWeb` com um servidor HTTP, por exemplo:
+
+```bash
+npx --yes http-server miniErpWeb -p 5500 -c-1
+```
+
+Depois, abra `http://127.0.0.1:5500` no navegador. Sem a API, o frontend usa o `localStorage` como fallback para as funções de produto já salvas no navegador.
+
+## Testes automatizados
+
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local.
+
+| Regra validada | Resultado esperado |
+|---|---|
+| Cálculo do valor total | Multiplica corretamente preço unitário pela quantidade em estoque |
+| Código duplicado | Impede o cadastro de dois produtos com o mesmo código |
+| Entrada de estoque | Atualiza o saldo e cria o registro de histórico |
+| Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
+
+Para executar a suíte:
+
+```bash
+dotnet test MiniErp.Api.Tests/MiniErp.Api.Tests.csproj
+```
+
+O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull request`.
 
 ## Testes manuais realizados
 
@@ -351,23 +404,22 @@ Testes com a API desligada:
 
 Observações da integração:
 
-- a API salva os produtos em arquivo JSON, então os dados continuam disponíveis após reiniciar;
+- a API salva os produtos, categorias e movimentações no SQLite;
 - o `localStorage` funciona como fallback quando a API está indisponível;
-- ainda não existe sincronização automática entre dados locais e dados da API;
 - a busca por nome continua local porque a API atual possui busca apenas por código.
 
-## Testes manuais da persistência em JSON
+## Testes manuais da persistência no SQLite
 
-Depois da persistência em arquivo JSON, foram testados cenários para confirmar que os dados continuam disponíveis mesmo após reiniciar a API.
+Depois da adoção do SQLite, foram testados cenários para confirmar que os dados continuam disponíveis mesmo após reiniciar a API.
 
 | Cenário | Entrada | Resultado esperado | Status |
 |---|---|---|---|
-| Build da API | Executar build do projeto `MiniErp.Api` | Compilação concluída sem avisos e sem erros | OK |
-| Cadastro persistido | Cadastrar produto com código 9901 | API retorna `201 Created` e salva o produto no arquivo JSON | OK |
+| Build da API | Executar build do projeto `MiniErp.Api` | Compilação concluída sem erros | OK |
+| Cadastro persistido | Cadastrar produto com código 9901 | API retorna `201 Created` e salva o produto no SQLite | OK |
 | Carregamento após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `200 OK` e encontra o produto cadastrado antes do reinício | OK |
-| Edição persistida | Editar nome, preço e quantidade do produto 9901 | API retorna `200 OK` e salva os novos dados no arquivo JSON | OK |
+| Edição persistida | Editar nome, preço e quantidade do produto 9901 | API retorna `200 OK` e salva os novos dados no SQLite | OK |
 | Carregamento da edição após reiniciar | Reiniciar a API e buscar novamente o código 9901 | API retorna o produto com os dados editados | OK |
-| Remoção persistida | Remover o produto 9901 | API retorna `204 No Content` e atualiza o arquivo JSON | OK |
+| Remoção persistida | Remover o produto 9901 | API retorna `204 No Content` e atualiza o SQLite | OK |
 | Remoção após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `404 Not Found`, confirmando que o produto não voltou | OK |
 
 Resultado observado nos testes:
@@ -380,6 +432,22 @@ Busca após reiniciar edição: HTTP 200, Produto Persistência Editado, R$ 150,
 Remoção: HTTP 204
 Busca após reiniciar remoção: HTTP 404
 ```
+
+## Testes manuais das regras de ERP
+
+| Cenário | Entrada | Resultado esperado | Status |
+|---|---|---|---|
+| Categoria obrigatória | Cadastrar produto sem selecionar categoria | Frontend bloqueia o cadastro e solicita uma categoria válida | OK |
+| Categoria inexistente | Enviar produto com `categoriaId` inexistente para a API | API retorna `400 Bad Request` com mensagem de categoria inexistente | OK |
+| Produto com categoria | Cadastrar produto selecionando uma categoria válida | Produto é salvo, a categoria aparece na tabela e o vínculo é retornado pela API | OK |
+| Edição de categoria | Alterar a categoria de um produto existente | Produto passa a exibir a nova categoria na tabela | OK |
+| Categoria em uso | Tentar remover categoria vinculada a produto | API bloqueia a remoção e exibe mensagem explicativa | OK |
+| Estoque mínimo | Produto com quantidade igual ou menor que o mínimo | Tabela exibe situação de estoque baixo | OK |
+| Entrada de estoque | Registrar entrada de 4 unidades em produto com saldo 5 | Saldo passa para 9, indicadores atualizam e histórico registra a entrada | OK |
+| Saída de estoque | Registrar saída de 2 unidades em produto com saldo 9 | Saldo passa para 7, indicadores atualizam e histórico registra a saída | OK |
+| Saída sem saldo | Registrar saída maior que o saldo disponível | API bloqueia a operação e não altera o estoque | OK |
+| Histórico | Consultar histórico após entrada e saída | Tela mostra data, tipo, quantidade, saldo anterior e saldo novo | OK |
+| Persistência de regras ERP | Reiniciar API após cadastrar produto e movimentar estoque | Produto, categoria e saldo permanecem no SQLite | OK |
 
 ## Maiores dificuldades
 
@@ -411,14 +479,18 @@ Durante o desenvolvimento, foram praticados:
 - criação de API com ASP.NET Core Minimal API;
 - criação de endpoints HTTP para produtos;
 - validação de dados recebidos pela API;
+- persistência com SQLite e Entity Framework Core;
+- criação e aplicação de migrations;
+- relacionamento entre produtos e categorias;
+- movimentações de estoque com histórico e validação de saldo;
 - versionamento com Git e envio para o GitHub.
 
 ## Próximos passos possíveis
 
 - melhorar alguns detalhes visuais da interface;
 - melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
-- adicionar banco de dados futuramente;
-- criar testes automatizados para a API.
+- reorganizar a solução em camadas de backend, frontend, domínio e testes;
+- atualizar dependências do SQLite para tratar avisos de segurança.
 
 ---
 

@@ -82,49 +82,36 @@ async function removerProdutoApi(codigo) {
     return tratarRespostaApi(resposta, "Erro ao remover produto na API.");
 }
 
-async function listarCategoriasApi() {
-    const resposta = await fetch(`${API_BASE_URL}/categorias`);
+async function listarMovimentacoesApi(codigo) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes`);
 
-    return tratarRespostaApi(resposta, "Erro ao listar categorias na API.");
+    return tratarRespostaApi(resposta, "Erro ao listar movimentações na API.");
 }
 
-async function buscarCategoriaPorIdApi(id) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`);
-
-    return tratarRespostaApi(resposta, "Categoria não encontrada na API.");
-}
-
-async function cadastrarCategoriaApi(categoria) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias`, {
+async function registrarEntradaEstoqueApi(codigo, quantidade) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes/entrada`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify(categoria),
+        body: JSON.stringify({ quantidade }),
     });
 
-    return tratarRespostaApi(resposta, "Erro ao cadastrar categoria na API.");
+    return tratarRespostaApi(resposta, "Erro ao registrar entrada de estoque na API.");
 }
 
-async function editarCategoriaApi(id, categoria) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`, {
-        method: "PUT",
+async function registrarSaidaEstoqueApi(codigo, quantidade) {
+    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes/saida`, {
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify(categoria),
+        body: JSON.stringify({ quantidade }),
     });
 
-    return tratarRespostaApi(resposta, "Erro ao editar categoria na API.");
+    return tratarRespostaApi(resposta, "Erro ao registrar saída de estoque na API.");
 }
 
-async function removerCategoriaApi(id) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`, {
-        method: "DELETE",
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao remover categoria na API.");
-}
 async function listarCategoriasApi() {
     const resposta = await fetch(`${API_BASE_URL}/categorias`);
 

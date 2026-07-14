@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Api.Data;
 
@@ -10,9 +11,11 @@ using MiniErp.Api.Data;
 namespace MiniErp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710191820_AddMovimentacoesEEstoqueMinimo")]
+    partial class AddMovimentacoesEEstoqueMinimo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -75,9 +78,6 @@ namespace MiniErp.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CategoriaId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("EstoqueMinimo")
                         .HasColumnType("INTEGER");
 
@@ -93,8 +93,6 @@ namespace MiniErp.Api.Migrations
 
                     b.HasKey("Codigo");
 
-                    b.HasIndex("CategoriaId");
-
                     b.ToTable("Produtos");
                 });
 
@@ -107,17 +105,6 @@ namespace MiniErp.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Produto");
-                });
-
-            modelBuilder.Entity("MiniErp.Api.Models.Produto", b =>
-                {
-                    b.HasOne("MiniErp.Api.Models.Categoria", "Categoria")
-                        .WithMany()
-                        .HasForeignKey("CategoriaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Categoria");
                 });
 #pragma warning restore 612, 618
         }

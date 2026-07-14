@@ -7,6 +7,8 @@ public class Produto
     public decimal PrecoUnitario { get; set; }
     public int QuantidadeEstoque { get; set; }
     public int EstoqueMinimo { get; set; }
+    public Categoria? Categoria { get; set; }
+    public int CategoriaId { get; set; }
 
     public decimal CalcularValorTotal()
     {

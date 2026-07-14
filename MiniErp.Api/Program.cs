@@ -62,9 +62,10 @@ app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService)
     return Results.Ok(produto);
 });
 
-app.MapPost("/produtos", (Produto produto, ProdutoService produtoService) =>
+app.MapPost("/produtos", (Produto produto, ProdutoService produtoService, CategoriaService categoriaService) =>
 {
     List<string> erros = ValidarProduto(produto);
+    erros.AddRange(ValidarCategoriaDoProduto(produto, categoriaService));
 
     if (erros.Count > 0)
     {
@@ -81,7 +82,7 @@ app.MapPost("/produtos", (Produto produto, ProdutoService produtoService) =>
     return Results.Created($"/produtos/{produto.Codigo}", produto);
 });
 
-app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService) =>
+app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService, CategoriaService categoriaService) =>
 {
     List<string> erros = ValidarProduto(produtoAtualizado);
 
@@ -89,6 +90,8 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, Pro
     {
         erros.Add("O código da URL deve ser igual ao código do produto.");
     }
+
+    erros.AddRange(ValidarCategoriaDoProduto(produtoAtualizado, categoriaService));
 
     if (erros.Count > 0)
     {
@@ -231,13 +234,17 @@ app.MapPut("/categorias/{id:int}", (int id, Categoria categoriaAtualizada, Categ
 
 app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
 {
-    bool removida = categoriaService.RemoverCategoria(id);
-
-    if (!removida)
+    if (categoriaService.BuscarPorId(id) == null)
     {
         return Results.NotFound();
     }
 
+    if (categoriaService.PossuiProdutosVinculados(id))
+    {
+        return Results.BadRequest("Não é possível remover uma categoria vinculada a produtos.");
+    }
+
+    categoriaService.RemoverCategoria(id);
     return Results.NoContent();
 });
 
@@ -270,6 +277,22 @@ static List<string> ValidarProduto(Produto produto)
     if (produto.EstoqueMinimo < 0)
     {
         erros.Add("O estoque mínimo não pode ser negativo.");
+    }
+
+    return erros;
+}
+
+static List<string> ValidarCategoriaDoProduto(Produto produto, CategoriaService categoriaService)
+{
+    List<string> erros = new List<string>();
+
+    if (produto.CategoriaId <= 0)
+    {
+        erros.Add("Informe uma categoria válida.");
+    }
+    else if (categoriaService.BuscarPorId(produto.CategoriaId) == null)
+    {
+        erros.Add("Categoria informada não existe.");
     }
 
     return erros;

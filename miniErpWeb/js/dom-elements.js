@@ -4,6 +4,8 @@ const elementos = {
     campoNome: document.getElementById("nome"),
     campoPreco: document.getElementById("preco"),
     campoQuantidade: document.getElementById("quantidade"),
+    campoEstoqueMinimo: document.getElementById("estoqueMinimo"),
+    campoCategoriaProduto: document.getElementById("categoriaProduto"),
     botaoSalvarProduto: document.getElementById("botaoSalvarProduto"),
     tabelaProdutos: document.getElementById("tabelaProdutos"),
     quantidadeProdutos: document.getElementById("quantidadeProdutos"),
@@ -19,7 +21,14 @@ const elementos = {
     campoCategoriaNome: document.getElementById("categoriaNome"),
     botaoSalvarCategoria: document.getElementById("botaoSalvarCategoria"),
     botaoLimparCategoria: document.getElementById("botaoLimparCategoria"),
-    tabelaCategorias: document.getElementById("tabelaCategorias")
+    tabelaCategorias: document.getElementById("tabelaCategorias"),
+    formularioMovimentacaoEstoque: document.getElementById("formMovimentacaoEstoque"),
+    campoMovimentacaoCodigo: document.getElementById("movimentacaoCodigo"),
+    campoMovimentacaoQuantidade: document.getElementById("movimentacaoQuantidade"),
+    botaoRegistrarEntrada: document.getElementById("botaoRegistrarEntrada"),
+    botaoRegistrarSaida: document.getElementById("botaoRegistrarSaida"),
+    botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
+    tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes")
 };
 
 elementos.botaoLimparFormulario = elementos.formulario.querySelector("button[type='reset']");
