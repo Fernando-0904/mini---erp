@@ -331,6 +331,25 @@ npx --yes http-server miniErpWeb -p 5500 -c-1
 
 Depois, abra `http://127.0.0.1:5500` no navegador. Sem a API, o frontend usa o `localStorage` como fallback para as funções de produto já salvas no navegador.
 
+## Testes automatizados
+
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local.
+
+| Regra validada | Resultado esperado |
+|---|---|
+| Cálculo do valor total | Multiplica corretamente preço unitário pela quantidade em estoque |
+| Código duplicado | Impede o cadastro de dois produtos com o mesmo código |
+| Entrada de estoque | Atualiza o saldo e cria o registro de histórico |
+| Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
+
+Para executar a suíte:
+
+```bash
+dotnet test MiniErp.Api.Tests/MiniErp.Api.Tests.csproj
+```
+
+O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull request`.
+
 ## Testes manuais realizados
 
 | Cenário | Entrada | Resultado esperado | Status |
@@ -470,7 +489,6 @@ Durante o desenvolvimento, foram praticados:
 
 - melhorar alguns detalhes visuais da interface;
 - melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
-- criar testes automatizados para as regras de produto e estoque;
 - reorganizar a solução em camadas de backend, frontend, domínio e testes;
 - atualizar dependências do SQLite para tratar avisos de segurança.
 
