@@ -256,15 +256,17 @@ function inicializarProdutoController() {
         elementos.campoCategoriaProduto.value = produtoEncontrado.categoriaId;
 
         elementos.campoCodigo.disabled = true;
+        elementos.campoQuantidade.disabled = true;
         elementos.botaoSalvarProduto.textContent = "Salvar alteração";
         elementos.campoNome.focus();
 
-        exibirMensagem("Edite os dados do produto e salve a alteração.", "sucesso");
+        exibirMensagem("Edite os dados do produto. Para alterar o estoque, registre uma movimentação.", "sucesso");
     }
 
     function limparModoEdicao() {
         codigoProdutoEmEdicao = null;
         elementos.campoCodigo.disabled = false;
+        elementos.campoQuantidade.disabled = false;
         elementos.botaoSalvarProduto.textContent = "Cadastrar produto";
     }
 
