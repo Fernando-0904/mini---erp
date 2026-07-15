@@ -84,11 +84,23 @@ app.MapPost("/produtos", (Produto produto, ProdutoService produtoService, Catego
 
 app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService, CategoriaService categoriaService) =>
 {
+    Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
+
+    if (produtoExistente == null)
+    {
+        return Results.NotFound();
+    }
+
     List<string> erros = ValidarProduto(produtoAtualizado);
 
     if (codigo != produtoAtualizado.Codigo)
     {
         erros.Add("O código da URL deve ser igual ao código do produto.");
+    }
+
+    if (produtoAtualizado.QuantidadeEstoque != produtoExistente.QuantidadeEstoque)
+    {
+        erros.Add("A quantidade em estoque deve ser alterada por uma movimentação de entrada ou saída.");
     }
 
     erros.AddRange(ValidarCategoriaDoProduto(produtoAtualizado, categoriaService));

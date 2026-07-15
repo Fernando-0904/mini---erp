@@ -11,6 +11,9 @@
     <Compile Remove="MiniErp.Api\**" />
     <EmbeddedResource Remove="MiniErp.Api\**" />
     <None Remove="MiniErp.Api\**" />
+    <Compile Remove="MiniErp.Api.Tests\**" />
+    <EmbeddedResource Remove="MiniErp.Api.Tests\**" />
+    <None Remove="MiniErp.Api.Tests\**" />
   </ItemGroup>
 
 </Project>

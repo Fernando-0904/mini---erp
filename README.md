@@ -339,6 +339,7 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 |---|---|
 | Cálculo do valor total | Multiplica corretamente preço unitário pela quantidade em estoque |
 | Código duplicado | Impede o cadastro de dois produtos com o mesmo código |
+| Edição de produto | Preserva o saldo de estoque; alterações de quantidade exigem movimentação |
 | Entrada de estoque | Atualiza o saldo e cria o registro de histórico |
 | Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
 
@@ -417,7 +418,7 @@ Depois da adoção do SQLite, foram testados cenários para confirmar que os dad
 | Build da API | Executar build do projeto `MiniErp.Api` | Compilação concluída sem erros | OK |
 | Cadastro persistido | Cadastrar produto com código 9901 | API retorna `201 Created` e salva o produto no SQLite | OK |
 | Carregamento após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `200 OK` e encontra o produto cadastrado antes do reinício | OK |
-| Edição persistida | Editar nome, preço e quantidade do produto 9901 | API retorna `200 OK` e salva os novos dados no SQLite | OK |
+| Edição persistida | Editar nome, preço, categoria ou estoque mínimo do produto 9901 | API retorna `200 OK` e salva os novos dados no SQLite, preservando o saldo | OK |
 | Carregamento da edição após reiniciar | Reiniciar a API e buscar novamente o código 9901 | API retorna o produto com os dados editados | OK |
 | Remoção persistida | Remover o produto 9901 | API retorna `204 No Content` e atualiza o SQLite | OK |
 | Remoção após reiniciar | Reiniciar a API e buscar o código 9901 | API retorna `404 Not Found`, confirmando que o produto não voltou | OK |
@@ -490,7 +491,6 @@ Durante o desenvolvimento, foram praticados:
 - melhorar alguns detalhes visuais da interface;
 - melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
 - reorganizar a solução em camadas de backend, frontend, domínio e testes;
-- atualizar dependências do SQLite para tratar avisos de segurança.
 
 ---
 

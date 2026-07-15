@@ -71,7 +71,6 @@ public class ProdutoService
 
         produtoExistente.Nome = produtoAtualizado.Nome;
         produtoExistente.PrecoUnitario = produtoAtualizado.PrecoUnitario;
-        produtoExistente.QuantidadeEstoque = produtoAtualizado.QuantidadeEstoque;
         produtoExistente.EstoqueMinimo = produtoAtualizado.EstoqueMinimo;
         produtoExistente.CategoriaId = produtoAtualizado.CategoriaId;
 

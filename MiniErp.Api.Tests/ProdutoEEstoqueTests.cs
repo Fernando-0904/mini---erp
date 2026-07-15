@@ -40,6 +40,24 @@ public class ProdutoEEstoqueTests
     }
 
     [Fact]
+    public void EditarProduto_ComQuantidadeDiferente_PreservaEstoqueAtual()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 5));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+        Produto produtoAtualizado = CriarProduto(codigo: 101, quantidadeEstoque: 20);
+        produtoAtualizado.Nome = "Produto atualizado";
+
+        bool editado = service.EditarProduto(101, produtoAtualizado);
+
+        Assert.True(editado);
+        Produto produtoPersistido = banco.Contexto.Produtos.Single();
+        Assert.Equal("Produto atualizado", produtoPersistido.Nome);
+        Assert.Equal(5, produtoPersistido.QuantidadeEstoque);
+    }
+
+    [Fact]
     public void RegistrarEntrada_ComQuantidadeValida_AtualizaEstoqueECriaHistorico()
     {
         using BancoDeTeste banco = new();
