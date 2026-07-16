@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiniErp.Api.Data;
+using MiniErp.Api.DTOs;
 using MiniErp.Api.Models;
 using MiniErp.Api.Services;
 
@@ -62,10 +63,11 @@ app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService)
     return Results.Ok(produto);
 });
 
-app.MapPost("/produtos", (Produto produto, ProdutoService produtoService, CategoriaService categoriaService) =>
+app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService) =>
 {
-    List<string> erros = ValidarProduto(produto);
-    erros.AddRange(ValidarCategoriaDoProduto(produto, categoriaService));
+    Produto produto = MapearProdutoRequest(request);
+    List<string> erros = produtoService.ValidarProduto(produto);
+    erros.AddRange(categoriaService.ValidarCategoriaDoProduto(produto.CategoriaId));
 
     if (erros.Count > 0)
     {
@@ -82,8 +84,9 @@ app.MapPost("/produtos", (Produto produto, ProdutoService produtoService, Catego
     return Results.Created($"/produtos/{produto.Codigo}", produto);
 });
 
-app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, ProdutoService produtoService, CategoriaService categoriaService) =>
+app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService) =>
 {
+    Produto produtoAtualizado = MapearProdutoRequest(request);
     Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
 
     if (produtoExistente == null)
@@ -91,7 +94,7 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, Pro
         return Results.NotFound();
     }
 
-    List<string> erros = ValidarProduto(produtoAtualizado);
+    List<string> erros = produtoService.ValidarProduto(produtoAtualizado);
 
     if (codigo != produtoAtualizado.Codigo)
     {
@@ -103,7 +106,7 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, Produto produtoAtualizado, Pro
         erros.Add("A quantidade em estoque deve ser alterada por uma movimentação de entrada ou saída.");
     }
 
-    erros.AddRange(ValidarCategoriaDoProduto(produtoAtualizado, categoriaService));
+    erros.AddRange(categoriaService.ValidarCategoriaDoProduto(produtoAtualizado.CategoriaId));
 
     if (erros.Count > 0)
     {
@@ -201,9 +204,10 @@ app.MapGet("/categorias/{id:int}", (int id, CategoriaService categoriaService) =
     return Results.Ok(categoria);
 });
 
-app.MapPost("/categorias", (Categoria categoria, CategoriaService categoriaService) =>
+app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoriaService) =>
 {
-    List<string> erros = ValidarCategoria(categoria);
+    Categoria categoria = MapearCategoriaRequest(request);
+    List<string> erros = categoriaService.ValidarCategoria(categoria);
 
     if (erros.Count > 0)
     {
@@ -220,9 +224,10 @@ app.MapPost("/categorias", (Categoria categoria, CategoriaService categoriaServi
     return Results.Created($"/categorias/{categoria.Id}", categoria);
 });
 
-app.MapPut("/categorias/{id:int}", (int id, Categoria categoriaAtualizada, CategoriaService categoriaService) =>
+app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService) =>
 {
-    List<string> erros = ValidarCategoria(categoriaAtualizada);
+    Categoria categoriaAtualizada = MapearCategoriaRequest(request);
+    List<string> erros = categoriaService.ValidarCategoria(categoriaAtualizada);
 
     if (id != categoriaAtualizada.Id)
     {
@@ -262,67 +267,24 @@ app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService
 
 app.Run();
 
-static List<string> ValidarProduto(Produto produto)
+static Produto MapearProdutoRequest(ProdutoRequest request)
 {
-    List<string> erros = new List<string>();
-
-    if (produto.Codigo <= 0)
+    return new Produto
     {
-        erros.Add("O código deve ser maior que zero.");
-    }
-
-    if (string.IsNullOrWhiteSpace(produto.Nome))
-    {
-        erros.Add("O nome é obrigatório.");
-    }
-
-    if (produto.PrecoUnitario <= 0)
-    {
-        erros.Add("O preço unitário deve ser maior que zero.");
-    }
-
-    if (produto.QuantidadeEstoque < 0)
-    {
-        erros.Add("A quantidade em estoque não pode ser negativa.");
-    }
-
-    if (produto.EstoqueMinimo < 0)
-    {
-        erros.Add("O estoque mínimo não pode ser negativo.");
-    }
-
-    return erros;
+        Codigo = request.Codigo,
+        Nome = request.Nome,
+        PrecoUnitario = request.PrecoUnitario,
+        QuantidadeEstoque = request.QuantidadeEstoque,
+        EstoqueMinimo = request.EstoqueMinimo,
+        CategoriaId = request.CategoriaId
+    };
 }
 
-static List<string> ValidarCategoriaDoProduto(Produto produto, CategoriaService categoriaService)
+static Categoria MapearCategoriaRequest(CategoriaRequest request)
 {
-    List<string> erros = new List<string>();
-
-    if (produto.CategoriaId <= 0)
+    return new Categoria
     {
-        erros.Add("Informe uma categoria válida.");
-    }
-    else if (categoriaService.BuscarPorId(produto.CategoriaId) == null)
-    {
-        erros.Add("Categoria informada não existe.");
-    }
-
-    return erros;
-}
-
-static List<string> ValidarCategoria(Categoria categoria)
-{
-    List<string> erros = new List<string>();
-
-    if (categoria.Id < 0)
-    {
-        erros.Add("O id não pode ser negativo.");
-    }
-
-    if (string.IsNullOrWhiteSpace(categoria.Nome))
-    {
-        erros.Add("O nome é obrigatório.");
-    }
-
-    return erros;
+        Id = request.Id,
+        Nome = request.Nome
+    };
 }

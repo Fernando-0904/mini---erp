@@ -40,6 +40,38 @@ public class ProdutoService
             .FirstOrDefault(produto => produto.Codigo == codigo);
     }
 
+    public List<string> ValidarProduto(Produto produto)
+    {
+        List<string> erros = new();
+
+        if (produto.Codigo <= 0)
+        {
+            erros.Add("O código deve ser maior que zero.");
+        }
+
+        if (string.IsNullOrWhiteSpace(produto.Nome))
+        {
+            erros.Add("O nome é obrigatório.");
+        }
+
+        if (produto.PrecoUnitario <= 0)
+        {
+            erros.Add("O preço unitário deve ser maior que zero.");
+        }
+
+        if (produto.QuantidadeEstoque < 0)
+        {
+            erros.Add("A quantidade em estoque não pode ser negativa.");
+        }
+
+        if (produto.EstoqueMinimo < 0)
+        {
+            erros.Add("O estoque mínimo não pode ser negativo.");
+        }
+
+        return erros;
+    }
+
     public bool CadastrarProduto(Produto produto)
     {
         if (BuscarPorCodigo(produto.Codigo) != null)
