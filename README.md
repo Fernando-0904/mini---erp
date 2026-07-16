@@ -6,6 +6,25 @@ Este projeto é um Mini ERP simples para controle de produtos e estoque. Ele foi
 
 A ideia principal foi criar um sistema pequeno, mas completo o suficiente para praticar cadastro, listagem, busca, validações, cálculos de estoque e manipulação de dados na tela.
 
+## Arquitetura da aplicação
+
+O Mini ERP possui uma interface web, uma API e um banco de dados. O fluxo principal de uma ação do usuário é:
+
+```text
+Usuário -> HTML/CSS/JavaScript -> api.js/fetch -> API ASP.NET Core -> Services -> Entity Framework Core -> SQLite
+```
+
+Cada parte possui uma responsabilidade:
+
+- **Frontend:** mostra formulários, tabelas e mensagens; recebe as ações do usuário e exibe os dados retornados pela API.
+- **`api.js`:** concentra as chamadas HTTP com `fetch` e o tratamento padrão das respostas da API.
+- **API ASP.NET Core:** recebe requisições, valida os dados, define respostas HTTP e chama os services.
+- **Services:** aplicam as regras de negócio, como código único, categoria existente, saldo suficiente e histórico de movimentações.
+- **Entity Framework Core:** mapeia as entidades C# e traduz operações da aplicação para o banco de dados.
+- **SQLite:** armazena produtos, categorias e movimentações no arquivo local do banco.
+
+Com a API disponível, o SQLite é a fonte principal dos dados. O `localStorage` permanece apenas como fallback didático e a interface avisa quando está funcionando sem conexão com a API.
+
 ## Versão em C#
 
 A primeira parte do projeto foi feita em C# com .NET. Essa versão roda pelo terminal e concentra a lógica principal do sistema.
@@ -280,22 +299,23 @@ projeto erp/
 
 ## Como executar a versão em C#
 
-No terminal, dentro da pasta do projeto, execute:
+Pré-requisito: .NET SDK 10 instalado. No terminal, na raiz do projeto, execute:
 
 ```bash
-dotnet build
-dotnet run
+dotnet restore
+dotnet run --project ProjetoErp.csproj
 ```
 
 ## Como executar a API
 
-Antes de subir a API pela primeira vez, crie o banco de dados executando a migration:
+Pré-requisito: .NET SDK 10 instalado. Na raiz do projeto, restaure as dependências e aplique as migrations antes da primeira execução:
 
 ```bash
+dotnet restore MiniErp.Api/MiniErp.Api.csproj
 dotnet ef database update --project MiniErp.Api --startup-project MiniErp.Api
 ```
 
-Depois, no terminal, dentro da pasta do projeto, execute:
+Depois, inicie a API:
 
 ```bash
 dotnet run --project MiniErp.Api
@@ -330,6 +350,12 @@ npx --yes http-server miniErpWeb -p 5500 -c-1
 ```
 
 Depois, abra `http://127.0.0.1:5500` no navegador. Sem a API, o frontend usa o `localStorage` como fallback para as funções de produto já salvas no navegador.
+
+Para iniciar a aplicação do zero, siga esta ordem:
+
+1. Execute a migration e inicie a API em um terminal.
+2. Em outro terminal, execute o servidor HTTP da pasta `miniErpWeb`.
+3. Abra `http://127.0.0.1:5500` e confirme que a tela carrega os dados da API em `http://localhost:5208`.
 
 ## Testes automatizados
 
