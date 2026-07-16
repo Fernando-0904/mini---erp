@@ -12,6 +12,18 @@ function obterApiBaseUrl() {
 
 const API_BASE_URL = obterApiBaseUrl();
 
+async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao) {
+    let resposta;
+
+    try {
+        resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoes);
+    } catch {
+        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+    }
+
+    return tratarRespostaApi(resposta, mensagemErroPadrao);
+}
+
 async function tratarRespostaApi(resposta, mensagemErroPadrao) {
     if (resposta.ok) {
         if (resposta.status === 204) {
@@ -39,119 +51,93 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao) {
 }
 
 async function listarProdutosApi() {
-    const resposta = await fetch(`${API_BASE_URL}/produtos`);
-
-    return tratarRespostaApi(resposta, "Erro ao listar produtos na API.");
+    return executarRequisicaoApi("/produtos", undefined, "Erro ao listar produtos na API.");
 }
 
 async function buscarProdutoPorCodigoApi(codigo) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`);
-
-    return tratarRespostaApi(resposta, "Produto não encontrado na API.");
+    return executarRequisicaoApi(`/produtos/${codigo}`, undefined, "Produto não encontrado na API.");
 }
 
 async function cadastrarProdutoApi(produto) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos`, {
+    return executarRequisicaoApi("/produtos", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(produto),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao cadastrar produto na API.");
+    }, "Erro ao cadastrar produto na API.");
 }
 
 async function editarProdutoApi(codigo, produto) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`, {
+    return executarRequisicaoApi(`/produtos/${codigo}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(produto),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao editar produto na API.");
+    }, "Erro ao editar produto na API.");
 }
 
 async function removerProdutoApi(codigo) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}`, {
+    return executarRequisicaoApi(`/produtos/${codigo}`, {
         method: "DELETE",
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao remover produto na API.");
+    }, "Erro ao remover produto na API.");
 }
 
 async function listarMovimentacoesApi(codigo) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes`);
-
-    return tratarRespostaApi(resposta, "Erro ao listar movimentações na API.");
+    return executarRequisicaoApi(`/produtos/${codigo}/movimentacoes`, undefined, "Erro ao listar movimentações na API.");
 }
 
 async function registrarEntradaEstoqueApi(codigo, quantidade) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes/entrada`, {
+    return executarRequisicaoApi(`/produtos/${codigo}/movimentacoes/entrada`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({ quantidade }),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao registrar entrada de estoque na API.");
+    }, "Erro ao registrar entrada de estoque na API.");
 }
 
 async function registrarSaidaEstoqueApi(codigo, quantidade) {
-    const resposta = await fetch(`${API_BASE_URL}/produtos/${codigo}/movimentacoes/saida`, {
+    return executarRequisicaoApi(`/produtos/${codigo}/movimentacoes/saida`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({ quantidade }),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao registrar saída de estoque na API.");
+    }, "Erro ao registrar saída de estoque na API.");
 }
 
 async function listarCategoriasApi() {
-    const resposta = await fetch(`${API_BASE_URL}/categorias`);
-
-    return tratarRespostaApi(resposta, "Erro ao listar categorias na API.");
+    return executarRequisicaoApi("/categorias", undefined, "Erro ao listar categorias na API.");
 }
 
 async function buscarCategoriaPorIdApi(id) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`);
-
-    return tratarRespostaApi(resposta, "Categoria não encontrada na API.");
+    return executarRequisicaoApi(`/categorias/${id}`, undefined, "Categoria não encontrada na API.");
 }
 
 async function cadastrarCategoriaApi(categoria) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias`, {
+    return executarRequisicaoApi("/categorias", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(categoria),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao cadastrar categoria na API.");
+    }, "Erro ao cadastrar categoria na API.");
 }
 
 async function editarCategoriaApi(id, categoria) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`, {
+    return executarRequisicaoApi(`/categorias/${id}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(categoria),
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao editar categoria na API.");
+    }, "Erro ao editar categoria na API.");
 }
 
 async function removerCategoriaApi(id) {
-    const resposta = await fetch(`${API_BASE_URL}/categorias/${id}`, {
+    return executarRequisicaoApi(`/categorias/${id}`, {
         method: "DELETE",
-    });
-
-    return tratarRespostaApi(resposta, "Erro ao remover categoria na API.");
+    }, "Erro ao remover categoria na API.");
 }
