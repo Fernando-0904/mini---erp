@@ -81,7 +81,7 @@ function inicializarProdutoController() {
 
             limparModoEdicao();
         }
-        
+
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
         elementos.formulario.reset();

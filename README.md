@@ -23,7 +23,7 @@ Cada parte possui uma responsabilidade:
 - **Entity Framework Core:** mapeia as entidades C# e traduz operações da aplicação para o banco de dados.
 - **SQLite:** armazena produtos, categorias e movimentações no arquivo local do banco.
 
-Com a API disponível, o SQLite é a fonte principal dos dados. O `localStorage` permanece apenas como fallback didático e a interface avisa quando está funcionando sem conexão com a API.
+Produtos, categorias e movimentações usam a API e o SQLite como fonte única de dados. O `localStorage` foi removido do fluxo principal para evitar que a tela apresente alterações que não foram persistidas no servidor.
 
 ## Versão em C#
 
@@ -60,8 +60,7 @@ Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão we
 - buscar produtos por código;
 - limpar a busca;
 - remover produtos com confirmação;
-- mostrar a situação do estoque;
-- salvar os produtos no navegador usando `localStorage`.
+- mostrar a situação do estoque.
 
 Com a evolução para regras de ERP, a tela também permite:
 
@@ -119,8 +118,7 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `storage.js`: cuida da persistência, ou seja, salvar e carregar os produtos no `localStorage`;
-- `api.js`: centraliza as chamadas HTTP para a API de produtos;
+- `api.js`: concentra todas as chamadas HTTP para produtos, categorias e movimentações, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
@@ -128,7 +126,7 @@ Hoje a parte web está organizada assim:
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
 
-O carregamento dos dados salvos também ficou mais seguro. A leitura do `localStorage` passou a usar `try/catch`, de forma que, se os dados estiverem inválidos ou corrompidos, a aplicação limpa o conteúdo inválido e inicia com uma lista vazia, em vez de quebrar.
+Quando a API está indisponível, `api.js` transforma a falha técnica de conexão em uma mensagem compreensível. A tela não grava, altera ou remove dados somente no navegador.
 
 ## Regras do sistema
 
@@ -153,7 +151,9 @@ Quando a quantidade atual é menor ou igual ao estoque mínimo configurado, a ta
 
 Além da versão em console e da versão web, o projeto também possui uma API criada com ASP.NET Core Minimal API.
 
-A versão web consome a API usando `fetch`. O `localStorage` foi mantido como fallback quando a API está indisponível, mas a fonte principal de dados é o banco SQLite.
+A versão web consome a API usando `fetch`, centralizado em `miniErpWeb/js/api.js`. A API e o banco SQLite são a fonte única de dados. Se o backend estiver indisponível, a interface informa o problema sem exibir mensagens técnicas como `Failed to fetch` e sem alterar dados localmente.
+
+Os endpoints de criação e edição recebem DTOs de entrada (`ProdutoRequest` e `CategoriaRequest`). No limite da API, esses dados são mapeados para as entidades persistidas e encaminhados aos services, que aplicam as regras de negócio.
 
 A API possui os seguintes endpoints:
 
@@ -267,6 +267,9 @@ projeto erp/
 ├── MiniErp.Api/
 │   ├── Data/
 │   │   └── AppDbContext.cs
+│   ├── DTOs/
+│   │   ├── CategoriaRequest.cs
+│   │   └── ProdutoRequest.cs
 │   ├── Migrations/
 │   ├── Models/
 │   │   ├── Categoria.cs
@@ -291,7 +294,6 @@ projeto erp/
 │   │   ├── dom-elements.js
 │   │   ├── movimentacao-controller.js
 │   │   ├── produto-controller.js
-│   │   ├── storage.js
 │   │   └── ui.js
 │   └── assets/
 └── .gitignore
@@ -349,7 +351,7 @@ Para testar a integração completa localmente, inicie a API e sirva a pasta `mi
 npx --yes http-server miniErpWeb -p 5500 -c-1
 ```
 
-Depois, abra `http://127.0.0.1:5500` no navegador. Sem a API, o frontend usa o `localStorage` como fallback para as funções de produto já salvas no navegador.
+Depois, abra `http://127.0.0.1:5500` no navegador. A API deve permanecer em execução para que a aplicação consulte e altere os dados.
 
 Para iniciar a aplicação do zero, siga esta ordem:
 
@@ -359,15 +361,23 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 13 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
 | Cálculo do valor total | Multiplica corretamente preço unitário pela quantidade em estoque |
+| Cadastro válido | Permite cadastrar produto com dados corretos |
 | Código duplicado | Impede o cadastro de dois produtos com o mesmo código |
+| Categoria obrigatória | Rejeita produto sem categoria |
+| Categoria existente | Rejeita categoria inexistente no produto |
+| Preço inválido | Rejeita preço menor ou igual a zero |
+| Quantidade negativa | Rejeita estoque inicial negativo |
+| Estoque mínimo negativo | Rejeita estoque mínimo negativo |
 | Edição de produto | Preserva o saldo de estoque; alterações de quantidade exigem movimentação |
 | Entrada de estoque | Atualiza o saldo e cria o registro de histórico |
+| Saída válida | Reduz o saldo e gera histórico |
 | Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
+| Histórico por produto | Retorna apenas as movimentações do produto consultado |
 
 Para executar a suíte:
 
@@ -376,6 +386,12 @@ dotnet test MiniErp.Api.Tests/MiniErp.Api.Tests.csproj
 ```
 
 O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull request`.
+
+## Fluxo de revisão
+
+O fluxo atual publica mudanças diretamente na `master` depois das validações adequadas. Para mudanças que precisem de isolamento ou revisão externa, o repositório possui o template [`.github/pull_request_template.md`](.github/pull_request_template.md), com resumo, tipo de alteração, como testar, evidências e checklist.
+
+Antes de publicar uma alteração, recomenda-se executar os testes relevantes, verificar `git diff --check`, atualizar o README quando necessário e conferir se não há erros no console do navegador ou no terminal da API.
 
 ## Testes manuais realizados
 
@@ -395,12 +411,11 @@ O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull re
 | Edição com campo inválido | Informar campo inválido durante edição | Sistema exibe erro e não salva a alteração | OK |
 | Remoção confirmada | Clicar em Remover e confirmar | Produto removido da tabela e indicadores atualizados | OK |
 | Remoção cancelada | Clicar em Remover e cancelar | Produto permanece cadastrado | OK |
-| Persistência após atualizar página | Cadastrar produto e pressionar F5 | Produto continua listado após recarregar a página | OK |
-| localStorage inválido | Alterar manualmente `produtos` no localStorage para valor inválido | Aplicação não quebra, limpa os dados inválidos e inicia lista vazia | OK |
+| Persistência após atualizar página | Cadastrar produto e pressionar F5 com a API em execução | Produto continua listado porque foi salvo no SQLite | OK |
 
 ## Testes manuais da integração com API
 
-Depois da criação da API, a versão web passou a tentar usar os endpoints do back-end para listar, cadastrar, editar, remover e buscar produtos por código. O `localStorage` foi mantido como fallback para quando a API estiver indisponível.
+Depois da criação da API, a versão web passou a usar os endpoints do back-end para listar, cadastrar, editar, remover e buscar produtos por código. A API e o SQLite são a fonte única dos dados.
 
 Testes com a API ligada:
 
@@ -410,29 +425,23 @@ Testes com a API ligada:
 | Cadastro pela API | Código 101, nome Teclado, preço 120, quantidade 5 | Produto cadastrado usando `POST /produtos` e exibido na tabela | OK |
 | Código duplicado pela API | Cadastrar outro produto com código 101 | API retorna conflito e o produto não é cadastrado novamente | OK |
 | Cadastro inválido pela API | Nome vazio, preço zero ou quantidade negativa | API retorna erro de validação e o produto não é cadastrado | OK |
-| Edição pela API | Editar nome, preço e quantidade de produto existente | Produto atualizado usando `PUT /produtos/{codigo}` | OK |
+| Edição pela API | Editar nome, preço, categoria ou estoque mínimo de produto existente | Produto atualizado usando `PUT /produtos/{codigo}`; o saldo é preservado | OK |
 | Remoção pela API | Remover produto existente e confirmar | Produto removido usando `DELETE /produtos/{codigo}` | OK |
 | Busca por código pela API | Buscar código 101 | Produto encontrado usando `GET /produtos/{codigo}` | OK |
 | Busca por código inexistente | Buscar código 999 | Sistema informa que nenhum produto foi encontrado | OK |
 | Busca por nome | Buscar parte do nome do produto | Sistema mantém a busca local por nome usando os dados carregados | OK |
 | CORS da API | Frontend chamar `http://localhost:5208` | API permite a chamada do navegador | OK |
 
-Testes com a API desligada:
+Teste com a API desligada:
 
 | Cenário | Entrada | Resultado esperado | Status |
 |---|---|---|---|
-| Carregamento sem API | Abrir a tela com a API desligada | Sistema carrega os produtos salvos no `localStorage` | OK |
-| Cadastro local | Cadastrar produto com a API desligada | Produto é salvo no navegador e exibido na tabela | OK |
-| Edição local | Editar produto com a API desligada | Produto é editado no navegador e salvo no `localStorage` | OK |
-| Remoção local | Remover produto com a API desligada | Produto é removido no navegador e o `localStorage` é atualizado | OK |
-| Busca por código local | Buscar código de produto salvo localmente | Sistema encontra o produto usando os dados locais | OK |
-| Busca por nome local | Buscar parte do nome com a API desligada | Sistema encontra produtos usando os dados locais | OK |
-| Persistência local | Recarregar a página depois de alterações locais | Dados continuam disponíveis pelo `localStorage` | OK |
+| Falha de conexão | Abrir a tela ou tentar uma operação com a API desligada | Interface informa que não foi possível conectar à API e não altera dados apenas no navegador | OK |
 
 Observações da integração:
 
 - a API salva os produtos, categorias e movimentações no SQLite;
-- o `localStorage` funciona como fallback quando a API está indisponível;
+- o `localStorage` não participa do fluxo de dados do ERP;
 - a busca por nome continua local porque a API atual possui busca apenas por código.
 
 ## Testes manuais da persistência no SQLite
@@ -480,7 +489,7 @@ Busca após reiniciar remoção: HTTP 404
 
 A maior dificuldade foi entender a integração do JavaScript com a página.
 
-Foi nessa parte que ficaram os pontos mais importantes do projeto web: capturar os dados do formulário, validar as informações, montar a tabela dinamicamente, atualizar os indicadores, controlar os botões de busca e remoção, mostrar mensagens na tela e manter os dados salvos com `localStorage`.
+Foi nessa parte que ficaram os pontos mais importantes do projeto web: capturar os dados do formulário, validar as informações, montar a tabela dinamicamente, atualizar os indicadores, controlar os botões de busca e remoção, mostrar mensagens na tela e integrar o frontend com a API.
 
 Essa etapa exigiu entender melhor como o JavaScript conversa com o HTML e como cada ação do usuário precisa alterar alguma parte da página.
 
@@ -502,7 +511,6 @@ Durante o desenvolvimento, foram praticados:
 - criação de elementos da tabela com `createElement`, `textContent` e `appendChild`;
 - separação do JavaScript em arquivos por responsabilidade;
 - tratamento de erro no carregamento de dados com `try/catch`;
-- armazenamento local com `localStorage`;
 - criação de API com ASP.NET Core Minimal API;
 - criação de endpoints HTTP para produtos;
 - validação de dados recebidos pela API;
@@ -515,7 +523,6 @@ Durante o desenvolvimento, foram praticados:
 ## Próximos passos possíveis
 
 - melhorar alguns detalhes visuais da interface;
-- melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
 - reorganizar a solução em camadas de backend, frontend, domínio e testes;
 
 ---
