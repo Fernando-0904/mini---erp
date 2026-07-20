@@ -42,7 +42,7 @@ function inicializarFornecedorController() {
             }
 
             atualizarTabelaFornecedores(fornecedores, editarFornecedor, removerFornecedor);
-            await recarregarFornecedoresDoProduto();
+            await atualizarFornecedoresDoProduto();
             elementos.formularioFornecedor.reset();
             elementos.campoFornecedorCodigo.focus();
         } catch (erro) {
@@ -136,7 +136,7 @@ function inicializarFornecedorController() {
             await removerFornecedorApi(id);
             fornecedores.splice(indiceFornecedor, 1);
             atualizarTabelaFornecedores(fornecedores, editarFornecedor, removerFornecedor);
-            await recarregarFornecedoresDoProduto();
+            await atualizarFornecedoresDoProduto();
             exibirMensagem("Fornecedor removido com sucesso.", "sucesso");
         } catch (erro) {
             exibirMensagem(erro.message, "erro");
@@ -146,5 +146,11 @@ function inicializarFornecedorController() {
     function limparModoEdicaoFornecedor() {
         idFornecedorEmEdicao = null;
         elementos.botaoSalvarFornecedor.textContent = "Cadastrar fornecedor";
+    }
+
+    async function atualizarFornecedoresDoProduto() {
+        if (typeof window.recarregarFornecedoresDoProduto === "function") {
+            await window.recarregarFornecedoresDoProduto();
+        }
     }
 }

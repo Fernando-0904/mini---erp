@@ -24,7 +24,7 @@ function inicializarCategoriaController() {
             try {
                 const categoriaCadastrada = await cadastrarCategoriaApi(categoria);
                 upsertCategoriaNoArray(categoriaCadastrada);
-                await recarregarCategoriasDoProduto();
+                await atualizarCategoriasDoProduto();
                 exibirMensagem("Categoria cadastrada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -48,7 +48,7 @@ function inicializarCategoriaController() {
             try {
                 const categoriaEditada = await editarCategoriaApi(idCategoriaEmEdicao, categoriaAtualizada);
                 aplicarDadosCategoria(categoriaExistente, categoriaEditada);
-                await recarregarCategoriasDoProduto();
+                await atualizarCategoriasDoProduto();
                 exibirMensagem("Categoria editada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -150,7 +150,7 @@ function inicializarCategoriaController() {
         try {
             await removerCategoriaApi(id);
             categorias.splice(indiceCategoria, 1);
-            await recarregarCategoriasDoProduto();
+            await atualizarCategoriasDoProduto();
             exibirMensagem("Categoria removida com sucesso.", "sucesso");
         } catch (erro) {
             exibirMensagem(erro.message, "erro");
@@ -176,6 +176,12 @@ function inicializarCategoriaController() {
 
     function aplicarDadosCategoria(categoriaDestino, categoriaOrigem) {
         categoriaDestino.nome = categoriaOrigem.nome;
+    }
+
+    async function atualizarCategoriasDoProduto() {
+        if (typeof window.recarregarCategoriasDoProduto === "function") {
+            await window.recarregarCategoriasDoProduto();
+        }
     }
 }
 

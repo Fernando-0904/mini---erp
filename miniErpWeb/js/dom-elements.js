@@ -41,4 +41,6 @@ const elementos = {
     tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes")
 };
 
-elementos.botaoLimparFormulario = elementos.formulario.querySelector("button[type='reset']");
+elementos.botaoLimparFormulario = elementos.formulario
+    ? elementos.formulario.querySelector("button[type='reset']")
+    : null;

@@ -47,7 +47,7 @@ Essa etapa ajudou a praticar estruturas básicas de programação, como `if`, `s
 
 Depois da versão em console, foi criada uma interface web para representar o sistema de forma visual.
 
-A página possui formulário de cadastro, indicadores, busca por código, tabela de produtos, mensagens para o usuário e botões de ação.
+A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores e movimentações de estoque.
 
 Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão web permite:
 
@@ -125,7 +125,16 @@ Hoje a parte web está organizada assim:
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
 - `fornecedor-controller.js`: controla o cadastro, a edição e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
+- `painel-controller.js`: carrega os indicadores consolidados de produtos, itens e valor em estoque;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
+
+As páginas da versão web são:
+
+- `miniErpWeb/index.html`: painel com indicadores do estoque;
+- `miniErpWeb/produtos.html`: cadastro, busca, edição, remoção e listagem de produtos;
+- `miniErpWeb/categorias.html`: cadastro, edição, remoção e listagem de categorias;
+- `miniErpWeb/fornecedores.html`: cadastro, edição, remoção e listagem de fornecedores;
+- `miniErpWeb/movimentacoes.html`: entradas, saídas e histórico de estoque.
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
 
@@ -303,6 +312,10 @@ projeto erp/
 │   └── MiniErp.Api.http
 ├── miniErpWeb/
 │   ├── index.html
+│   ├── produtos.html
+│   ├── categorias.html
+│   ├── fornecedores.html
+│   ├── movimentacoes.html
 │   ├── css/
 │   │   └── style.css
 │   ├── js/
@@ -312,6 +325,7 @@ projeto erp/
 │   │   ├── dom-elements.js
 │   │   ├── fornecedor-controller.js
 │   │   ├── movimentacao-controller.js
+│   │   ├── painel-controller.js
 │   │   ├── produto-controller.js
 │   │   └── ui.js
 │   └── assets/

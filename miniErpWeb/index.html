@@ -9,7 +9,14 @@
 <body>
 <header>
     <h1>Mini ERP</h1>
-    <h2>Controle de Estoque - Módulo de Produtos</h2>
+    <h2>Painel de estoque</h2>
+    <nav aria-label="Navegação principal">
+        <a href="index.html" aria-current="page">Painel</a>
+        <a href="produtos.html">Produtos</a>
+        <a href="categorias.html">Categorias</a>
+        <a href="fornecedores.html">Fornecedores</a>
+        <a href="movimentacoes.html">Movimentações</a>
+    </nav>
 </header>
 <main>
     <section class="indicadores" aria-label="Indicadores do estoque">
@@ -32,236 +39,19 @@
             </div>
         </div>
     </section>
-    <section aria-label="Cadastro de produto">
-        <h3>Cadastro de produto</h3>
-
-        <form id="formProduto">
-            <div>
-                <label for="codigo">Código</label>
-                <input type="number" id="codigo" name="codigo">
-            </div>
-
-            <div>
-                <label for="nome">Nome</label>
-                <input type="text" id="nome" name="nome">
-            </div>
-
-            <div>
-                <label for="preco">Preço Unitário</label>
-                <input type="number" id="preco" name="preco" step="0.01">
-            </div>
-            <div>
-                <label for="estoqueMinimo">Estoque Mínimo</label>
-                <input type="number" id="estoqueMinimo" name="estoqueMinimo">
-            </div>
-
-            <div>
-                <label for="categoriaProduto">Categoria</label>
-                <select id="categoriaProduto" name="categoriaProduto">
-                    <option value="">Selecione uma categoria</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="fornecedorProduto">Fornecedor</label>
-                <select id="fornecedorProduto" name="fornecedorProduto">
-                    <option value="">Sem fornecedor</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="quantidade">Quantidade</label>
-                <input type="number" id="quantidade" name="quantidade">
-            </div>
-
-            <button type="submit" id="botaoSalvarProduto">Cadastrar produto</button>
-            <button type="reset">Limpar</button>
-        </form>
-    </section>
-    <section aria-label="Busca de produto">
-        <h3>Buscar produto por código ou nome</h3>
-
-        <form id="formBuscaProduto">
-            <div>
-                <label for="codigoBusca">Código ou nome</label>
-                <input type="text" id="codigoBusca" name="codigoBusca">
-            </div>
-
-            <button type="button" id="botaoBuscar">Buscar</button>
-            <button type="button" id="botaoLimparBusca">Limpar busca</button>
-        </form>
-    </section>
-    <section aria-label="Cadastro de categoria">
-        <h3>Cadastro de categoria</h3>
-
-        <form id="formCategoria">
-            <div>
-                <label for="categoriaId">ID</label>
-                <input type="number" id="categoriaId" name="categoriaId">
-            </div>
-
-            <div>
-                <label for="categoriaNome">Nome</label>
-                <input type="text" id="categoriaNome" name="categoriaNome">
-            </div>
-
-            <button type="submit" id="botaoSalvarCategoria">Cadastrar categoria</button>
-            <button type="reset" id="botaoLimparCategoria">Limpar</button>
-        </form>
-    </section>
-    <section aria-label="Cadastro de fornecedor">
-        <h3>Cadastro de fornecedor</h3>
-
-        <form id="formFornecedor">
-            <div>
-                <label for="fornecedorCodigo">Código</label>
-                <input type="number" id="fornecedorCodigo" name="fornecedorCodigo">
-            </div>
-
-            <div>
-                <label for="fornecedorNome">Nome</label>
-                <input type="text" id="fornecedorNome" name="fornecedorNome">
-            </div>
-
-            <div>
-                <label for="fornecedorDocumento">Documento</label>
-                <input type="text" id="fornecedorDocumento" name="fornecedorDocumento">
-            </div>
-
-            <div>
-                <label for="fornecedorEmail">E-mail</label>
-                <input type="email" id="fornecedorEmail" name="fornecedorEmail">
-            </div>
-
-            <div>
-                <label for="fornecedorAtivo">Ativo</label>
-                <input type="checkbox" id="fornecedorAtivo" name="fornecedorAtivo" checked>
-            </div>
-
-            <button type="submit" id="botaoSalvarFornecedor">Cadastrar fornecedor</button>
-            <button type="reset" id="botaoLimparFornecedor">Limpar</button>
-        </form>
-    </section>
-    <section class="tabela-fornecedores" aria-label="Lista de fornecedores">
-        <h3>Lista de fornecedores</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Nome</th>
-                    <th>Documento</th>
-                    <th>E-mail</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-
-            <tbody id="tabelaFornecedores">
-                <tr>
-                    <td colspan="6">Nenhum fornecedor cadastrado.</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-    <section aria-label="Movimentação de estoque">
-        <h3>Movimentação de estoque</h3>
-
-        <form id="formMovimentacaoEstoque">
-            <div>
-                <label for="movimentacaoCodigo">Código do produto</label>
-                <input type="number" id="movimentacaoCodigo" name="movimentacaoCodigo">
-            </div>
-
-            <div>
-                <label for="movimentacaoQuantidade">Quantidade</label>
-                <input type="number" id="movimentacaoQuantidade" name="movimentacaoQuantidade">
-            </div>
-
-            <button type="button" id="botaoRegistrarEntrada">Registrar entrada</button>
-            <button type="button" id="botaoRegistrarSaida">Registrar saída</button>
-            <button type="button" id="botaoBuscarHistorico">Ver histórico</button>
-            <button type="reset">Limpar</button>
-        </form>
-    </section>
-    <section class="tabela-movimentacoes" aria-label="Histórico de movimentações">
-        <h3>Histórico de movimentações</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Código</th>
-                    <th>Tipo</th>
-                    <th>Quantidade</th>
-                    <th>Saldo anterior</th>
-                    <th>Saldo novo</th>
-                </tr>
-            </thead>
-
-            <tbody id="tabelaMovimentacoes">
-                <tr>
-                    <td colspan="6">Nenhuma movimentação registrada.</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-    <section class="tabela-categorias" aria-label="Lista de categorias">
-        <h3>Lista de categorias</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-
-            <tbody id="tabelaCategorias">
-                <tr>
-                    <td colspan="3">Nenhuma categoria cadastrada.</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
     <p id="mensagem"></p>
-    <section class="tabela-produtos" aria-label="Lista de produtos">
-        <h3>Lista de Produtos</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Nome</th>
-                    <th>Categoria</th>
-                    <th>Fornecedor</th>
-                    <th>Preço Unitário</th>
-                    <th>Quantidade</th>
-                    <th>Valor Total</th>
-                    <th>Situação</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-
-            <tbody id="tabelaProdutos">
-                <tr>
-                    <td colspan="9">Nenhum produto cadastrado.</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
 </main>
 <footer>
     <p>Mini ERP - Projeto de Aprendizado</p>
 </footer>
-<script src="js/dom-elements.js?v=2"></script>
-<script src="js/api.js?v=2"></script>
-<script src="js/ui.js?v=2"></script>
-<script src="js/produto-controller.js?v=2"></script>
-<script src="js/categoria-controller.js?v=2"></script>
-<script src="js/fornecedor-controller.js?v=2"></script>
-<script src="js/movimentacao-controller.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/dom-elements.js?v=3"></script>
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/produto-controller.js?v=3"></script>
+<script src="js/categoria-controller.js?v=3"></script>
+<script src="js/fornecedor-controller.js?v=3"></script>
+<script src="js/movimentacao-controller.js?v=3"></script>
+<script src="js/painel-controller.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

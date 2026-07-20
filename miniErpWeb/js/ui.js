@@ -188,6 +188,10 @@ function criarCelulaAcoesFornecedor(id, aoEditarFornecedor, aoRemoverFornecedor)
 }
 
 function atualizarIndicadores(produtos) {
+    if (elementos.quantidadeProdutos === null) {
+        return;
+    }
+
     let totalItens = 0;
     let valorTotal = 0;
 

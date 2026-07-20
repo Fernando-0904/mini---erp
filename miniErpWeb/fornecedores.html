@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini ERP - Fornecedores</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Mini ERP</h1>
+    <h2>Gestão de fornecedores</h2>
+    <nav aria-label="Navegação principal">
+        <a href="index.html">Painel</a>
+        <a href="produtos.html">Produtos</a>
+        <a href="categorias.html">Categorias</a>
+        <a href="fornecedores.html" aria-current="page">Fornecedores</a>
+        <a href="movimentacoes.html">Movimentações</a>
+    </nav>
+</header>
+<main>
+    <section aria-label="Cadastro de fornecedor">
+        <h3>Cadastro de fornecedor</h3>
+        <form id="formFornecedor" novalidate>
+            <div><label for="fornecedorCodigo">Código</label><input type="number" id="fornecedorCodigo" name="fornecedorCodigo"></div>
+            <div><label for="fornecedorNome">Nome</label><input type="text" id="fornecedorNome" name="fornecedorNome"></div>
+            <div><label for="fornecedorDocumento">Documento</label><input type="text" id="fornecedorDocumento" name="fornecedorDocumento"></div>
+            <div><label for="fornecedorEmail">E-mail</label><input type="email" id="fornecedorEmail" name="fornecedorEmail"></div>
+            <div class="campo-checkbox"><label for="fornecedorAtivo">Ativo</label><input type="checkbox" id="fornecedorAtivo" name="fornecedorAtivo" checked></div>
+            <button type="submit" id="botaoSalvarFornecedor">Cadastrar fornecedor</button>
+            <button type="reset" id="botaoLimparFornecedor">Limpar</button>
+        </form>
+    </section>
+    <p id="mensagem"></p>
+    <section class="tabela-fornecedores" aria-label="Lista de fornecedores">
+        <h3>Lista de fornecedores</h3>
+        <table><thead><tr><th>Código</th><th>Nome</th><th>Documento</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaFornecedores"><tr><td colspan="6">Nenhum fornecedor cadastrado.</td></tr></tbody></table>
+    </section>
+</main>
+<footer><p>Mini ERP - Projeto de Aprendizado</p></footer>
+<script src="js/dom-elements.js?v=3"></script>
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/produto-controller.js?v=3"></script>
+<script src="js/categoria-controller.js?v=3"></script>
+<script src="js/fornecedor-controller.js?v=3"></script>
+<script src="js/movimentacao-controller.js?v=3"></script>
+<script src="js/painel-controller.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+</body>
+</html>
