@@ -24,14 +24,22 @@ public class ProdutoService
             .ToList();
     }
 
-    public List<Produto> ListarProdutosComEstoqueBaixo()
+    public List<Produto> ListarProdutosComEstoqueBaixo(int? categoriaId = null)
     {
-        return contexto.Produtos
+        IQueryable<Produto> consulta = contexto.Produtos
             .AsNoTracking()
             .Include(produto => produto.Categoria)
             .Include(produto => produto.Fornecedor)
-            .Where(produto => produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
+            .Where(produto => produto.QuantidadeEstoque <= produto.EstoqueMinimo);
+
+        if (categoriaId.HasValue)
+        {
+            consulta = consulta.Where(produto => produto.CategoriaId == categoriaId.Value);
+        }
+
+        return consulta
             .OrderBy(produto => produto.QuantidadeEstoque)
+            .ThenBy(produto => produto.Codigo)
             .ToList();
     }
 

@@ -17,3 +17,7 @@ if (elementos.formularioFornecedor !== null) {
 if (elementos.formularioMovimentacaoEstoque !== null) {
 	inicializarMovimentacaoController();
 }
+
+if (elementos.tabelaEstoqueBaixo !== null) {
+	inicializarEstoqueBaixoController();
+}

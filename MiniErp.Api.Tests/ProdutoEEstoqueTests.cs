@@ -207,7 +207,40 @@ public class ProdutoEEstoqueTests
         Assert.Equal(TipoMovimentacaoEstoque.Entrada, movimentacoes[0].Tipo);
     }
 
-    private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1)
+    [Fact]
+    public void ListarProdutosComEstoqueBaixo_RetornaAbaixoOuIgualAoMinimoOrdenados()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 2, estoqueMinimo: 3));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 0, estoqueMinimo: 0));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 103, quantidadeEstoque: 5, estoqueMinimo: 3));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosComEstoqueBaixo();
+
+        Assert.Equal(new[] { 102, 101 }, produtos.Select(produto => produto.Codigo));
+    }
+
+    [Fact]
+    public void ListarProdutosComEstoqueBaixo_ComFiltroDeCategoria_RetornaSomenteCategoriaSelecionada()
+    {
+        using BancoDeTeste banco = new();
+        Categoria outraCategoria = new() { Nome = "Outra categoria" };
+        banco.Contexto.Categorias.Add(outraCategoria);
+        banco.Contexto.SaveChanges();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 1, estoqueMinimo: 2));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 1, estoqueMinimo: 2, categoriaId: outraCategoria.Id));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosComEstoqueBaixo(outraCategoria.Id);
+
+        Assert.Single(produtos);
+        Assert.Equal(102, produtos[0].Codigo);
+    }
+
+    private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1, int estoqueMinimo = 0, int categoriaId = 1)
     {
         return new Produto
         {
@@ -215,7 +248,8 @@ public class ProdutoEEstoqueTests
             Nome = "Produto de teste",
             PrecoUnitario = 10m,
             QuantidadeEstoque = quantidadeEstoque,
-            CategoriaId = 1,
+            EstoqueMinimo = estoqueMinimo,
+            CategoriaId = categoriaId,
         };
     }
 

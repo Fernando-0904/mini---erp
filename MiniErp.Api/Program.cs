@@ -47,9 +47,9 @@ app.MapGet("/produtos", (ProdutoService produtoService) =>
     return Results.Ok(produtoService.ListarProdutos());
 });
 
-app.MapGet("/produtos/estoque-baixo", (ProdutoService produtoService) =>
+app.MapGet("/produtos/estoque-baixo", (int? categoriaId, ProdutoService produtoService) =>
 {
-    return Results.Ok(produtoService.ListarProdutosComEstoqueBaixo());
+    return Results.Ok(produtoService.ListarProdutosComEstoqueBaixo(categoriaId));
 });
 
 app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>

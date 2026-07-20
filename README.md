@@ -47,7 +47,7 @@ Essa etapa ajudou a praticar estruturas básicas de programação, como `if`, `s
 
 Depois da versão em console, foi criada uma interface web para representar o sistema de forma visual.
 
-A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores e movimentações de estoque.
+A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores, movimentações de estoque e relatório de estoque baixo.
 
 Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão web permite:
 
@@ -70,8 +70,12 @@ Com a evolução para regras de ERP, a tela também permite:
 - registrar entradas e saídas de estoque;
 - consultar o histórico de movimentações;
 - bloquear saídas que deixariam o saldo do produto negativo.
-- cadastrar, editar e remover fornecedores;
+- cadastrar, editar, inativar e remover fornecedores;
+- informar telefone e e-mail opcional do fornecedor;
 - vincular opcionalmente um fornecedor ativo a cada produto.
+- consultar produtos com saldo menor ou igual ao estoque mínimo;
+- filtrar o relatório de estoque baixo por categoria;
+- destacar produtos sem estoque.
 
 ![Cadastro de produto com categoria](miniErpWeb/assets/cadastro-produto.png)
 
@@ -120,11 +124,12 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias, fornecedores e movimentações, além do tratamento padrão de respostas e falhas de conexão;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias, fornecedores, movimentações e relatório de estoque baixo, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
-- `fornecedor-controller.js`: controla o cadastro, a edição e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
+- `fornecedor-controller.js`: controla o cadastro, a edição, a inativação e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
+- `estoque-baixo-controller.js`: carrega o relatório de estoque baixo e aplica o filtro por categoria;
 - `painel-controller.js`: carrega os indicadores consolidados de produtos, itens e valor em estoque;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
 
@@ -133,8 +138,9 @@ As páginas da versão web são:
 - `miniErpWeb/index.html`: painel com indicadores do estoque;
 - `miniErpWeb/produtos.html`: cadastro, busca, edição, remoção e listagem de produtos;
 - `miniErpWeb/categorias.html`: cadastro, edição, remoção e listagem de categorias;
-- `miniErpWeb/fornecedores.html`: cadastro, edição, remoção e listagem de fornecedores;
+- `miniErpWeb/fornecedores.html`: cadastro, edição, inativação, remoção e listagem de fornecedores;
 - `miniErpWeb/movimentacoes.html`: entradas, saídas e histórico de estoque.
+- `miniErpWeb/estoque-baixo.html`: relatório filtrável de produtos com estoque baixo.
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
 
@@ -154,6 +160,9 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 - não é possível remover uma categoria vinculada a produtos;
 - um produto pode ter fornecedor opcional, mas o fornecedor informado deve existir e estar ativo;
 - código e documento de fornecedor não podem ser duplicados;
+- o e-mail do fornecedor é opcional, mas deve ter formato válido quando informado;
+- o telefone do fornecedor pode ser informado e é persistido;
+- um fornecedor ativo pode ser inativado sem apagar seu histórico ou seus vínculos;
 - não é possível remover um fornecedor vinculado a produtos;
 - uma saída de estoque não pode ser maior que o saldo disponível;
 - o estoque mínimo não pode ser negativo.
@@ -179,7 +188,7 @@ A API possui os seguintes endpoints:
 | POST | `/produtos` | Cadastra um novo produto |
 | PUT | `/produtos/{codigo}` | Edita um produto existente |
 | DELETE | `/produtos/{codigo}` | Remove um produto existente |
-| GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele |
+| GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele; aceita o filtro opcional `categoriaId` |
 | GET | `/produtos/{codigo}/movimentacoes` | Lista o histórico de movimentações de um produto |
 | POST | `/produtos/{codigo}/movimentacoes/entrada` | Registra uma entrada de estoque |
 | POST | `/produtos/{codigo}/movimentacoes/saida` | Registra uma saída de estoque |
@@ -192,6 +201,7 @@ A API possui os seguintes endpoints:
 | GET | `/fornecedores/{id}` | Busca fornecedor pelo identificador |
 | POST | `/fornecedores` | Cadastra fornecedor |
 | PUT | `/fornecedores/{id}` | Edita fornecedor |
+| PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
 | DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
 
 Exemplo de JSON usado no cadastro e na edição:
@@ -220,7 +230,7 @@ A API também possui validações para evitar dados inválidos:
 - não pode haver dois produtos com o mesmo código;
 - na edição, o código da URL precisa ser igual ao código enviado no corpo da requisição.
 
-O fornecedor possui código, nome, documento, e-mail e status ativo/inativo. O código e o documento são únicos, o e-mail deve ser válido e a associação com produto é opcional.
+O fornecedor possui código, nome, documento, e-mail opcional, telefone e status ativo/inativo. O código e o documento são únicos; quando informado, o e-mail deve ser válido. A associação com produto é opcional e somente fornecedores ativos podem ser vinculados a novos produtos.
 
 As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
 
@@ -241,13 +251,13 @@ Algumas respostas esperadas da API:
 
 ## Banco de dados SQLite
 
-A API utiliza SQLite com Entity Framework Core para persistir os produtos. Os dados ficam armazenados no arquivo:
+A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores e movimentações. Os dados ficam armazenados no arquivo:
 
 ```text
 MiniErp.Api/Dados/mini-erp.db
 ```
 
-Esse arquivo é criado automaticamente ao executar a migration e não é versionado no Git.
+Esse arquivo é criado automaticamente ao executar as migrations e não é versionado no Git.
 
 O contexto de banco está definido em `MiniErp.Api/Data/AppDbContext.cs` e os arquivos de migration ficam em `MiniErp.Api/Migrations/`.
 
@@ -316,6 +326,7 @@ projeto erp/
 │   ├── categorias.html
 │   ├── fornecedores.html
 │   ├── movimentacoes.html
+│   ├── estoque-baixo.html
 │   ├── css/
 │   │   └── style.css
 │   ├── js/
@@ -324,6 +335,7 @@ projeto erp/
 │   │   ├── categoria-controller.js
 │   │   ├── dom-elements.js
 │   │   ├── fornecedor-controller.js
+│   │   ├── estoque-baixo-controller.js
 │   │   ├── movimentacao-controller.js
 │   │   ├── painel-controller.js
 │   │   ├── produto-controller.js
@@ -394,7 +406,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 23 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 28 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -412,12 +424,17 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
 | Histórico por produto | Retorna apenas as movimentações do produto consultado |
 | Cadastro de fornecedor | Permite fornecedor com dados válidos |
+| Nome de fornecedor obrigatório | Rejeita fornecedor sem nome |
 | Código ou documento duplicado | Impede fornecedores duplicados |
+| E-mail opcional | Permite fornecedor sem e-mail |
 | E-mail de fornecedor inválido | Rejeita e-mail inválido |
 | Status de fornecedor | Persiste fornecedor inativo |
+| Inativação de fornecedor | Altera o status de um fornecedor ativo |
 | Vínculo opcional | Permite produto sem fornecedor |
 | Fornecedor em produto | Detecta produto vinculado e valida fornecedor inexistente ou inativo |
 | Edição de fornecedor no produto | Persiste a troca do fornecedor associado |
+| Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
+| Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
 
 Para executar a suíte:
 

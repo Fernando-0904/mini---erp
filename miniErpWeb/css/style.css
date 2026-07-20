@@ -146,8 +146,13 @@ th {
 .tabela-produtos,
 .tabela-fornecedores,
 .tabela-categorias,
-.tabela-movimentacoes {
+.tabela-movimentacoes,
+.tabela-estoque-baixo {
     overflow-x: auto;
+}
+
+.linha-sem-estoque {
+    background-color: #fff1f2;
 }
 @media (max-width: 600px) {
     .cards-indicadores {
