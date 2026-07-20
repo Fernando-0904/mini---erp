@@ -141,3 +141,37 @@ async function removerCategoriaApi(id) {
         method: "DELETE",
     }, "Erro ao remover categoria na API.");
 }
+
+async function listarFornecedoresApi() {
+    return executarRequisicaoApi("/fornecedores", undefined, "Erro ao listar fornecedores na API.");
+}
+
+async function buscarFornecedorPorIdApi(id) {
+    return executarRequisicaoApi(`/fornecedores/${id}`, undefined, "Fornecedor não encontrado na API.");
+}
+
+async function cadastrarFornecedorApi(fornecedor) {
+    return executarRequisicaoApi("/fornecedores", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(fornecedor),
+    }, "Erro ao cadastrar fornecedor na API.");
+}
+
+async function editarFornecedorApi(id, fornecedor) {
+    return executarRequisicaoApi(`/fornecedores/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(fornecedor),
+    }, "Erro ao editar fornecedor na API.");
+}
+
+async function removerFornecedorApi(id) {
+    return executarRequisicaoApi(`/fornecedores/${id}`, {
+        method: "DELETE",
+    }, "Erro ao remover fornecedor na API.");
+}

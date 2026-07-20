@@ -63,6 +63,13 @@
             </div>
 
             <div>
+                <label for="fornecedorProduto">Fornecedor</label>
+                <select id="fornecedorProduto" name="fornecedorProduto">
+                    <option value="">Sem fornecedor</option>
+                </select>
+            </div>
+
+            <div>
                 <label for="quantidade">Quantidade</label>
                 <input type="number" id="quantidade" name="quantidade">
             </div>
@@ -101,6 +108,61 @@
             <button type="submit" id="botaoSalvarCategoria">Cadastrar categoria</button>
             <button type="reset" id="botaoLimparCategoria">Limpar</button>
         </form>
+    </section>
+    <section aria-label="Cadastro de fornecedor">
+        <h3>Cadastro de fornecedor</h3>
+
+        <form id="formFornecedor">
+            <div>
+                <label for="fornecedorCodigo">Código</label>
+                <input type="number" id="fornecedorCodigo" name="fornecedorCodigo">
+            </div>
+
+            <div>
+                <label for="fornecedorNome">Nome</label>
+                <input type="text" id="fornecedorNome" name="fornecedorNome">
+            </div>
+
+            <div>
+                <label for="fornecedorDocumento">Documento</label>
+                <input type="text" id="fornecedorDocumento" name="fornecedorDocumento">
+            </div>
+
+            <div>
+                <label for="fornecedorEmail">E-mail</label>
+                <input type="email" id="fornecedorEmail" name="fornecedorEmail">
+            </div>
+
+            <div>
+                <label for="fornecedorAtivo">Ativo</label>
+                <input type="checkbox" id="fornecedorAtivo" name="fornecedorAtivo" checked>
+            </div>
+
+            <button type="submit" id="botaoSalvarFornecedor">Cadastrar fornecedor</button>
+            <button type="reset" id="botaoLimparFornecedor">Limpar</button>
+        </form>
+    </section>
+    <section class="tabela-fornecedores" aria-label="Lista de fornecedores">
+        <h3>Lista de fornecedores</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Documento</th>
+                    <th>E-mail</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabelaFornecedores">
+                <tr>
+                    <td colspan="6">Nenhum fornecedor cadastrado.</td>
+                </tr>
+            </tbody>
+        </table>
     </section>
     <section aria-label="Movimentação de estoque">
         <h3>Movimentação de estoque</h3>
@@ -173,6 +235,7 @@
                     <th>Código</th>
                     <th>Nome</th>
                     <th>Categoria</th>
+                    <th>Fornecedor</th>
                     <th>Preço Unitário</th>
                     <th>Quantidade</th>
                     <th>Valor Total</th>
@@ -183,7 +246,7 @@
 
             <tbody id="tabelaProdutos">
                 <tr>
-                    <td colspan="8">Nenhum produto cadastrado.</td>
+                    <td colspan="9">Nenhum produto cadastrado.</td>
                 </tr>
             </tbody>
         </table>
@@ -197,6 +260,7 @@
 <script src="js/ui.js?v=2"></script>
 <script src="js/produto-controller.js?v=2"></script>
 <script src="js/categoria-controller.js?v=2"></script>
+<script src="js/fornecedor-controller.js?v=2"></script>
 <script src="js/movimentacao-controller.js?v=2"></script>
 <script src="js/app.js?v=2"></script>
 </body>

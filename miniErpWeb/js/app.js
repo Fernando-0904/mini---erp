@@ -1,3 +1,4 @@
 inicializarProdutoController();
 inicializarCategoriaController();
+inicializarFornecedorController();
 inicializarMovimentacaoController();

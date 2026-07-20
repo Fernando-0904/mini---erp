@@ -25,7 +25,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
         const linhaVazia = document.createElement("tr");
         const celulaVazia = document.createElement("td");
 
-        celulaVazia.colSpan = 8;
+        celulaVazia.colSpan = 9;
         celulaVazia.textContent = "Nenhum produto cadastrado.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaProdutos.appendChild(linhaVazia);
@@ -41,6 +41,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
         linha.appendChild(criarCelula(produto.codigo));
         linha.appendChild(criarCelula(produto.nome));
         linha.appendChild(criarCelula(produto.categoriaNome));
+        linha.appendChild(criarCelula(produto.fornecedorNome));
         linha.appendChild(criarCelula(formatarMoeda(produto.preco)));
         linha.appendChild(criarCelula(produto.quantidade));
         linha.appendChild(criarCelula(formatarMoeda(valorTotal)));
@@ -68,6 +69,57 @@ function atualizarSelectCategorias(categorias, categoriaSelecionadaId) {
     }
 
     elementos.campoCategoriaProduto.value = categoriaSelecionadaId || "";
+}
+
+function atualizarSelectFornecedores(fornecedores, fornecedorSelecionadoId) {
+    elementos.campoFornecedorProduto.innerHTML = "";
+
+    const opcaoPadrao = document.createElement("option");
+    opcaoPadrao.value = "";
+    opcaoPadrao.textContent = "Sem fornecedor";
+    elementos.campoFornecedorProduto.appendChild(opcaoPadrao);
+
+    for (const fornecedor of fornecedores) {
+        if (!fornecedor.ativo) {
+            continue;
+        }
+
+        const opcao = document.createElement("option");
+
+        opcao.value = fornecedor.id;
+        opcao.textContent = fornecedor.nome;
+        elementos.campoFornecedorProduto.appendChild(opcao);
+    }
+
+    elementos.campoFornecedorProduto.value = fornecedorSelecionadoId || "";
+}
+
+function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoRemoverFornecedor) {
+    elementos.tabelaFornecedores.innerHTML = "";
+
+    if (fornecedores.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 6;
+        celulaVazia.textContent = "Nenhum fornecedor cadastrado.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaFornecedores.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const fornecedor of fornecedores) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(fornecedor.codigo));
+        linha.appendChild(criarCelula(fornecedor.nome));
+        linha.appendChild(criarCelula(fornecedor.documento));
+        linha.appendChild(criarCelula(fornecedor.email));
+        linha.appendChild(criarCelula(fornecedor.ativo ? "Ativo" : "Inativo"));
+        linha.appendChild(criarCelulaAcoesFornecedor(fornecedor.id, aoEditarFornecedor, aoRemoverFornecedor));
+
+        elementos.tabelaFornecedores.appendChild(linha);
+    }
 }
 
 function criarCelula(texto) {
@@ -102,6 +154,30 @@ function criarCelulaAcoes(codigo, aoEditarProduto, aoRemoverProduto) {
     botaoRemover.textContent = "Remover";
     botaoRemover.addEventListener("click", function () {
         aoRemoverProduto(codigo);
+    });
+
+    celula.appendChild(botaoEditar);
+    celula.appendChild(document.createTextNode(" "));
+    celula.appendChild(botaoRemover);
+
+    return celula;
+}
+
+function criarCelulaAcoesFornecedor(id, aoEditarFornecedor, aoRemoverFornecedor) {
+    const celula = document.createElement("td");
+    const botaoEditar = document.createElement("button");
+    const botaoRemover = document.createElement("button");
+
+    botaoEditar.type = "button";
+    botaoEditar.textContent = "Editar";
+    botaoEditar.addEventListener("click", function () {
+        aoEditarFornecedor(id);
+    });
+
+    botaoRemover.type = "button";
+    botaoRemover.textContent = "Remover";
+    botaoRemover.addEventListener("click", function () {
+        aoRemoverFornecedor(id);
     });
 
     celula.appendChild(botaoEditar);

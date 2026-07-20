@@ -70,6 +70,8 @@ Com a evolução para regras de ERP, a tela também permite:
 - registrar entradas e saídas de estoque;
 - consultar o histórico de movimentações;
 - bloquear saídas que deixariam o saldo do produto negativo.
+- cadastrar, editar e remover fornecedores;
+- vincular opcionalmente um fornecedor ativo a cada produto.
 
 ![Cadastro de produto com categoria](miniErpWeb/assets/cadastro-produto.png)
 
@@ -118,9 +120,10 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias e movimentações, além do tratamento padrão de respostas e falhas de conexão;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias, fornecedores e movimentações, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
+- `fornecedor-controller.js`: controla o cadastro, a edição e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
 
@@ -307,6 +310,7 @@ projeto erp/
 │   │   ├── api.js
 │   │   ├── categoria-controller.js
 │   │   ├── dom-elements.js
+│   │   ├── fornecedor-controller.js
 │   │   ├── movimentacao-controller.js
 │   │   ├── produto-controller.js
 │   │   └── ui.js

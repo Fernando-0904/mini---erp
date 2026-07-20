@@ -115,7 +115,8 @@ td {
 th {
     background-color: #f4f6f8;
 }
-.tabela-produtos {
+.tabela-produtos,
+.tabela-fornecedores {
     overflow-x: auto;
 }
 @media (max-width: 600px) {

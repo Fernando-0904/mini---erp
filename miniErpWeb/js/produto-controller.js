@@ -4,9 +4,11 @@ function inicializarProdutoController() {
 
     window.recarregarProdutosNaTela = atualizarProdutosDaApi;
     window.recarregarCategoriasDoProduto = carregarCategoriasDoProduto;
+    window.recarregarFornecedoresDoProduto = carregarFornecedoresDoProduto;
 
     carregarProdutos();
     carregarCategoriasDoProduto();
+    carregarFornecedoresDoProduto();
 
     elementos.formulario.addEventListener("submit", async function (event) {
         event.preventDefault();
@@ -17,12 +19,14 @@ function inicializarProdutoController() {
         const quantidadeTexto = elementos.campoQuantidade.value.trim();
         const estoqueMinimoTexto = elementos.campoEstoqueMinimo.value.trim();
         const categoriaIdTexto = elementos.campoCategoriaProduto.value;
+        const fornecedorIdTexto = elementos.campoFornecedorProduto.value;
 
         const codigo = Number(codigoTexto);
         const preco = Number(precoTexto);
         const quantidade = Number(quantidadeTexto);
         const estoqueMinimo = estoqueMinimoTexto === "" ? 0 : Number(estoqueMinimoTexto);
         const categoriaId = Number(categoriaIdTexto);
+        const fornecedorId = fornecedorIdTexto === "" ? null : Number(fornecedorIdTexto);
 
         if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId)) {
             return;
@@ -35,7 +39,8 @@ function inicializarProdutoController() {
                 preco: preco,
                 quantidade: quantidade,
                 estoqueMinimo: estoqueMinimo,
-                categoriaId: categoriaId
+                categoriaId: categoriaId,
+                fornecedorId: fornecedorId
             };
 
             try {
@@ -63,7 +68,8 @@ function inicializarProdutoController() {
                 preco: preco,
                 quantidade: quantidade,
                 estoqueMinimo: estoqueMinimo,
-                categoriaId: categoriaId
+                categoriaId: categoriaId,
+                fornecedorId: fornecedorId
             };
 
             try {
@@ -243,6 +249,7 @@ function inicializarProdutoController() {
         elementos.campoQuantidade.value = produtoEncontrado.quantidade;
         elementos.campoEstoqueMinimo.value = produtoEncontrado.estoqueMinimo;
         elementos.campoCategoriaProduto.value = produtoEncontrado.categoriaId;
+        elementos.campoFornecedorProduto.value = produtoEncontrado.fornecedorId || "";
 
         elementos.campoCodigo.disabled = true;
         elementos.campoQuantidade.disabled = true;
@@ -319,6 +326,15 @@ function inicializarProdutoController() {
         }
     }
 
+    async function carregarFornecedoresDoProduto() {
+        try {
+            const fornecedores = await listarFornecedoresApi();
+            atualizarSelectFornecedores(fornecedores, elementos.campoFornecedorProduto.value);
+        } catch {
+            atualizarSelectFornecedores([], "");
+        }
+    }
+
     function converterProdutoApiParaTela(produtoApi) {
         return {
             codigo: produtoApi.codigo,
@@ -327,7 +343,9 @@ function inicializarProdutoController() {
             quantidade: produtoApi.quantidadeEstoque,
             estoqueMinimo: typeof produtoApi.estoqueMinimo === "number" ? produtoApi.estoqueMinimo : 0,
             categoriaId: produtoApi.categoriaId,
-            categoriaNome: produtoApi.categoria ? produtoApi.categoria.nome : "Sem categoria"
+            categoriaNome: produtoApi.categoria ? produtoApi.categoria.nome : "Sem categoria",
+            fornecedorId: produtoApi.fornecedorId,
+            fornecedorNome: produtoApi.fornecedor ? produtoApi.fornecedor.nome : "Sem fornecedor"
         };
     }
 
@@ -338,7 +356,8 @@ function inicializarProdutoController() {
             precoUnitario: produto.preco,
             quantidadeEstoque: produto.quantidade,
             estoqueMinimo: produto.estoqueMinimo,
-            categoriaId: produto.categoriaId
+            categoriaId: produto.categoriaId,
+            fornecedorId: produto.fornecedorId
         };
     }
 
@@ -349,6 +368,8 @@ function inicializarProdutoController() {
         produto.estoqueMinimo = typeof novosDados.estoqueMinimo === "number" ? novosDados.estoqueMinimo : 0;
         produto.categoriaId = novosDados.categoriaId;
         produto.categoriaNome = novosDados.categoriaNome;
+        produto.fornecedorId = novosDados.fornecedorId;
+        produto.fornecedorNome = novosDados.fornecedorNome;
     }
 
     function upsertProdutoNoArray(produto) {
