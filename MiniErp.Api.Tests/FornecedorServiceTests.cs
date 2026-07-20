@@ -66,6 +66,32 @@ public class FornecedorServiceTests
     }
 
     [Fact]
+    public void ValidarFornecedor_SemNome_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        FornecedorService service = new(banco.Contexto);
+        Fornecedor fornecedor = CriarFornecedor();
+        fornecedor.Nome = string.Empty;
+
+        List<string> erros = service.ValidarFornecedor(fornecedor);
+
+        Assert.Contains("O nome é obrigatório.", erros);
+    }
+
+    [Fact]
+    public void ValidarFornecedor_SemEmail_NaoRetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        FornecedorService service = new(banco.Contexto);
+        Fornecedor fornecedor = CriarFornecedor();
+        fornecedor.Email = string.Empty;
+
+        List<string> erros = service.ValidarFornecedor(fornecedor);
+
+        Assert.DoesNotContain("Informe um e-mail válido.", erros);
+    }
+
+    [Fact]
     public void CadastrarFornecedor_Inativo_PersisteStatusInativo()
     {
         using BancoDeTeste banco = new();
@@ -76,6 +102,20 @@ public class FornecedorServiceTests
         bool cadastrado = service.CadastrarFornecedor(fornecedor);
 
         Assert.True(cadastrado);
+        Assert.False(banco.Contexto.Fornecedores.Single().Ativo);
+    }
+
+    [Fact]
+    public void InativarFornecedor_ComFornecedorAtivo_PersisteStatusInativo()
+    {
+        using BancoDeTeste banco = new();
+        FornecedorService service = new(banco.Contexto);
+        Fornecedor fornecedor = CriarFornecedor();
+        service.CadastrarFornecedor(fornecedor);
+
+        bool inativado = service.InativarFornecedor(fornecedor.Id);
+
+        Assert.True(inativado);
         Assert.False(banco.Contexto.Fornecedores.Single().Ativo);
     }
 
@@ -160,6 +200,7 @@ public class FornecedorServiceTests
             Nome = "Fornecedor de teste",
             Documento = documento,
             Email = "fornecedor@teste.com",
+            Telefone = "11999999999",
             Ativo = true,
         };
     }

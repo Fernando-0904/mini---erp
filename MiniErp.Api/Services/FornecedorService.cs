@@ -71,7 +71,7 @@ public class FornecedorService
             erros.Add("O documento é obrigatório.");
         }
 
-        if (string.IsNullOrWhiteSpace(fornecedor.Email) ||
+        if (!string.IsNullOrWhiteSpace(fornecedor.Email) &&
             !MailAddress.TryCreate(fornecedor.Email, out _))
         {
             erros.Add("Informe um e-mail válido.");
@@ -131,6 +131,7 @@ public class FornecedorService
         fornecedorExistente.Nome = fornecedorAtualizado.Nome;
         fornecedorExistente.Documento = fornecedorAtualizado.Documento;
         fornecedorExistente.Email = fornecedorAtualizado.Email;
+        fornecedorExistente.Telefone = fornecedorAtualizado.Telefone;
         fornecedorExistente.Ativo = fornecedorAtualizado.Ativo;
 
         try
@@ -158,6 +159,20 @@ public class FornecedorService
         return true;
     }
 
+    public bool InativarFornecedor(int id)
+    {
+        Fornecedor? fornecedor = BuscarPorId(id);
+
+        if (fornecedor == null)
+        {
+            return false;
+        }
+
+        fornecedor.Ativo = false;
+        contexto.SaveChanges();
+        return true;
+    }
+
     public bool PossuiProdutosVinculados(int fornecedorId)
     {
         return contexto.Produtos.Any(produto => produto.FornecedorId == fornecedorId);
@@ -180,6 +195,7 @@ public class FornecedorService
         fornecedor.Nome = fornecedor.Nome.Trim();
         fornecedor.Documento = fornecedor.Documento.Trim();
         fornecedor.Email = fornecedor.Email.Trim();
+        fornecedor.Telefone = fornecedor.Telefone.Trim();
     }
 
     private static bool IsDuplicateKeyException(DbUpdateException ex)

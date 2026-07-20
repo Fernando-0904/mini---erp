@@ -28,6 +28,7 @@ const elementos = {
     campoFornecedorNome: document.getElementById("fornecedorNome"),
     campoFornecedorDocumento: document.getElementById("fornecedorDocumento"),
     campoFornecedorEmail: document.getElementById("fornecedorEmail"),
+    campoFornecedorTelefone: document.getElementById("fornecedorTelefone"),
     campoFornecedorAtivo: document.getElementById("fornecedorAtivo"),
     botaoSalvarFornecedor: document.getElementById("botaoSalvarFornecedor"),
     botaoLimparFornecedor: document.getElementById("botaoLimparFornecedor"),
@@ -38,7 +39,9 @@ const elementos = {
     botaoRegistrarEntrada: document.getElementById("botaoRegistrarEntrada"),
     botaoRegistrarSaida: document.getElementById("botaoRegistrarSaida"),
     botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
-    tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes")
+    tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes"),
+    campoCategoriaEstoqueBaixo: document.getElementById("categoriaEstoqueBaixo"),
+    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo")
 };
 
 elementos.botaoLimparFormulario = elementos.formulario

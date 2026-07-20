@@ -94,14 +94,14 @@ function atualizarSelectFornecedores(fornecedores, fornecedorSelecionadoId) {
     elementos.campoFornecedorProduto.value = fornecedorSelecionadoId || "";
 }
 
-function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoRemoverFornecedor) {
+function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoInativarFornecedor, aoRemoverFornecedor) {
     elementos.tabelaFornecedores.innerHTML = "";
 
     if (fornecedores.length === 0) {
         const linhaVazia = document.createElement("tr");
         const celulaVazia = document.createElement("td");
 
-        celulaVazia.colSpan = 6;
+        celulaVazia.colSpan = 7;
         celulaVazia.textContent = "Nenhum fornecedor cadastrado.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaFornecedores.appendChild(linhaVazia);
@@ -115,8 +115,9 @@ function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoRemover
         linha.appendChild(criarCelula(fornecedor.nome));
         linha.appendChild(criarCelula(fornecedor.documento));
         linha.appendChild(criarCelula(fornecedor.email));
+        linha.appendChild(criarCelula(fornecedor.telefone));
         linha.appendChild(criarCelula(fornecedor.ativo ? "Ativo" : "Inativo"));
-        linha.appendChild(criarCelulaAcoesFornecedor(fornecedor.id, aoEditarFornecedor, aoRemoverFornecedor));
+        linha.appendChild(criarCelulaAcoesFornecedor(fornecedor.id, fornecedor.ativo, aoEditarFornecedor, aoInativarFornecedor, aoRemoverFornecedor));
 
         elementos.tabelaFornecedores.appendChild(linha);
     }
@@ -163,7 +164,7 @@ function criarCelulaAcoes(codigo, aoEditarProduto, aoRemoverProduto) {
     return celula;
 }
 
-function criarCelulaAcoesFornecedor(id, aoEditarFornecedor, aoRemoverFornecedor) {
+function criarCelulaAcoesFornecedor(id, ativo, aoEditarFornecedor, aoInativarFornecedor, aoRemoverFornecedor) {
     const celula = document.createElement("td");
     const botaoEditar = document.createElement("button");
     const botaoRemover = document.createElement("button");
@@ -174,17 +175,84 @@ function criarCelulaAcoesFornecedor(id, aoEditarFornecedor, aoRemoverFornecedor)
         aoEditarFornecedor(id);
     });
 
+    celula.appendChild(botaoEditar);
+
+    if (ativo) {
+        const botaoInativar = document.createElement("button");
+
+        botaoInativar.type = "button";
+        botaoInativar.textContent = "Inativar";
+        botaoInativar.addEventListener("click", function () {
+            aoInativarFornecedor(id);
+        });
+
+        celula.appendChild(document.createTextNode(" "));
+        celula.appendChild(botaoInativar);
+    }
+
     botaoRemover.type = "button";
     botaoRemover.textContent = "Remover";
     botaoRemover.addEventListener("click", function () {
         aoRemoverFornecedor(id);
     });
 
-    celula.appendChild(botaoEditar);
     celula.appendChild(document.createTextNode(" "));
     celula.appendChild(botaoRemover);
 
     return celula;
+}
+
+function atualizarSelectCategoriasEstoqueBaixo(categorias, categoriaSelecionadaId) {
+    elementos.campoCategoriaEstoqueBaixo.innerHTML = "";
+
+    const opcaoPadrao = document.createElement("option");
+    opcaoPadrao.value = "";
+    opcaoPadrao.textContent = "Todas as categorias";
+    elementos.campoCategoriaEstoqueBaixo.appendChild(opcaoPadrao);
+
+    for (const categoria of categorias) {
+        const opcao = document.createElement("option");
+
+        opcao.value = categoria.id;
+        opcao.textContent = categoria.nome;
+        elementos.campoCategoriaEstoqueBaixo.appendChild(opcao);
+    }
+
+    elementos.campoCategoriaEstoqueBaixo.value = categoriaSelecionadaId || "";
+}
+
+function atualizarTabelaEstoqueBaixo(produtos) {
+    elementos.tabelaEstoqueBaixo.innerHTML = "";
+
+    if (produtos.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 6;
+        celulaVazia.textContent = "Nenhum produto com estoque baixo.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaEstoqueBaixo.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const produto of produtos) {
+        const linha = document.createElement("tr");
+        const situacao = obterSituacaoEstoque(produto.quantidadeEstoque, produto.estoqueMinimo);
+        const classeSituacao = obterClasseSituacaoEstoque(produto.quantidadeEstoque, produto.estoqueMinimo);
+
+        if (produto.quantidadeEstoque === 0) {
+            linha.className = "linha-sem-estoque";
+        }
+
+        linha.appendChild(criarCelula(produto.codigo));
+        linha.appendChild(criarCelula(produto.nome));
+        linha.appendChild(criarCelula(produto.categoria ? produto.categoria.nome : "Sem categoria"));
+        linha.appendChild(criarCelula(produto.quantidadeEstoque));
+        linha.appendChild(criarCelula(produto.estoqueMinimo));
+        linha.appendChild(criarCelulaSituacao(situacao, classeSituacao));
+
+        elementos.tabelaEstoqueBaixo.appendChild(linha);
+    }
 }
 
 function atualizarIndicadores(produtos) {

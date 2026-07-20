@@ -330,6 +330,16 @@ app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, Fornece
     return Results.Ok(fornecedorService.BuscarPorId(id));
 });
 
+app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService) =>
+{
+    if (!fornecedorService.InativarFornecedor(id))
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(fornecedorService.BuscarPorId(id));
+});
+
 app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
 {
     if (fornecedorService.BuscarPorId(id) == null)
@@ -379,6 +389,7 @@ static Fornecedor MapearFornecedorRequest(FornecedorRequest request)
         Nome = request.Nome,
         Documento = request.Documento,
         Email = request.Email,
+        Telefone = request.Telefone,
         Ativo = request.Ativo
     };
 }

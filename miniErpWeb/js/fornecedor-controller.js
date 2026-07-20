@@ -11,6 +11,7 @@ function inicializarFornecedorController() {
         const nome = elementos.campoFornecedorNome.value.trim();
         const documento = elementos.campoFornecedorDocumento.value.trim();
         const email = elementos.campoFornecedorEmail.value.trim();
+        const telefone = elementos.campoFornecedorTelefone.value.trim();
         const codigo = Number(codigoTexto);
 
         if (!validarFornecedor(codigoTexto, nome, documento, email, codigo)) {
@@ -22,6 +23,7 @@ function inicializarFornecedorController() {
             nome: nome,
             documento: documento,
             email: email,
+            telefone: telefone,
             ativo: elementos.campoFornecedorAtivo.checked
         };
 
@@ -41,7 +43,7 @@ function inicializarFornecedorController() {
                 exibirMensagem("Fornecedor editado com sucesso.", "sucesso");
             }
 
-            atualizarTabelaFornecedores(fornecedores, editarFornecedor, removerFornecedor);
+            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
             await atualizarFornecedoresDoProduto();
             elementos.formularioFornecedor.reset();
             elementos.campoFornecedorCodigo.focus();
@@ -74,7 +76,7 @@ function inicializarFornecedorController() {
             return false;
         }
 
-        if (email === "" || !elementos.campoFornecedorEmail.validity.valid) {
+        if (email !== "" && !elementos.campoFornecedorEmail.validity.valid) {
             exibirMensagem("Informe um e-mail válido.", "erro");
             elementos.campoFornecedorEmail.focus();
             return false;
@@ -93,7 +95,7 @@ function inicializarFornecedorController() {
             exibirMensagem(erro.message, "erro");
         }
 
-        atualizarTabelaFornecedores(fornecedores, editarFornecedor, removerFornecedor);
+        atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
     }
 
     function editarFornecedor(id) {
@@ -111,6 +113,7 @@ function inicializarFornecedorController() {
         elementos.campoFornecedorNome.value = fornecedor.nome;
         elementos.campoFornecedorDocumento.value = fornecedor.documento;
         elementos.campoFornecedorEmail.value = fornecedor.email;
+        elementos.campoFornecedorTelefone.value = fornecedor.telefone;
         elementos.campoFornecedorAtivo.checked = fornecedor.ativo;
         elementos.botaoSalvarFornecedor.textContent = "Salvar alteração";
         elementos.campoFornecedorCodigo.focus();
@@ -135,9 +138,34 @@ function inicializarFornecedorController() {
         try {
             await removerFornecedorApi(id);
             fornecedores.splice(indiceFornecedor, 1);
-            atualizarTabelaFornecedores(fornecedores, editarFornecedor, removerFornecedor);
+            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
             await atualizarFornecedoresDoProduto();
             exibirMensagem("Fornecedor removido com sucesso.", "sucesso");
+        } catch (erro) {
+            exibirMensagem(erro.message, "erro");
+        }
+    }
+
+    async function inativarFornecedor(id) {
+        if (!confirm("Deseja inativar este fornecedor?")) {
+            return;
+        }
+
+        const indiceFornecedor = fornecedores.findIndex(function (item) {
+            return item.id === id;
+        });
+
+        if (indiceFornecedor === -1) {
+            exibirMensagem("Fornecedor não encontrado para inativação.", "erro");
+            return;
+        }
+
+        try {
+            const fornecedorInativado = await inativarFornecedorApi(id);
+            fornecedores[indiceFornecedor] = fornecedorInativado;
+            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+            await atualizarFornecedoresDoProduto();
+            exibirMensagem("Fornecedor inativado com sucesso.", "sucesso");
         } catch (erro) {
             exibirMensagem(erro.message, "erro");
         }

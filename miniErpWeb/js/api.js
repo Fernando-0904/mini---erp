@@ -108,6 +108,14 @@ async function registrarSaidaEstoqueApi(codigo, quantidade) {
     }, "Erro ao registrar saída de estoque na API.");
 }
 
+async function listarProdutosComEstoqueBaixoApi(categoriaId) {
+    const caminho = categoriaId === null || categoriaId === undefined
+        ? "/produtos/estoque-baixo"
+        : `/produtos/estoque-baixo?categoriaId=${encodeURIComponent(categoriaId)}`;
+
+    return executarRequisicaoApi(caminho, undefined, "Erro ao listar produtos com estoque baixo na API.");
+}
+
 async function listarCategoriasApi() {
     return executarRequisicaoApi("/categorias", undefined, "Erro ao listar categorias na API.");
 }
@@ -174,4 +182,10 @@ async function removerFornecedorApi(id) {
     return executarRequisicaoApi(`/fornecedores/${id}`, {
         method: "DELETE",
     }, "Erro ao remover fornecedor na API.");
+}
+
+async function inativarFornecedorApi(id) {
+    return executarRequisicaoApi(`/fornecedores/${id}/inativar`, {
+        method: "PATCH",
+    }, "Erro ao inativar fornecedor na API.");
 }
