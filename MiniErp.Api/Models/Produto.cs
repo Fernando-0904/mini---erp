@@ -9,6 +9,8 @@ public class Produto
     public int EstoqueMinimo { get; set; }
     public Categoria? Categoria { get; set; }
     public int CategoriaId { get; set; }
+    public Fornecedor? Fornecedor { get; set; }
+    public int? FornecedorId { get; set; }
 
     public decimal CalcularValorTotal()
     {

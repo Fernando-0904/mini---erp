@@ -8,4 +8,5 @@ public class ProdutoRequest
     public int QuantidadeEstoque { get; set; }
     public int EstoqueMinimo { get; set; }
     public int CategoriaId { get; set; }
+    public int? FornecedorId { get; set; }
 }

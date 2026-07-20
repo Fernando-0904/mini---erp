@@ -19,6 +19,7 @@ public class ProdutoService
         return contexto.Produtos
             .AsNoTracking()
             .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
             .OrderBy(produto => produto.Codigo)
             .ToList();
     }
@@ -28,6 +29,7 @@ public class ProdutoService
         return contexto.Produtos
             .AsNoTracking()
             .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
             .Where(produto => produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
             .OrderBy(produto => produto.QuantidadeEstoque)
             .ToList();
@@ -37,6 +39,7 @@ public class ProdutoService
     {
         return contexto.Produtos
             .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
             .FirstOrDefault(produto => produto.Codigo == codigo);
     }
 
@@ -105,6 +108,7 @@ public class ProdutoService
         produtoExistente.PrecoUnitario = produtoAtualizado.PrecoUnitario;
         produtoExistente.EstoqueMinimo = produtoAtualizado.EstoqueMinimo;
         produtoExistente.CategoriaId = produtoAtualizado.CategoriaId;
+        produtoExistente.FornecedorId = produtoAtualizado.FornecedorId;
 
         contexto.SaveChanges();
         return true;

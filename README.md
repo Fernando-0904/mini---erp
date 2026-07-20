@@ -19,11 +19,11 @@ Cada parte possui uma responsabilidade:
 - **Frontend:** mostra formulários, tabelas e mensagens; recebe as ações do usuário e exibe os dados retornados pela API.
 - **`api.js`:** concentra as chamadas HTTP com `fetch` e o tratamento padrão das respostas da API.
 - **API ASP.NET Core:** recebe requisições, valida os dados, define respostas HTTP e chama os services.
-- **Services:** aplicam as regras de negócio, como código único, categoria existente, saldo suficiente e histórico de movimentações.
+- **Services:** aplicam as regras de negócio, como código único, categoria ou fornecedor existente, saldo suficiente e histórico de movimentações.
 - **Entity Framework Core:** mapeia as entidades C# e traduz operações da aplicação para o banco de dados.
-- **SQLite:** armazena produtos, categorias e movimentações no arquivo local do banco.
+- **SQLite:** armazena produtos, categorias, fornecedores e movimentações no arquivo local do banco.
 
-Produtos, categorias e movimentações usam a API e o SQLite como fonte única de dados. O `localStorage` foi removido do fluxo principal para evitar que a tela apresente alterações que não foram persistidas no servidor.
+Produtos, categorias, fornecedores e movimentações usam a API e o SQLite como fonte única de dados. O `localStorage` foi removido do fluxo principal para evitar que a tela apresente alterações que não foram persistidas no servidor.
 
 ## Versão em C#
 
@@ -118,7 +118,7 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `api.js`: concentra todas as chamadas HTTP para produtos, categorias e movimentações, além do tratamento padrão de respostas e falhas de conexão;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias e movimentações, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
@@ -140,6 +140,9 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 - a quantidade não pode ser negativa.
 - todo produto deve possuir uma categoria existente;
 - não é possível remover uma categoria vinculada a produtos;
+- um produto pode ter fornecedor opcional, mas o fornecedor informado deve existir e estar ativo;
+- código e documento de fornecedor não podem ser duplicados;
+- não é possível remover um fornecedor vinculado a produtos;
 - uma saída de estoque não pode ser maior que o saldo disponível;
 - o estoque mínimo não pode ser negativo.
 
@@ -153,7 +156,7 @@ Além da versão em console e da versão web, o projeto também possui uma API c
 
 A versão web consome a API usando `fetch`, centralizado em `miniErpWeb/js/api.js`. A API e o banco SQLite são a fonte única de dados. Se o backend estiver indisponível, a interface informa o problema sem exibir mensagens técnicas como `Failed to fetch` e sem alterar dados localmente.
 
-Os endpoints de criação e edição recebem DTOs de entrada (`ProdutoRequest` e `CategoriaRequest`). No limite da API, esses dados são mapeados para as entidades persistidas e encaminhados aos services, que aplicam as regras de negócio.
+Os endpoints de criação e edição recebem DTOs de entrada (`ProdutoRequest`, `CategoriaRequest` e `FornecedorRequest`). No limite da API, esses dados são mapeados para as entidades persistidas e encaminhados aos services, que aplicam as regras de negócio.
 
 A API possui os seguintes endpoints:
 
@@ -173,6 +176,11 @@ A API possui os seguintes endpoints:
 | POST | `/categorias` | Cadastra uma categoria |
 | PUT | `/categorias/{id}` | Edita uma categoria |
 | DELETE | `/categorias/{id}` | Remove uma categoria sem produtos vinculados |
+| GET | `/fornecedores` | Lista fornecedores |
+| GET | `/fornecedores/{id}` | Busca fornecedor pelo identificador |
+| POST | `/fornecedores` | Cadastra fornecedor |
+| PUT | `/fornecedores/{id}` | Edita fornecedor |
+| DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
 
 Exemplo de JSON usado no cadastro e na edição:
 
@@ -183,7 +191,8 @@ Exemplo de JSON usado no cadastro e na edição:
   "precoUnitario": 120,
   "quantidadeEstoque": 5,
   "estoqueMinimo": 2,
-  "categoriaId": 1
+  "categoriaId": 1,
+  "fornecedorId": null
 }
 ```
 
@@ -195,8 +204,11 @@ A API também possui validações para evitar dados inválidos:
 - a quantidade em estoque não pode ser negativa;
 - o estoque mínimo não pode ser negativo;
 - a categoria informada deve existir;
+- quando informado, o fornecedor deve existir e estar ativo;
 - não pode haver dois produtos com o mesmo código;
 - na edição, o código da URL precisa ser igual ao código enviado no corpo da requisição.
+
+O fornecedor possui código, nome, documento, e-mail e status ativo/inativo. O código e o documento são únicos, o e-mail deve ser válido e a associação com produto é opcional.
 
 As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
 
@@ -269,15 +281,18 @@ projeto erp/
 │   │   └── AppDbContext.cs
 │   ├── DTOs/
 │   │   ├── CategoriaRequest.cs
+│   │   ├── FornecedorRequest.cs
 │   │   └── ProdutoRequest.cs
 │   ├── Migrations/
 │   ├── Models/
 │   │   ├── Categoria.cs
+│   │   ├── Fornecedor.cs
 │   │   ├── MovimentacaoEstoque.cs
 │   │   ├── MovimentacaoEstoqueRequest.cs
 │   │   └── Produto.cs
 │   ├── Services/
 │   │   ├── CategoriaService.cs
+│   │   ├── FornecedorService.cs
 │   │   ├── MovimentacaoEstoqueService.cs
 │   │   └── ProdutoService.cs
 │   ├── Program.cs
@@ -361,7 +376,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 13 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 23 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -378,6 +393,13 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | Saída válida | Reduz o saldo e gera histórico |
 | Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
 | Histórico por produto | Retorna apenas as movimentações do produto consultado |
+| Cadastro de fornecedor | Permite fornecedor com dados válidos |
+| Código ou documento duplicado | Impede fornecedores duplicados |
+| E-mail de fornecedor inválido | Rejeita e-mail inválido |
+| Status de fornecedor | Persiste fornecedor inativo |
+| Vínculo opcional | Permite produto sem fornecedor |
+| Fornecedor em produto | Detecta produto vinculado e valida fornecedor inexistente ou inativo |
+| Edição de fornecedor no produto | Persiste a troca do fornecedor associado |
 
 Para executar a suíte:
 
@@ -389,7 +411,7 @@ O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull re
 
 ## Fluxo de revisão
 
-O fluxo atual publica mudanças diretamente na `master` depois das validações adequadas. Para mudanças que precisem de isolamento ou revisão externa, o repositório possui o template [`.github/pull_request_template.md`](.github/pull_request_template.md), com resumo, tipo de alteração, como testar, evidências e checklist.
+O fluxo atual publica mudanças diretamente na `master` depois das validações adequadas. Quando for necessário usar uma pull request, registre o resumo, o tipo de alteração, como testar, as evidências e o checklist da revisão.
 
 Antes de publicar uma alteração, recomenda-se executar os testes relevantes, verificar `git diff --check`, atualizar o README quando necessário e conferir se não há erros no console do navegador ou no terminal da API.
 

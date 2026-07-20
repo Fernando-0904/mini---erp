@@ -30,6 +30,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=Dados/mini-erp.db"));
 builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
+builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
 
 var app = builder.Build();
@@ -63,11 +64,12 @@ app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService)
     return Results.Ok(produto);
 });
 
-app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService) =>
+app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
 {
     Produto produto = MapearProdutoRequest(request);
     List<string> erros = produtoService.ValidarProduto(produto);
     erros.AddRange(categoriaService.ValidarCategoriaDoProduto(produto.CategoriaId));
+    erros.AddRange(fornecedorService.ValidarFornecedorDoProduto(produto.FornecedorId));
 
     if (erros.Count > 0)
     {
@@ -84,7 +86,7 @@ app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService,
     return Results.Created($"/produtos/{produto.Codigo}", produto);
 });
 
-app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService) =>
+app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
 {
     Produto produtoAtualizado = MapearProdutoRequest(request);
     Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
@@ -107,6 +109,7 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, Produt
     }
 
     erros.AddRange(categoriaService.ValidarCategoriaDoProduto(produtoAtualizado.CategoriaId));
+    erros.AddRange(fornecedorService.ValidarFornecedorDoProduto(produtoAtualizado.FornecedorId));
 
     if (erros.Count > 0)
     {
@@ -265,6 +268,84 @@ app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService
     return Results.NoContent();
 });
 
+app.MapGet("/fornecedores", (FornecedorService fornecedorService) =>
+{
+    return Results.Ok(fornecedorService.ListarFornecedores());
+});
+
+app.MapGet("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
+{
+    Fornecedor? fornecedor = fornecedorService.BuscarPorId(id);
+
+    if (fornecedor == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(fornecedor);
+});
+
+app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService fornecedorService) =>
+{
+    Fornecedor fornecedor = MapearFornecedorRequest(request);
+    List<string> erros = fornecedorService.ValidarFornecedor(fornecedor);
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
+    bool cadastrado = fornecedorService.CadastrarFornecedor(fornecedor);
+
+    if (!cadastrado)
+    {
+        return Results.Conflict("Já existe um fornecedor com esse código ou documento.");
+    }
+
+    return Results.Created($"/fornecedores/{fornecedor.Id}", fornecedor);
+});
+
+app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService) =>
+{
+    if (fornecedorService.BuscarPorId(id) == null)
+    {
+        return Results.NotFound();
+    }
+
+    Fornecedor fornecedorAtualizado = MapearFornecedorRequest(request);
+    List<string> erros = fornecedorService.ValidarFornecedor(fornecedorAtualizado);
+
+    if (erros.Count > 0)
+    {
+        return Results.BadRequest(erros);
+    }
+
+    bool editado = fornecedorService.EditarFornecedor(id, fornecedorAtualizado);
+
+    if (!editado)
+    {
+        return Results.Conflict("Já existe um fornecedor com esse código ou documento.");
+    }
+
+    return Results.Ok(fornecedorService.BuscarPorId(id));
+});
+
+app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
+{
+    if (fornecedorService.BuscarPorId(id) == null)
+    {
+        return Results.NotFound();
+    }
+
+    if (fornecedorService.PossuiProdutosVinculados(id))
+    {
+        return Results.BadRequest("Não é possível remover um fornecedor vinculado a produtos.");
+    }
+
+    fornecedorService.RemoverFornecedor(id);
+    return Results.NoContent();
+});
+
 app.Run();
 
 static Produto MapearProdutoRequest(ProdutoRequest request)
@@ -276,7 +357,8 @@ static Produto MapearProdutoRequest(ProdutoRequest request)
         PrecoUnitario = request.PrecoUnitario,
         QuantidadeEstoque = request.QuantidadeEstoque,
         EstoqueMinimo = request.EstoqueMinimo,
-        CategoriaId = request.CategoriaId
+        CategoriaId = request.CategoriaId,
+        FornecedorId = request.FornecedorId
     };
 }
 
@@ -286,5 +368,17 @@ static Categoria MapearCategoriaRequest(CategoriaRequest request)
     {
         Id = request.Id,
         Nome = request.Nome
+    };
+}
+
+static Fornecedor MapearFornecedorRequest(FornecedorRequest request)
+{
+    return new Fornecedor
+    {
+        Codigo = request.Codigo,
+        Nome = request.Nome,
+        Documento = request.Documento,
+        Email = request.Email,
+        Ativo = request.Ativo
     };
 }

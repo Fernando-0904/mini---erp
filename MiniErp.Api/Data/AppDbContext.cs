@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Produto> Produtos => Set<Produto>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
     public DbSet<MovimentacaoEstoque> MovimentacoesEstoque => Set<MovimentacaoEstoque>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,6 +23,11 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(produto => produto.CategoriaId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Produto>()
+            .HasOne(produto => produto.Fornecedor)
+            .WithMany()
+            .HasForeignKey(produto => produto.FornecedorId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Categoria>().HasKey(categoria => categoria.Id);
         modelBuilder.Entity<Categoria>()
@@ -29,6 +35,17 @@ public class AppDbContext : DbContext
             .ValueGeneratedOnAdd();
         modelBuilder.Entity<Categoria>()
             .HasIndex(categoria => categoria.Nome)
+            .IsUnique();
+
+        modelBuilder.Entity<Fornecedor>().HasKey(fornecedor => fornecedor.Id);
+        modelBuilder.Entity<Fornecedor>()
+            .Property(fornecedor => fornecedor.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<Fornecedor>()
+            .HasIndex(fornecedor => fornecedor.Codigo)
+            .IsUnique();
+        modelBuilder.Entity<Fornecedor>()
+            .HasIndex(fornecedor => fornecedor.Documento)
             .IsUnique();
 
         modelBuilder.Entity<MovimentacaoEstoque>().HasKey(movimentacao => movimentacao.Id);
