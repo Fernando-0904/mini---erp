@@ -60,3 +60,20 @@ Validacao manual:
 - [x] Nenhum caractere Unicode oculto encontrado.
 - [x] Console do navegador sem erros com a API ativa.
 - [ ] Revisao de outro colaborador.
+
+## Criterios de aceite da Fase 6
+
+- [x] O README permite rodar o projeto do zero.
+- [x] A arquitetura esta documentada.
+- [x] O frontend consome a API como fonte principal.
+- [x] O papel do `localStorage` esta claro e ele nao participa do fluxo principal.
+- [x] A auditoria de caracteres ocultos foi concluida sem ocorrencias.
+- [x] O JavaScript esta organizado e legivel.
+- [x] O backend possui responsabilidades separadas entre rotas, services e persistencia.
+- [x] DTOs simples sao usados nos endpoints principais.
+- [x] Existem 29 testes automatizados relevantes.
+- [x] O GitHub Actions executa os testes com sucesso.
+- [x] Existe template de Pull Request.
+- [ ] O PR da fase foi aberto, recebeu as evidencias e passou por revisao.
+
+O item 12 fica reservado para a abertura manual do Pull Request a partir desta branch e para a revisao externa antes do merge.
