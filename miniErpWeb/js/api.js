@@ -11,6 +11,7 @@ function obterApiBaseUrl() {
 }
 
 const API_BASE_URL = obterApiBaseUrl();
+const MENSAGEM_ERRO_INESPERADO = "Ocorreu um erro inesperado. Tente novamente.";
 
 async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao) {
     let resposta;
@@ -33,21 +34,55 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao) {
         return resposta.json();
     }
 
-    let mensagemErro = mensagemErroPadrao;
+    let mensagemErro = resposta.status >= 500
+        ? MENSAGEM_ERRO_INESPERADO
+        : mensagemErroPadrao;
 
     try {
         const erro = await resposta.json();
+        const mensagemExtraida = extrairMensagemErroApi(erro);
 
-        if (Array.isArray(erro)) {
-            mensagemErro = erro.join(" ");
-        } else if (typeof erro === "string") {
-            mensagemErro = erro;
+        if (resposta.status < 500 && mensagemExtraida !== "") {
+            mensagemErro = mensagemExtraida;
         }
     } catch {
         // Mantém a mensagem padrão se a API não retornar JSON.
     }
 
     throw new Error(mensagemErro);
+}
+
+function extrairMensagemErroApi(erro) {
+    if (Array.isArray(erro)) {
+        return erro.join(" ");
+    }
+
+    if (typeof erro === "string") {
+        return erro;
+    }
+
+    if (erro !== null && typeof erro === "object") {
+        if (typeof erro.detail === "string") {
+            return erro.detail;
+        }
+
+        if (typeof erro.title === "string" && !/internal server error|server error/i.test(erro.title)) {
+            return erro.title;
+        }
+
+        if (erro.errors !== null && typeof erro.errors === "object") {
+            return Object.values(erro.errors)
+                .flatMap(function (mensagens) {
+                    return Array.isArray(mensagens) ? mensagens : [mensagens];
+                })
+                .filter(function (mensagem) {
+                    return typeof mensagem === "string";
+                })
+                .join(" ");
+        }
+    }
+
+    return "";
 }
 
 async function listarProdutosApi() {
@@ -114,6 +149,14 @@ async function listarProdutosComEstoqueBaixoApi(categoriaId) {
         : `/produtos/estoque-baixo?categoriaId=${encodeURIComponent(categoriaId)}`;
 
     return executarRequisicaoApi(caminho, undefined, "Erro ao listar produtos com estoque baixo na API.");
+}
+
+async function listarProdutosSemEstoqueApi(categoriaId) {
+    const caminho = categoriaId === null || categoriaId === undefined
+        ? "/produtos/sem-estoque"
+        : `/produtos/sem-estoque?categoriaId=${encodeURIComponent(categoriaId)}`;
+
+    return executarRequisicaoApi(caminho, undefined, "Erro ao listar produtos sem estoque na API.");
 }
 
 async function listarCategoriasApi() {

@@ -240,6 +240,22 @@ public class ProdutoEEstoqueTests
         Assert.Equal(102, produtos[0].Codigo);
     }
 
+    [Fact]
+    public void ListarProdutosSemEstoque_RetornaSomenteProdutosComSaldoZero()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 0));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 1));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosSemEstoque();
+
+        Assert.Single(produtos);
+        Assert.Equal(101, produtos[0].Codigo);
+        Assert.Equal(0, produtos[0].QuantidadeEstoque);
+    }
+
     private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1, int estoqueMinimo = 0, int categoriaId = 1)
     {
         return new Produto

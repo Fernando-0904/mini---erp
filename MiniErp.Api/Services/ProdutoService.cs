@@ -43,6 +43,24 @@ public class ProdutoService
             .ToList();
     }
 
+    public List<Produto> ListarProdutosSemEstoque(int? categoriaId = null)
+    {
+        IQueryable<Produto> consulta = contexto.Produtos
+            .AsNoTracking()
+            .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
+            .Where(produto => produto.QuantidadeEstoque == 0);
+
+        if (categoriaId.HasValue)
+        {
+            consulta = consulta.Where(produto => produto.CategoriaId == categoriaId.Value);
+        }
+
+        return consulta
+            .OrderBy(produto => produto.Codigo)
+            .ToList();
+    }
+
     public Produto? BuscarPorCodigo(int codigo)
     {
         return contexto.Produtos
