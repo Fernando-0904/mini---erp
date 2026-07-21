@@ -189,6 +189,7 @@ A API possui os seguintes endpoints:
 | PUT | `/produtos/{codigo}` | Edita um produto existente |
 | DELETE | `/produtos/{codigo}` | Remove um produto existente |
 | GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele; aceita o filtro opcional `categoriaId` |
+| GET | `/produtos/sem-estoque` | Lista produtos com saldo igual a zero; aceita o filtro opcional `categoriaId` |
 | GET | `/produtos/{codigo}/movimentacoes` | Lista o histórico de movimentações de um produto |
 | POST | `/produtos/{codigo}/movimentacoes/entrada` | Registra uma entrada de estoque |
 | POST | `/produtos/{codigo}/movimentacoes/saida` | Registra uma saída de estoque |
@@ -341,6 +342,10 @@ projeto erp/
 │   │   ├── produto-controller.js
 │   │   └── ui.js
 │   └── assets/
+│       └── evidencias/
+├── docs/
+│   ├── pr-fase-6.md
+│   └── validacao-fase-6.md
 └── .gitignore
 ```
 
@@ -355,7 +360,13 @@ dotnet run --project ProjetoErp.csproj
 
 ## Como executar a API
 
-Pré-requisito: .NET SDK 10 instalado. Na raiz do projeto, restaure as dependências e aplique as migrations antes da primeira execução:
+Pré-requisito: .NET SDK 10 instalado. Em uma máquina nova, instale também a ferramenta do Entity Framework Core uma vez:
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+Na raiz do projeto, restaure as dependências e aplique as migrations antes da primeira execução:
 
 ```bash
 dotnet restore MiniErp.Api/MiniErp.Api.csproj
@@ -374,7 +385,7 @@ Por padrão, a API pode ser acessada localmente em:
 http://localhost:5208
 ```
 
-O arquivo `MiniErp.Api/MiniErp.Api.http` possui exemplos de requisições para listar, buscar, cadastrar, editar e remover produtos.
+O arquivo `MiniErp.Api/MiniErp.Api.http` possui exemplos de requisições para categorias, produtos, fornecedores, movimentações, estoque baixo e produtos sem estoque. Os valores de categoria e fornecedor devem ser ajustados para ids existentes no banco local quando necessário.
 
 ## Como abrir a versão web
 
@@ -406,7 +417,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 28 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 29 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -435,6 +446,7 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | Edição de fornecedor no produto | Persiste a troca do fornecedor associado |
 | Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
 | Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
+| Produtos sem estoque | Lista somente produtos com saldo igual a zero |
 
 Para executar a suíte:
 
@@ -541,6 +553,11 @@ Busca após reiniciar remoção: HTTP 404
 | Saída sem saldo | Registrar saída maior que o saldo disponível | API bloqueia a operação e não altera o estoque | OK |
 | Histórico | Consultar histórico após entrada e saída | Tela mostra data, tipo, quantidade, saldo anterior e saldo novo | OK |
 | Persistência de regras ERP | Reiniciar API após cadastrar produto e movimentar estoque | Produto, categoria e saldo permanecem no SQLite | OK |
+| Fornecedor com telefone | Cadastrar fornecedor com telefone e e-mail vazio | Fornecedor aparece na tabela com telefone e sem erro de validação | OK |
+| Inativação de fornecedor | Clicar em Inativar e confirmar | Status muda para Inativo e fornecedor não aparece em novos vínculos | OK |
+| Relatório de estoque baixo | Abrir a página com produto no mínimo ou abaixo dele | Produto aparece ordenado pelo menor saldo | OK |
+| Filtro por categoria | Selecionar uma categoria no relatório | Apenas produtos da categoria selecionada aparecem | OK |
+| Produto sem estoque | Consultar produto com saldo zero | Produto aparece destacado visualmente | OK |
 
 ## Maiores dificuldades
 
@@ -581,6 +598,10 @@ Durante o desenvolvimento, foram praticados:
 
 - melhorar alguns detalhes visuais da interface;
 - reorganizar a solução em camadas de backend, frontend, domínio e testes;
+
+## Validação técnica da Fase 6
+
+O checklist completo de execução, critérios do MD, comandos, evidências e cenários manuais está em [docs/validacao-fase-6.md](docs/validacao-fase-6.md). Ele deve ser atualizado quando uma nova validação for executada e pode ser anexado ao Pull Request como evidência.
 
 ---
 
