@@ -6,6 +6,25 @@ Este projeto é um Mini ERP simples para controle de produtos e estoque. Ele foi
 
 A ideia principal foi criar um sistema pequeno, mas completo o suficiente para praticar cadastro, listagem, busca, validações, cálculos de estoque e manipulação de dados na tela.
 
+## Arquitetura da aplicação
+
+O Mini ERP possui uma interface web, uma API e um banco de dados. O fluxo principal de uma ação do usuário é:
+
+```text
+Usuário -> HTML/CSS/JavaScript -> api.js/fetch -> API ASP.NET Core -> Services -> Entity Framework Core -> SQLite
+```
+
+Cada parte possui uma responsabilidade:
+
+- **Frontend:** mostra formulários, tabelas e mensagens; recebe as ações do usuário e exibe os dados retornados pela API.
+- **`api.js`:** concentra as chamadas HTTP com `fetch` e o tratamento padrão das respostas da API.
+- **API ASP.NET Core:** recebe requisições, valida os dados, define respostas HTTP e chama os services.
+- **Services:** aplicam as regras de negócio, como código único, categoria ou fornecedor existente, saldo suficiente e histórico de movimentações.
+- **Entity Framework Core:** mapeia as entidades C# e traduz operações da aplicação para o banco de dados.
+- **SQLite:** armazena produtos, categorias, fornecedores e movimentações no arquivo local do banco.
+
+Produtos, categorias, fornecedores e movimentações usam a API e o SQLite como fonte única de dados. O `localStorage` foi removido do fluxo principal para evitar que a tela apresente alterações que não foram persistidas no servidor.
+
 ## Versão em C#
 
 A primeira parte do projeto foi feita em C# com .NET. Essa versão roda pelo terminal e concentra a lógica principal do sistema.
@@ -28,7 +47,7 @@ Essa etapa ajudou a praticar estruturas básicas de programação, como `if`, `s
 
 Depois da versão em console, foi criada uma interface web para representar o sistema de forma visual.
 
-A página possui formulário de cadastro, indicadores, busca por código, tabela de produtos, mensagens para o usuário e botões de ação.
+A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores, movimentações de estoque e relatório de estoque baixo.
 
 Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão web permite:
 
@@ -41,8 +60,7 @@ Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão we
 - buscar produtos por código;
 - limpar a busca;
 - remover produtos com confirmação;
-- mostrar a situação do estoque;
-- salvar os produtos no navegador usando `localStorage`.
+- mostrar a situação do estoque.
 
 Com a evolução para regras de ERP, a tela também permite:
 
@@ -52,6 +70,12 @@ Com a evolução para regras de ERP, a tela também permite:
 - registrar entradas e saídas de estoque;
 - consultar o histórico de movimentações;
 - bloquear saídas que deixariam o saldo do produto negativo.
+- cadastrar, editar, inativar e remover fornecedores;
+- informar telefone e e-mail opcional do fornecedor;
+- vincular opcionalmente um fornecedor ativo a cada produto.
+- consultar produtos com saldo menor ou igual ao estoque mínimo;
+- filtrar o relatório de estoque baixo por categoria;
+- destacar produtos sem estoque.
 
 ![Cadastro de produto com categoria](miniErpWeb/assets/cadastro-produto.png)
 
@@ -100,16 +124,27 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `storage.js`: cuida da persistência, ou seja, salvar e carregar os produtos no `localStorage`;
-- `api.js`: centraliza as chamadas HTTP para a API de produtos;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias, fornecedores, movimentações e relatório de estoque baixo, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
+- `fornecedor-controller.js`: controla o cadastro, a edição, a inativação e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
+- `estoque-baixo-controller.js`: carrega o relatório de estoque baixo e aplica o filtro por categoria;
+- `painel-controller.js`: carrega os indicadores consolidados de produtos, itens e valor em estoque;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
+
+As páginas da versão web são:
+
+- `miniErpWeb/index.html`: painel com indicadores do estoque;
+- `miniErpWeb/produtos.html`: cadastro, busca, edição, remoção e listagem de produtos;
+- `miniErpWeb/categorias.html`: cadastro, edição, remoção e listagem de categorias;
+- `miniErpWeb/fornecedores.html`: cadastro, edição, inativação, remoção e listagem de fornecedores;
+- `miniErpWeb/movimentacoes.html`: entradas, saídas e histórico de estoque.
+- `miniErpWeb/estoque-baixo.html`: relatório filtrável de produtos com estoque baixo.
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
 
-O carregamento dos dados salvos também ficou mais seguro. A leitura do `localStorage` passou a usar `try/catch`, de forma que, se os dados estiverem inválidos ou corrompidos, a aplicação limpa o conteúdo inválido e inicia com uma lista vazia, em vez de quebrar.
+Quando a API está indisponível, `api.js` transforma a falha técnica de conexão em uma mensagem compreensível. A tela não grava, altera ou remove dados somente no navegador.
 
 ## Regras do sistema
 
@@ -123,6 +158,12 @@ O sistema aplica algumas regras para evitar cadastros inválidos:
 - a quantidade não pode ser negativa.
 - todo produto deve possuir uma categoria existente;
 - não é possível remover uma categoria vinculada a produtos;
+- um produto pode ter fornecedor opcional, mas o fornecedor informado deve existir e estar ativo;
+- código e documento de fornecedor não podem ser duplicados;
+- o e-mail do fornecedor é opcional, mas deve ter formato válido quando informado;
+- o telefone do fornecedor pode ser informado e é persistido;
+- um fornecedor ativo pode ser inativado sem apagar seu histórico ou seus vínculos;
+- não é possível remover um fornecedor vinculado a produtos;
 - uma saída de estoque não pode ser maior que o saldo disponível;
 - o estoque mínimo não pode ser negativo.
 
@@ -134,7 +175,9 @@ Quando a quantidade atual é menor ou igual ao estoque mínimo configurado, a ta
 
 Além da versão em console e da versão web, o projeto também possui uma API criada com ASP.NET Core Minimal API.
 
-A versão web consome a API usando `fetch`. O `localStorage` foi mantido como fallback quando a API está indisponível, mas a fonte principal de dados é o banco SQLite.
+A versão web consome a API usando `fetch`, centralizado em `miniErpWeb/js/api.js`. A API e o banco SQLite são a fonte única de dados. Se o backend estiver indisponível, a interface informa o problema sem exibir mensagens técnicas como `Failed to fetch` e sem alterar dados localmente.
+
+Os endpoints de criação e edição recebem DTOs de entrada (`ProdutoRequest`, `CategoriaRequest` e `FornecedorRequest`). No limite da API, esses dados são mapeados para as entidades persistidas e encaminhados aos services, que aplicam as regras de negócio.
 
 A API possui os seguintes endpoints:
 
@@ -145,7 +188,8 @@ A API possui os seguintes endpoints:
 | POST | `/produtos` | Cadastra um novo produto |
 | PUT | `/produtos/{codigo}` | Edita um produto existente |
 | DELETE | `/produtos/{codigo}` | Remove um produto existente |
-| GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele |
+| GET | `/produtos/estoque-baixo` | Lista produtos com estoque no mínimo ou abaixo dele; aceita o filtro opcional `categoriaId` |
+| GET | `/produtos/sem-estoque` | Lista produtos com saldo igual a zero; aceita o filtro opcional `categoriaId` |
 | GET | `/produtos/{codigo}/movimentacoes` | Lista o histórico de movimentações de um produto |
 | POST | `/produtos/{codigo}/movimentacoes/entrada` | Registra uma entrada de estoque |
 | POST | `/produtos/{codigo}/movimentacoes/saida` | Registra uma saída de estoque |
@@ -154,6 +198,12 @@ A API possui os seguintes endpoints:
 | POST | `/categorias` | Cadastra uma categoria |
 | PUT | `/categorias/{id}` | Edita uma categoria |
 | DELETE | `/categorias/{id}` | Remove uma categoria sem produtos vinculados |
+| GET | `/fornecedores` | Lista fornecedores |
+| GET | `/fornecedores/{id}` | Busca fornecedor pelo identificador |
+| POST | `/fornecedores` | Cadastra fornecedor |
+| PUT | `/fornecedores/{id}` | Edita fornecedor |
+| PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
+| DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
 
 Exemplo de JSON usado no cadastro e na edição:
 
@@ -164,7 +214,8 @@ Exemplo de JSON usado no cadastro e na edição:
   "precoUnitario": 120,
   "quantidadeEstoque": 5,
   "estoqueMinimo": 2,
-  "categoriaId": 1
+  "categoriaId": 1,
+  "fornecedorId": null
 }
 ```
 
@@ -176,8 +227,11 @@ A API também possui validações para evitar dados inválidos:
 - a quantidade em estoque não pode ser negativa;
 - o estoque mínimo não pode ser negativo;
 - a categoria informada deve existir;
+- quando informado, o fornecedor deve existir e estar ativo;
 - não pode haver dois produtos com o mesmo código;
 - na edição, o código da URL precisa ser igual ao código enviado no corpo da requisição.
+
+O fornecedor possui código, nome, documento, e-mail opcional, telefone e status ativo/inativo. O código e o documento são únicos; quando informado, o e-mail deve ser válido. A associação com produto é opcional e somente fornecedores ativos podem ser vinculados a novos produtos.
 
 As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
 
@@ -198,13 +252,13 @@ Algumas respostas esperadas da API:
 
 ## Banco de dados SQLite
 
-A API utiliza SQLite com Entity Framework Core para persistir os produtos. Os dados ficam armazenados no arquivo:
+A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores e movimentações. Os dados ficam armazenados no arquivo:
 
 ```text
 MiniErp.Api/Dados/mini-erp.db
 ```
 
-Esse arquivo é criado automaticamente ao executar a migration e não é versionado no Git.
+Esse arquivo é criado automaticamente ao executar as migrations e não é versionado no Git.
 
 O contexto de banco está definido em `MiniErp.Api/Data/AppDbContext.cs` e os arquivos de migration ficam em `MiniErp.Api/Migrations/`.
 
@@ -248,14 +302,20 @@ projeto erp/
 ├── MiniErp.Api/
 │   ├── Data/
 │   │   └── AppDbContext.cs
+│   ├── DTOs/
+│   │   ├── CategoriaRequest.cs
+│   │   ├── FornecedorRequest.cs
+│   │   └── ProdutoRequest.cs
 │   ├── Migrations/
 │   ├── Models/
 │   │   ├── Categoria.cs
+│   │   ├── Fornecedor.cs
 │   │   ├── MovimentacaoEstoque.cs
 │   │   ├── MovimentacaoEstoqueRequest.cs
 │   │   └── Produto.cs
 │   ├── Services/
 │   │   ├── CategoriaService.cs
+│   │   ├── FornecedorService.cs
 │   │   ├── MovimentacaoEstoqueService.cs
 │   │   └── ProdutoService.cs
 │   ├── Program.cs
@@ -263,6 +323,11 @@ projeto erp/
 │   └── MiniErp.Api.http
 ├── miniErpWeb/
 │   ├── index.html
+│   ├── produtos.html
+│   ├── categorias.html
+│   ├── fornecedores.html
+│   ├── movimentacoes.html
+│   ├── estoque-baixo.html
 │   ├── css/
 │   │   └── style.css
 │   ├── js/
@@ -270,32 +335,45 @@ projeto erp/
 │   │   ├── api.js
 │   │   ├── categoria-controller.js
 │   │   ├── dom-elements.js
+│   │   ├── fornecedor-controller.js
+│   │   ├── estoque-baixo-controller.js
 │   │   ├── movimentacao-controller.js
+│   │   ├── painel-controller.js
 │   │   ├── produto-controller.js
-│   │   ├── storage.js
 │   │   └── ui.js
 │   └── assets/
+│       └── evidencias/
+├── docs/
+│   ├── pr-fase-6.md
+│   └── validacao-fase-6.md
 └── .gitignore
 ```
 
 ## Como executar a versão em C#
 
-No terminal, dentro da pasta do projeto, execute:
+Pré-requisito: .NET SDK 10 instalado. No terminal, na raiz do projeto, execute:
 
 ```bash
-dotnet build
-dotnet run
+dotnet restore
+dotnet run --project ProjetoErp.csproj
 ```
 
 ## Como executar a API
 
-Antes de subir a API pela primeira vez, crie o banco de dados executando a migration:
+Pré-requisito: .NET SDK 10 instalado. Em uma máquina nova, instale também a ferramenta do Entity Framework Core uma vez:
 
 ```bash
+dotnet tool install --global dotnet-ef
+```
+
+Na raiz do projeto, restaure as dependências e aplique as migrations antes da primeira execução:
+
+```bash
+dotnet restore MiniErp.Api/MiniErp.Api.csproj
 dotnet ef database update --project MiniErp.Api --startup-project MiniErp.Api
 ```
 
-Depois, no terminal, dentro da pasta do projeto, execute:
+Depois, inicie a API:
 
 ```bash
 dotnet run --project MiniErp.Api
@@ -307,7 +385,7 @@ Por padrão, a API pode ser acessada localmente em:
 http://localhost:5208
 ```
 
-O arquivo `MiniErp.Api/MiniErp.Api.http` possui exemplos de requisições para listar, buscar, cadastrar, editar e remover produtos.
+O arquivo `MiniErp.Api/MiniErp.Api.http` possui exemplos de requisições para categorias, produtos, fornecedores, movimentações, estoque baixo e produtos sem estoque. Os valores de categoria e fornecedor devem ser ajustados para ids existentes no banco local quando necessário.
 
 ## Como abrir a versão web
 
@@ -329,19 +407,46 @@ Para testar a integração completa localmente, inicie a API e sirva a pasta `mi
 npx --yes http-server miniErpWeb -p 5500 -c-1
 ```
 
-Depois, abra `http://127.0.0.1:5500` no navegador. Sem a API, o frontend usa o `localStorage` como fallback para as funções de produto já salvas no navegador.
+Depois, abra `http://127.0.0.1:5500` no navegador. A API deve permanecer em execução para que a aplicação consulte e altere os dados.
+
+Para iniciar a aplicação do zero, siga esta ordem:
+
+1. Execute a migration e inicie a API em um terminal.
+2. Em outro terminal, execute o servidor HTTP da pasta `miniErpWeb`.
+3. Abra `http://127.0.0.1:5500` e confirme que a tela carrega os dados da API em `http://localhost:5208`.
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 29 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
 | Cálculo do valor total | Multiplica corretamente preço unitário pela quantidade em estoque |
+| Cadastro válido | Permite cadastrar produto com dados corretos |
 | Código duplicado | Impede o cadastro de dois produtos com o mesmo código |
+| Categoria obrigatória | Rejeita produto sem categoria |
+| Categoria existente | Rejeita categoria inexistente no produto |
+| Preço inválido | Rejeita preço menor ou igual a zero |
+| Quantidade negativa | Rejeita estoque inicial negativo |
+| Estoque mínimo negativo | Rejeita estoque mínimo negativo |
 | Edição de produto | Preserva o saldo de estoque; alterações de quantidade exigem movimentação |
 | Entrada de estoque | Atualiza o saldo e cria o registro de histórico |
+| Saída válida | Reduz o saldo e gera histórico |
 | Saída com saldo insuficiente | Bloqueia a movimentação e preserva o saldo e o histórico |
+| Histórico por produto | Retorna apenas as movimentações do produto consultado |
+| Cadastro de fornecedor | Permite fornecedor com dados válidos |
+| Nome de fornecedor obrigatório | Rejeita fornecedor sem nome |
+| Código ou documento duplicado | Impede fornecedores duplicados |
+| E-mail opcional | Permite fornecedor sem e-mail |
+| E-mail de fornecedor inválido | Rejeita e-mail inválido |
+| Status de fornecedor | Persiste fornecedor inativo |
+| Inativação de fornecedor | Altera o status de um fornecedor ativo |
+| Vínculo opcional | Permite produto sem fornecedor |
+| Fornecedor em produto | Detecta produto vinculado e valida fornecedor inexistente ou inativo |
+| Edição de fornecedor no produto | Persiste a troca do fornecedor associado |
+| Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
+| Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
+| Produtos sem estoque | Lista somente produtos com saldo igual a zero |
 
 Para executar a suíte:
 
@@ -350,6 +455,12 @@ dotnet test MiniErp.Api.Tests/MiniErp.Api.Tests.csproj
 ```
 
 O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull request`.
+
+## Fluxo de revisão
+
+O fluxo atual publica mudanças diretamente na `master` depois das validações adequadas. Quando for necessário usar uma pull request, registre o resumo, o tipo de alteração, como testar, as evidências e o checklist da revisão.
+
+Antes de publicar uma alteração, recomenda-se executar os testes relevantes, verificar `git diff --check`, atualizar o README quando necessário e conferir se não há erros no console do navegador ou no terminal da API.
 
 ## Testes manuais realizados
 
@@ -369,12 +480,11 @@ O workflow do GitHub Actions executa essa mesma suíte em cada `push` e `pull re
 | Edição com campo inválido | Informar campo inválido durante edição | Sistema exibe erro e não salva a alteração | OK |
 | Remoção confirmada | Clicar em Remover e confirmar | Produto removido da tabela e indicadores atualizados | OK |
 | Remoção cancelada | Clicar em Remover e cancelar | Produto permanece cadastrado | OK |
-| Persistência após atualizar página | Cadastrar produto e pressionar F5 | Produto continua listado após recarregar a página | OK |
-| localStorage inválido | Alterar manualmente `produtos` no localStorage para valor inválido | Aplicação não quebra, limpa os dados inválidos e inicia lista vazia | OK |
+| Persistência após atualizar página | Cadastrar produto e pressionar F5 com a API em execução | Produto continua listado porque foi salvo no SQLite | OK |
 
 ## Testes manuais da integração com API
 
-Depois da criação da API, a versão web passou a tentar usar os endpoints do back-end para listar, cadastrar, editar, remover e buscar produtos por código. O `localStorage` foi mantido como fallback para quando a API estiver indisponível.
+Depois da criação da API, a versão web passou a usar os endpoints do back-end para listar, cadastrar, editar, remover e buscar produtos por código. A API e o SQLite são a fonte única dos dados.
 
 Testes com a API ligada:
 
@@ -384,29 +494,23 @@ Testes com a API ligada:
 | Cadastro pela API | Código 101, nome Teclado, preço 120, quantidade 5 | Produto cadastrado usando `POST /produtos` e exibido na tabela | OK |
 | Código duplicado pela API | Cadastrar outro produto com código 101 | API retorna conflito e o produto não é cadastrado novamente | OK |
 | Cadastro inválido pela API | Nome vazio, preço zero ou quantidade negativa | API retorna erro de validação e o produto não é cadastrado | OK |
-| Edição pela API | Editar nome, preço e quantidade de produto existente | Produto atualizado usando `PUT /produtos/{codigo}` | OK |
+| Edição pela API | Editar nome, preço, categoria ou estoque mínimo de produto existente | Produto atualizado usando `PUT /produtos/{codigo}`; o saldo é preservado | OK |
 | Remoção pela API | Remover produto existente e confirmar | Produto removido usando `DELETE /produtos/{codigo}` | OK |
 | Busca por código pela API | Buscar código 101 | Produto encontrado usando `GET /produtos/{codigo}` | OK |
 | Busca por código inexistente | Buscar código 999 | Sistema informa que nenhum produto foi encontrado | OK |
 | Busca por nome | Buscar parte do nome do produto | Sistema mantém a busca local por nome usando os dados carregados | OK |
 | CORS da API | Frontend chamar `http://localhost:5208` | API permite a chamada do navegador | OK |
 
-Testes com a API desligada:
+Teste com a API desligada:
 
 | Cenário | Entrada | Resultado esperado | Status |
 |---|---|---|---|
-| Carregamento sem API | Abrir a tela com a API desligada | Sistema carrega os produtos salvos no `localStorage` | OK |
-| Cadastro local | Cadastrar produto com a API desligada | Produto é salvo no navegador e exibido na tabela | OK |
-| Edição local | Editar produto com a API desligada | Produto é editado no navegador e salvo no `localStorage` | OK |
-| Remoção local | Remover produto com a API desligada | Produto é removido no navegador e o `localStorage` é atualizado | OK |
-| Busca por código local | Buscar código de produto salvo localmente | Sistema encontra o produto usando os dados locais | OK |
-| Busca por nome local | Buscar parte do nome com a API desligada | Sistema encontra produtos usando os dados locais | OK |
-| Persistência local | Recarregar a página depois de alterações locais | Dados continuam disponíveis pelo `localStorage` | OK |
+| Falha de conexão | Abrir a tela ou tentar uma operação com a API desligada | Interface informa que não foi possível conectar à API e não altera dados apenas no navegador | OK |
 
 Observações da integração:
 
 - a API salva os produtos, categorias e movimentações no SQLite;
-- o `localStorage` funciona como fallback quando a API está indisponível;
+- o `localStorage` não participa do fluxo de dados do ERP;
 - a busca por nome continua local porque a API atual possui busca apenas por código.
 
 ## Testes manuais da persistência no SQLite
@@ -449,12 +553,17 @@ Busca após reiniciar remoção: HTTP 404
 | Saída sem saldo | Registrar saída maior que o saldo disponível | API bloqueia a operação e não altera o estoque | OK |
 | Histórico | Consultar histórico após entrada e saída | Tela mostra data, tipo, quantidade, saldo anterior e saldo novo | OK |
 | Persistência de regras ERP | Reiniciar API após cadastrar produto e movimentar estoque | Produto, categoria e saldo permanecem no SQLite | OK |
+| Fornecedor com telefone | Cadastrar fornecedor com telefone e e-mail vazio | Fornecedor aparece na tabela com telefone e sem erro de validação | OK |
+| Inativação de fornecedor | Clicar em Inativar e confirmar | Status muda para Inativo e fornecedor não aparece em novos vínculos | OK |
+| Relatório de estoque baixo | Abrir a página com produto no mínimo ou abaixo dele | Produto aparece ordenado pelo menor saldo | OK |
+| Filtro por categoria | Selecionar uma categoria no relatório | Apenas produtos da categoria selecionada aparecem | OK |
+| Produto sem estoque | Consultar produto com saldo zero | Produto aparece destacado visualmente | OK |
 
 ## Maiores dificuldades
 
 A maior dificuldade foi entender a integração do JavaScript com a página.
 
-Foi nessa parte que ficaram os pontos mais importantes do projeto web: capturar os dados do formulário, validar as informações, montar a tabela dinamicamente, atualizar os indicadores, controlar os botões de busca e remoção, mostrar mensagens na tela e manter os dados salvos com `localStorage`.
+Foi nessa parte que ficaram os pontos mais importantes do projeto web: capturar os dados do formulário, validar as informações, montar a tabela dinamicamente, atualizar os indicadores, controlar os botões de busca e remoção, mostrar mensagens na tela e integrar o frontend com a API.
 
 Essa etapa exigiu entender melhor como o JavaScript conversa com o HTML e como cada ação do usuário precisa alterar alguma parte da página.
 
@@ -476,7 +585,6 @@ Durante o desenvolvimento, foram praticados:
 - criação de elementos da tabela com `createElement`, `textContent` e `appendChild`;
 - separação do JavaScript em arquivos por responsabilidade;
 - tratamento de erro no carregamento de dados com `try/catch`;
-- armazenamento local com `localStorage`;
 - criação de API com ASP.NET Core Minimal API;
 - criação de endpoints HTTP para produtos;
 - validação de dados recebidos pela API;
@@ -489,8 +597,11 @@ Durante o desenvolvimento, foram praticados:
 ## Próximos passos possíveis
 
 - melhorar alguns detalhes visuais da interface;
-- melhorar a indicação visual de quando o sistema está usando a API ou o modo local;
 - reorganizar a solução em camadas de backend, frontend, domínio e testes;
+
+## Validação técnica da Fase 6
+
+O checklist completo de execução, critérios do MD, comandos, evidências e cenários manuais está em [docs/validacao-fase-6.md](docs/validacao-fase-6.md). Ele deve ser atualizado quando uma nova validação for executada e pode ser anexado ao Pull Request como evidência.
 
 ---
 

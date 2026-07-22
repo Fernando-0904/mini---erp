@@ -19,17 +19,45 @@ public class ProdutoService
         return contexto.Produtos
             .AsNoTracking()
             .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
             .OrderBy(produto => produto.Codigo)
             .ToList();
     }
 
-    public List<Produto> ListarProdutosComEstoqueBaixo()
+    public List<Produto> ListarProdutosComEstoqueBaixo(int? categoriaId = null)
     {
-        return contexto.Produtos
+        IQueryable<Produto> consulta = contexto.Produtos
             .AsNoTracking()
             .Include(produto => produto.Categoria)
-            .Where(produto => produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
+            .Include(produto => produto.Fornecedor)
+            .Where(produto => produto.QuantidadeEstoque <= produto.EstoqueMinimo);
+
+        if (categoriaId.HasValue)
+        {
+            consulta = consulta.Where(produto => produto.CategoriaId == categoriaId.Value);
+        }
+
+        return consulta
             .OrderBy(produto => produto.QuantidadeEstoque)
+            .ThenBy(produto => produto.Codigo)
+            .ToList();
+    }
+
+    public List<Produto> ListarProdutosSemEstoque(int? categoriaId = null)
+    {
+        IQueryable<Produto> consulta = contexto.Produtos
+            .AsNoTracking()
+            .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
+            .Where(produto => produto.QuantidadeEstoque == 0);
+
+        if (categoriaId.HasValue)
+        {
+            consulta = consulta.Where(produto => produto.CategoriaId == categoriaId.Value);
+        }
+
+        return consulta
+            .OrderBy(produto => produto.Codigo)
             .ToList();
     }
 
@@ -37,7 +65,40 @@ public class ProdutoService
     {
         return contexto.Produtos
             .Include(produto => produto.Categoria)
+            .Include(produto => produto.Fornecedor)
             .FirstOrDefault(produto => produto.Codigo == codigo);
+    }
+
+    public List<string> ValidarProduto(Produto produto)
+    {
+        List<string> erros = new();
+
+        if (produto.Codigo <= 0)
+        {
+            erros.Add("O código deve ser maior que zero.");
+        }
+
+        if (string.IsNullOrWhiteSpace(produto.Nome))
+        {
+            erros.Add("O nome é obrigatório.");
+        }
+
+        if (produto.PrecoUnitario <= 0)
+        {
+            erros.Add("O preço unitário deve ser maior que zero.");
+        }
+
+        if (produto.QuantidadeEstoque < 0)
+        {
+            erros.Add("A quantidade em estoque não pode ser negativa.");
+        }
+
+        if (produto.EstoqueMinimo < 0)
+        {
+            erros.Add("O estoque mínimo não pode ser negativo.");
+        }
+
+        return erros;
     }
 
     public bool CadastrarProduto(Produto produto)
@@ -73,6 +134,7 @@ public class ProdutoService
         produtoExistente.PrecoUnitario = produtoAtualizado.PrecoUnitario;
         produtoExistente.EstoqueMinimo = produtoAtualizado.EstoqueMinimo;
         produtoExistente.CategoriaId = produtoAtualizado.CategoriaId;
+        produtoExistente.FornecedorId = produtoAtualizado.FornecedorId;
 
         contexto.SaveChanges();
         return true;

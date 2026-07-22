@@ -36,7 +36,9 @@ function inicializarMovimentacaoController() {
                 await registrarSaidaEstoqueApi(codigo, quantidade);
             }
 
-            await recarregarProdutosNaTela();
+            if (typeof window.recarregarProdutosNaTela === "function") {
+                await window.recarregarProdutosNaTela();
+            }
             await carregarHistorico(codigo, false);
             elementos.campoMovimentacaoQuantidade.value = "";
             const descricaoTipo = tipo === "entrada" ? "entrada" : "saída";

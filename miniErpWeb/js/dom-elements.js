@@ -6,6 +6,7 @@ const elementos = {
     campoQuantidade: document.getElementById("quantidade"),
     campoEstoqueMinimo: document.getElementById("estoqueMinimo"),
     campoCategoriaProduto: document.getElementById("categoriaProduto"),
+    campoFornecedorProduto: document.getElementById("fornecedorProduto"),
     botaoSalvarProduto: document.getElementById("botaoSalvarProduto"),
     tabelaProdutos: document.getElementById("tabelaProdutos"),
     quantidadeProdutos: document.getElementById("quantidadeProdutos"),
@@ -22,13 +23,27 @@ const elementos = {
     botaoSalvarCategoria: document.getElementById("botaoSalvarCategoria"),
     botaoLimparCategoria: document.getElementById("botaoLimparCategoria"),
     tabelaCategorias: document.getElementById("tabelaCategorias"),
+    formularioFornecedor: document.getElementById("formFornecedor"),
+    campoFornecedorCodigo: document.getElementById("fornecedorCodigo"),
+    campoFornecedorNome: document.getElementById("fornecedorNome"),
+    campoFornecedorDocumento: document.getElementById("fornecedorDocumento"),
+    campoFornecedorEmail: document.getElementById("fornecedorEmail"),
+    campoFornecedorTelefone: document.getElementById("fornecedorTelefone"),
+    campoFornecedorAtivo: document.getElementById("fornecedorAtivo"),
+    botaoSalvarFornecedor: document.getElementById("botaoSalvarFornecedor"),
+    botaoLimparFornecedor: document.getElementById("botaoLimparFornecedor"),
+    tabelaFornecedores: document.getElementById("tabelaFornecedores"),
     formularioMovimentacaoEstoque: document.getElementById("formMovimentacaoEstoque"),
     campoMovimentacaoCodigo: document.getElementById("movimentacaoCodigo"),
     campoMovimentacaoQuantidade: document.getElementById("movimentacaoQuantidade"),
     botaoRegistrarEntrada: document.getElementById("botaoRegistrarEntrada"),
     botaoRegistrarSaida: document.getElementById("botaoRegistrarSaida"),
     botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
-    tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes")
+    tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes"),
+    campoCategoriaEstoqueBaixo: document.getElementById("categoriaEstoqueBaixo"),
+    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo")
 };
 
-elementos.botaoLimparFormulario = elementos.formulario.querySelector("button[type='reset']");
+elementos.botaoLimparFormulario = elementos.formulario
+    ? elementos.formulario.querySelector("button[type='reset']")
+    : null;

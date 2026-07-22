@@ -22,9 +22,9 @@ function inicializarCategoriaController() {
             };
 
             try {
-                const categoriaCadastrada = await cadastrarCategoriaFrontend(categoria);
+                const categoriaCadastrada = await cadastrarCategoriaApi(categoria);
                 upsertCategoriaNoArray(categoriaCadastrada);
-                await recarregarCategoriasDoProduto();
+                await atualizarCategoriasDoProduto();
                 exibirMensagem("Categoria cadastrada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -46,9 +46,9 @@ function inicializarCategoriaController() {
             };
 
             try {
-                const categoriaEditada = await editarCategoriaFrontend(idCategoriaEmEdicao, categoriaAtualizada);
+                const categoriaEditada = await editarCategoriaApi(idCategoriaEmEdicao, categoriaAtualizada);
                 aplicarDadosCategoria(categoriaExistente, categoriaEditada);
-                await recarregarCategoriasDoProduto();
+                await atualizarCategoriasDoProduto();
                 exibirMensagem("Categoria editada com sucesso.", "sucesso");
             } catch (erro) {
                 exibirMensagem(erro.message, "erro");
@@ -88,7 +88,7 @@ function inicializarCategoriaController() {
 
     async function carregarCategorias() {
         try {
-            const categoriasApi = await listarCategoriasFrontend();
+            const categoriasApi = await listarCategoriasApi();
 
             categorias.length = 0;
 
@@ -148,9 +148,9 @@ function inicializarCategoriaController() {
         }
 
         try {
-            await removerCategoriaFrontend(id);
+            await removerCategoriaApi(id);
             categorias.splice(indiceCategoria, 1);
-            await recarregarCategoriasDoProduto();
+            await atualizarCategoriasDoProduto();
             exibirMensagem("Categoria removida com sucesso.", "sucesso");
         } catch (erro) {
             exibirMensagem(erro.message, "erro");
@@ -177,101 +177,12 @@ function inicializarCategoriaController() {
     function aplicarDadosCategoria(categoriaDestino, categoriaOrigem) {
         categoriaDestino.nome = categoriaOrigem.nome;
     }
-}
 
-function obterApiBaseUrlCategorias() {
-    if (typeof API_BASE_URL === "string" && API_BASE_URL.trim() !== "") {
-        return API_BASE_URL;
-    }
-
-    if (typeof window !== "undefined" && window.location && /^https?:$/i.test(window.location.protocol)) {
-        return `${window.location.protocol}//${window.location.hostname}:5208`;
-    }
-
-    return "http://localhost:5208";
-}
-
-async function tratarRespostaCategoriasFrontend(resposta, mensagemErroPadrao) {
-    if (typeof tratarRespostaApi === "function") {
-        return tratarRespostaApi(resposta, mensagemErroPadrao);
-    }
-
-    if (resposta.ok) {
-        if (resposta.status === 204) {
-            return null;
+    async function atualizarCategoriasDoProduto() {
+        if (typeof window.recarregarCategoriasDoProduto === "function") {
+            await window.recarregarCategoriasDoProduto();
         }
-
-        return resposta.json();
     }
-
-    let mensagemErro = mensagemErroPadrao;
-
-    try {
-        const erro = await resposta.json();
-
-        if (Array.isArray(erro)) {
-            mensagemErro = erro.join(" ");
-        } else if (typeof erro === "string") {
-            mensagemErro = erro;
-        }
-    } catch {
-        // Mantém a mensagem padrão se a API não retornar JSON.
-    }
-
-    throw new Error(mensagemErro);
-}
-
-async function listarCategoriasFrontend() {
-    if (typeof listarCategoriasApi === "function") {
-        return listarCategoriasApi();
-    }
-
-    const resposta = await fetch(`${obterApiBaseUrlCategorias()}/categorias`);
-    return tratarRespostaCategoriasFrontend(resposta, "Erro ao listar categorias na API.");
-}
-
-async function cadastrarCategoriaFrontend(categoria) {
-    if (typeof cadastrarCategoriaApi === "function") {
-        return cadastrarCategoriaApi(categoria);
-    }
-
-    const resposta = await fetch(`${obterApiBaseUrlCategorias()}/categorias`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(categoria),
-    });
-
-    return tratarRespostaCategoriasFrontend(resposta, "Erro ao cadastrar categoria na API.");
-}
-
-async function editarCategoriaFrontend(id, categoria) {
-    if (typeof editarCategoriaApi === "function") {
-        return editarCategoriaApi(id, categoria);
-    }
-
-    const resposta = await fetch(`${obterApiBaseUrlCategorias()}/categorias/${id}`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(categoria),
-    });
-
-    return tratarRespostaCategoriasFrontend(resposta, "Erro ao editar categoria na API.");
-}
-
-async function removerCategoriaFrontend(id) {
-    if (typeof removerCategoriaApi === "function") {
-        return removerCategoriaApi(id);
-    }
-
-    const resposta = await fetch(`${obterApiBaseUrlCategorias()}/categorias/${id}`, {
-        method: "DELETE",
-    });
-
-    return tratarRespostaCategoriasFrontend(resposta, "Erro ao remover categoria na API.");
 }
 
 function atualizarTabelaCategorias(listaCategorias, aoEditarCategoria, aoRemoverCategoria) {

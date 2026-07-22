@@ -40,6 +40,82 @@ public class ProdutoEEstoqueTests
     }
 
     [Fact]
+    public void CadastrarProduto_ComDadosValidos_RetornaTrue()
+    {
+        using BancoDeTeste banco = new();
+        ProdutoService service = new(banco.Contexto);
+
+        bool cadastrado = service.CadastrarProduto(CriarProduto(codigo: 101));
+
+        Assert.True(cadastrado);
+        Assert.Single(banco.Contexto.Produtos);
+    }
+
+    [Fact]
+    public void ValidarProduto_SemCategoria_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        ProdutoService service = new(banco.Contexto);
+        Produto produto = CriarProduto(codigo: 101);
+        produto.CategoriaId = 0;
+
+        List<string> erros = service.ValidarProduto(produto);
+        CategoriaService categoriaService = new(banco.Contexto);
+        erros.AddRange(categoriaService.ValidarCategoriaDoProduto(produto.CategoriaId));
+
+        Assert.Contains("Informe uma categoria válida.", erros);
+    }
+
+    [Fact]
+    public void ValidarCategoriaDoProduto_ComCategoriaInexistente_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        CategoriaService service = new(banco.Contexto);
+
+        List<string> erros = service.ValidarCategoriaDoProduto(999);
+
+        Assert.Contains("Categoria informada não existe.", erros);
+    }
+
+    [Fact]
+    public void ValidarProduto_ComPrecoInvalido_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        ProdutoService service = new(banco.Contexto);
+        Produto produto = CriarProduto(codigo: 101);
+        produto.PrecoUnitario = 0;
+
+        List<string> erros = service.ValidarProduto(produto);
+
+        Assert.Contains("O preço unitário deve ser maior que zero.", erros);
+    }
+
+    [Fact]
+    public void ValidarProduto_ComQuantidadeNegativa_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        ProdutoService service = new(banco.Contexto);
+        Produto produto = CriarProduto(codigo: 101, quantidadeEstoque: -1);
+
+        List<string> erros = service.ValidarProduto(produto);
+
+        Assert.Contains("A quantidade em estoque não pode ser negativa.", erros);
+    }
+
+    [Fact]
+    public void ValidarProduto_ComEstoqueMinimoNegativo_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        ProdutoService service = new(banco.Contexto);
+        Produto produto = CriarProduto(codigo: 101);
+        produto.EstoqueMinimo = -1;
+
+        List<string> erros = service.ValidarProduto(produto);
+
+        Assert.Contains("O estoque mínimo não pode ser negativo.", erros);
+    }
+
+    [Fact]
     public void EditarProduto_ComQuantidadeDiferente_PreservaEstoqueAtual()
     {
         using BancoDeTeste banco = new();
@@ -94,7 +170,93 @@ public class ProdutoEEstoqueTests
         Assert.Empty(banco.Contexto.MovimentacoesEstoque);
     }
 
-    private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1)
+    [Fact]
+    public void RegistrarSaida_ComQuantidadeValida_AtualizaEstoqueECriaHistorico()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 5));
+        banco.Contexto.SaveChanges();
+        MovimentacaoEstoqueService service = new(banco.Contexto);
+
+        bool registrado = service.RegistrarSaida(101, 2, out MovimentacaoEstoque? movimentacao, out string erro);
+
+        Assert.True(registrado);
+        Assert.Equal(string.Empty, erro);
+        Assert.NotNull(movimentacao);
+        Assert.Equal(3, banco.Contexto.Produtos.Single().QuantidadeEstoque);
+        Assert.Equal(TipoMovimentacaoEstoque.Saida, movimentacao.Tipo);
+        Assert.Equal(5, movimentacao.SaldoAnterior);
+        Assert.Equal(3, movimentacao.SaldoNovo);
+    }
+
+    [Fact]
+    public void ListarMovimentacoesPorProduto_ComHistorico_RetornaMovimentacoesDoProduto()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 5));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 5));
+        banco.Contexto.SaveChanges();
+        MovimentacaoEstoqueService service = new(banco.Contexto);
+        service.RegistrarEntrada(101, 2, out _, out _);
+        service.RegistrarEntrada(102, 3, out _, out _);
+
+        List<MovimentacaoEstoque> movimentacoes = service.ListarMovimentacoesPorProduto(101);
+
+        Assert.Single(movimentacoes);
+        Assert.Equal(101, movimentacoes[0].ProdutoCodigo);
+        Assert.Equal(TipoMovimentacaoEstoque.Entrada, movimentacoes[0].Tipo);
+    }
+
+    [Fact]
+    public void ListarProdutosComEstoqueBaixo_RetornaAbaixoOuIgualAoMinimoOrdenados()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 2, estoqueMinimo: 3));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 0, estoqueMinimo: 0));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 103, quantidadeEstoque: 5, estoqueMinimo: 3));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosComEstoqueBaixo();
+
+        Assert.Equal(new[] { 102, 101 }, produtos.Select(produto => produto.Codigo));
+    }
+
+    [Fact]
+    public void ListarProdutosComEstoqueBaixo_ComFiltroDeCategoria_RetornaSomenteCategoriaSelecionada()
+    {
+        using BancoDeTeste banco = new();
+        Categoria outraCategoria = new() { Nome = "Outra categoria" };
+        banco.Contexto.Categorias.Add(outraCategoria);
+        banco.Contexto.SaveChanges();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 1, estoqueMinimo: 2));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 1, estoqueMinimo: 2, categoriaId: outraCategoria.Id));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosComEstoqueBaixo(outraCategoria.Id);
+
+        Assert.Single(produtos);
+        Assert.Equal(102, produtos[0].Codigo);
+    }
+
+    [Fact]
+    public void ListarProdutosSemEstoque_RetornaSomenteProdutosComSaldoZero()
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 0));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 1));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosSemEstoque();
+
+        Assert.Single(produtos);
+        Assert.Equal(101, produtos[0].Codigo);
+        Assert.Equal(0, produtos[0].QuantidadeEstoque);
+    }
+
+    private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1, int estoqueMinimo = 0, int categoriaId = 1)
     {
         return new Produto
         {
@@ -102,7 +264,8 @@ public class ProdutoEEstoqueTests
             Nome = "Produto de teste",
             PrecoUnitario = 10m,
             QuantidadeEstoque = quantidadeEstoque,
-            CategoriaId = 1,
+            EstoqueMinimo = estoqueMinimo,
+            CategoriaId = categoriaId,
         };
     }
 

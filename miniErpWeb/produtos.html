@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini ERP - Produtos</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Mini ERP</h1>
+    <h2>Gestão de produtos</h2>
+    <nav aria-label="Navegação principal">
+        <a href="index.html">Painel</a>
+        <a href="produtos.html" aria-current="page">Produtos</a>
+        <a href="categorias.html">Categorias</a>
+        <a href="fornecedores.html">Fornecedores</a>
+        <a href="movimentacoes.html">Movimentações</a>
+        <a href="estoque-baixo.html">Estoque baixo</a>
+    </nav>
+</header>
+<main>
+    <section aria-label="Cadastro de produto">
+        <h3>Cadastro de produto</h3>
+        <form id="formProduto" novalidate>
+            <div><label for="codigo">Código</label><input type="number" id="codigo" name="codigo"></div>
+            <div><label for="nome">Nome</label><input type="text" id="nome" name="nome"></div>
+            <div><label for="preco">Preço Unitário</label><input type="number" id="preco" name="preco" step="0.01"></div>
+            <div><label for="estoqueMinimo">Estoque Mínimo</label><input type="number" id="estoqueMinimo" name="estoqueMinimo"></div>
+            <div><label for="categoriaProduto">Categoria</label><select id="categoriaProduto" name="categoriaProduto"><option value="">Selecione uma categoria</option></select></div>
+            <div><label for="fornecedorProduto">Fornecedor</label><select id="fornecedorProduto" name="fornecedorProduto"><option value="">Sem fornecedor</option></select></div>
+            <div><label for="quantidade">Quantidade</label><input type="number" id="quantidade" name="quantidade"></div>
+            <button type="submit" id="botaoSalvarProduto">Cadastrar produto</button>
+            <button type="reset">Limpar</button>
+        </form>
+    </section>
+    <section aria-label="Busca de produto">
+        <h3>Buscar produto por código ou nome</h3>
+        <form id="formBuscaProduto" novalidate>
+            <div><label for="codigoBusca">Código ou nome</label><input type="text" id="codigoBusca" name="codigoBusca"></div>
+            <button type="button" id="botaoBuscar">Buscar</button>
+            <button type="button" id="botaoLimparBusca">Limpar busca</button>
+        </form>
+    </section>
+    <p id="mensagem"></p>
+    <section class="tabela-produtos" aria-label="Lista de produtos">
+        <h3>Lista de produtos</h3>
+        <table>
+            <thead><tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th><th>Quantidade</th><th>Valor Total</th><th>Situação</th><th>Ações</th></tr></thead>
+            <tbody id="tabelaProdutos"><tr><td colspan="9">Nenhum produto cadastrado.</td></tr></tbody>
+        </table>
+    </section>
+</main>
+<footer><p>Mini ERP - Projeto de Aprendizado</p></footer>
+<script src="js/dom-elements.js?v=3"></script>
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/produto-controller.js?v=3"></script>
+<script src="js/categoria-controller.js?v=3"></script>
+<script src="js/fornecedor-controller.js?v=3"></script>
+<script src="js/movimentacao-controller.js?v=3"></script>
+<script src="js/painel-controller.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+</body>
+</html>

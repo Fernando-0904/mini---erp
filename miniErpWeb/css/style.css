@@ -10,6 +10,24 @@ header {
     padding: 24px;
     text-align: center;
 }
+nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+nav a {
+    color: white;
+    padding: 8px 12px;
+    border: 1px solid #bcccdc;
+    border-radius: 6px;
+    text-decoration: none;
+}
+nav a[aria-current="page"] {
+    background-color: white;
+    color: #1f2933;
+}
 main {
     max-width: 1000px;
     margin: 24px auto;
@@ -48,6 +66,16 @@ input {
     border: 1px solid #bcccdc;
     border-radius: 6px;
     box-sizing: border-box;
+}
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #bcccdc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.campo-checkbox input {
+    width: auto;
 }
 button {
     background-color: #1f2933;
@@ -115,8 +143,16 @@ td {
 th {
     background-color: #f4f6f8;
 }
-.tabela-produtos {
+.tabela-produtos,
+.tabela-fornecedores,
+.tabela-categorias,
+.tabela-movimentacoes,
+.tabela-estoque-baixo {
     overflow-x: auto;
+}
+
+.linha-sem-estoque {
+    background-color: #fff1f2;
 }
 @media (max-width: 600px) {
     .cards-indicadores {
@@ -129,6 +165,10 @@ th {
 
     section {
         padding: 16px;
+    }
+
+    nav {
+        justify-content: flex-start;
     }
 }
 

@@ -28,6 +28,39 @@ public class CategoriaService
             .FirstOrDefault(categoria => categoria.Id == id);
     }
 
+    public List<string> ValidarCategoria(Categoria categoria)
+    {
+        List<string> erros = new();
+
+        if (categoria.Id < 0)
+        {
+            erros.Add("O id não pode ser negativo.");
+        }
+
+        if (string.IsNullOrWhiteSpace(categoria.Nome))
+        {
+            erros.Add("O nome é obrigatório.");
+        }
+
+        return erros;
+    }
+
+    public List<string> ValidarCategoriaDoProduto(int categoriaId)
+    {
+        List<string> erros = new();
+
+        if (categoriaId <= 0)
+        {
+            erros.Add("Informe uma categoria válida.");
+        }
+        else if (BuscarPorId(categoriaId) == null)
+        {
+            erros.Add("Categoria informada não existe.");
+        }
+
+        return erros;
+    }
+
     public bool CadastrarCategoria(Categoria categoria)
     {
         string nomeNormalizado = categoria.Nome.Trim();

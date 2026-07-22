@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini ERP - Estoque baixo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Mini ERP</h1>
+    <h2>Relatório de estoque baixo</h2>
+    <nav aria-label="Navegação principal">
+        <a href="index.html">Painel</a>
+        <a href="produtos.html">Produtos</a>
+        <a href="categorias.html">Categorias</a>
+        <a href="fornecedores.html">Fornecedores</a>
+        <a href="movimentacoes.html">Movimentações</a>
+        <a href="estoque-baixo.html" aria-current="page">Estoque baixo</a>
+    </nav>
+</header>
+<main>
+    <section aria-label="Filtros do relatório">
+        <h3>Filtros</h3>
+        <div>
+            <label for="categoriaEstoqueBaixo">Categoria</label>
+            <select id="categoriaEstoqueBaixo" name="categoriaEstoqueBaixo">
+                <option value="">Todas as categorias</option>
+            </select>
+        </div>
+    </section>
+    <p id="mensagem"></p>
+    <section class="tabela-estoque-baixo" aria-label="Produtos com estoque baixo">
+        <h3>Produtos com estoque baixo</h3>
+        <table>
+            <thead>
+                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Saldo</th><th>Estoque mínimo</th><th>Situação</th></tr>
+            </thead>
+            <tbody id="tabelaEstoqueBaixo">
+                <tr><td colspan="6">Nenhum produto com estoque baixo.</td></tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+<footer><p>Mini ERP - Projeto de Aprendizado</p></footer>
+<script src="js/dom-elements.js?v=4"></script>
+<script src="js/api.js?v=4"></script>
+<script src="js/ui.js?v=4"></script>
+<script src="js/estoque-baixo-controller.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+</body>
+</html>

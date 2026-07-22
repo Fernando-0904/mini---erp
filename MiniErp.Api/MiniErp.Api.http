@@ -1,11 +1,34 @@
 @MiniErp.Api_HostAddress = http://localhost:5208
+@CategoriaId = 1
+@ProdutoCodigo = 101
+@FornecedorId = 1
+
+# Use um id retornado por GET /categorias e GET /fornecedores quando os
+# valores abaixo não existirem no banco local.
+
+### Listar categorias
+GET {{MiniErp.Api_HostAddress}}/categorias
+Accept: application/json
+
+###
+
+### Cadastrar categoria de exemplo
+POST {{MiniErp.Api_HostAddress}}/categorias
+Content-Type: application/json
+
+{
+  "id": 900001,
+  "nome": "Categoria de exemplo"
+}
+
+###
 
 GET {{MiniErp.Api_HostAddress}}/produtos
 Accept: application/json
 
 ###
 
-GET {{MiniErp.Api_HostAddress}}/produtos/101
+GET {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}
 Accept: application/json
 
 ###
@@ -14,26 +37,149 @@ POST {{MiniErp.Api_HostAddress}}/produtos
 Content-Type: application/json
 
 {
-  "codigo": 101,
+  "codigo": {{ProdutoCodigo}},
   "nome": "Teclado",
   "precoUnitario": 120,
-  "quantidadeEstoque": 5
+  "quantidadeEstoque": 5,
+  "estoqueMinimo": 2,
+  "categoriaId": {{CategoriaId}},
+  "fornecedorId": null
 }
 
 ###
 
-PUT {{MiniErp.Api_HostAddress}}/produtos/101
+PUT {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}
 Content-Type: application/json
 
 {
-  "codigo": 101,
+  "codigo": {{ProdutoCodigo}},
   "nome": "Teclado Mecânico",
   "precoUnitario": 250,
-  "quantidadeEstoque": 3
+  "quantidadeEstoque": 5,
+  "estoqueMinimo": 2,
+  "categoriaId": {{CategoriaId}},
+  "fornecedorId": null
 }
 
 ###
 
-DELETE {{MiniErp.Api_HostAddress}}/produtos/101
+DELETE {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}
 
 ###
+
+### Listar produtos com estoque baixo
+GET {{MiniErp.Api_HostAddress}}/produtos/estoque-baixo
+Accept: application/json
+
+###
+
+### Listar produtos sem estoque
+GET {{MiniErp.Api_HostAddress}}/produtos/sem-estoque
+Accept: application/json
+
+###
+
+### Registrar entrada de estoque
+POST {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}/movimentacoes/entrada
+Content-Type: application/json
+
+{
+  "quantidade": 2
+}
+
+###
+
+### Registrar saida de estoque
+POST {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}/movimentacoes/saida
+Content-Type: application/json
+
+{
+  "quantidade": 1
+}
+
+###
+
+### Listar historico de movimentacoes
+GET {{MiniErp.Api_HostAddress}}/produtos/{{ProdutoCodigo}}/movimentacoes
+Accept: application/json
+
+###
+
+
+### Listar fornecedores
+GET {{MiniErp.Api_HostAddress}}/fornecedores
+Accept: application/json
+
+###
+
+### Cadastrar fornecedor válido
+POST {{MiniErp.Api_HostAddress}}/fornecedores
+Content-Type: application/json
+
+{
+  "codigo": 990001,
+  "nome": "Fornecedor Teste Manual",
+  "documento": "99999999000199",
+  "email": "teste.fornecedor@mini-erp.local",
+  "telefone": "11999999999",
+  "ativo": true
+}
+
+###
+
+### Buscar fornecedor pelo Id retornado no cadastro
+GET {{MiniErp.Api_HostAddress}}/fornecedores/{{FornecedorId}}
+Accept: application/json
+
+###
+
+### Editar fornecedor pelo Id
+PUT {{MiniErp.Api_HostAddress}}/fornecedores/{{FornecedorId}}
+Content-Type: application/json
+
+{
+  "codigo": 990002,
+  "nome": "Fornecedor Teste Manual Atualizado",
+  "documento": "99999999000199",
+  "email": "atualizado.fornecedor@mini-erp.local",
+  "telefone": "11988888888",
+  "ativo": false
+}
+
+###
+
+### Inativar fornecedor
+PATCH {{MiniErp.Api_HostAddress}}/fornecedores/{{FornecedorId}}/inativar
+
+###
+
+### Tentar cadastrar e-mail inválido
+POST {{MiniErp.Api_HostAddress}}/fornecedores
+Content-Type: application/json
+
+{
+  "codigo": 990003,
+  "nome": "Fornecedor E-mail Inválido",
+  "documento": "99999999000299",
+  "email": "email-invalido",
+  "ativo": true
+}
+
+###
+
+### Tentar duplicar o documento do fornecedor existente
+POST {{MiniErp.Api_HostAddress}}/fornecedores
+Content-Type: application/json
+
+{
+  "codigo": 990004,
+  "nome": "Fornecedor Documento Duplicado",
+  "documento": "99999999000199",
+  "email": "duplicado@mini-erp.local",
+  "ativo": true
+}
+
+###
+
+### Remover o fornecedor de teste
+DELETE {{MiniErp.Api_HostAddress}}/fornecedores/{{FornecedorId}}
