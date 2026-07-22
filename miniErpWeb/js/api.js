@@ -49,7 +49,23 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao) {
         // Mantém a mensagem padrão se a API não retornar JSON.
     }
 
-    throw new Error(mensagemErro);
+    throw new Error(normalizarMensagemErroUsuario(mensagemErro));
+}
+
+function normalizarMensagemErroUsuario(mensagem) {
+    if (typeof mensagem !== "string" || mensagem.trim() === "") {
+        return MENSAGEM_ERRO_INESPERADO;
+    }
+
+    if (/failed to fetch|networkerror|network error|typeerror|internal server error|server error/i.test(mensagem)) {
+        if (/failed to fetch|networkerror|network error/i.test(mensagem)) {
+            return "Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.";
+        }
+
+        return MENSAGEM_ERRO_INESPERADO;
+    }
+
+    return mensagem;
 }
 
 function extrairMensagemErroApi(erro) {
