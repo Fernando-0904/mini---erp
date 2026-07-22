@@ -4,10 +4,10 @@ Use `Proxima_Fase_Consolidacao_Profissional_Mini_ERP.md` como referencia princip
 
 ## Fluxo Git solicitado pelo usuario
 
-- Trabalhe diretamente na branch `master`.
-- Nao crie branches, pull requests ou fluxos de merge, a menos que o usuario solicite isso explicitamente.
-- Quando o usuario pedir commit e push, publique diretamente na `master` depois das validacoes adequadas.
-- O MD pede uma pratica de PR. Implemente o template e documente o fluxo, mas nao force o uso de PR contra a preferencia atual do usuario.
+- Para evolucoes relevantes, trabalhe em uma branch propria, abra um Pull Request, aguarde a revisao e faca o merge somente depois da aprovacao.
+- Commit direto na `master` so deve acontecer quando o usuario solicitar isso explicitamente.
+- Quando o usuario pedir commit e push sem indicar outra branch, confirme a branch de destino e execute as validacoes adequadas antes de publicar.
+- O template de Pull Request e o checklist de evidencias devem ser mantidos e usados nas alteracoes relevantes.
 
 ## Arquitetura atual
 
