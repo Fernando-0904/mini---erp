@@ -273,6 +273,57 @@ function atualizarIndicadores(produtos) {
     elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
+function atualizarAlertasPainel(alertas) {
+    if (elementos.tabelaAlertasPainel === null || elementos.quantidadeAlertasCriticos === null) {
+        return;
+    }
+
+    elementos.tabelaAlertasPainel.innerHTML = "";
+
+    const totalCriticos = alertas.filter(function (alerta) {
+        return alerta.situacao === "Sem estoque";
+    }).length;
+
+    elementos.quantidadeAlertasCriticos.textContent = totalCriticos;
+
+    if (alertas.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 7;
+        celulaVazia.textContent = "Nenhum alerta de estoque no momento.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaAlertasPainel.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const alerta of alertas) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(alerta.codigo));
+        linha.appendChild(criarCelula(alerta.nome));
+        linha.appendChild(criarCelula(alerta.categoriaNome));
+        linha.appendChild(criarCelula(alerta.saldo));
+        linha.appendChild(criarCelula(alerta.estoqueMinimo));
+        linha.appendChild(criarCelulaSituacao(alerta.situacao, alerta.situacaoClasse));
+        linha.appendChild(criarCelulaAcaoReposicao(alerta.codigo));
+
+        elementos.tabelaAlertasPainel.appendChild(linha);
+    }
+}
+
+function criarCelulaAcaoReposicao(codigoProduto) {
+    const celula = document.createElement("td");
+    const link = document.createElement("a");
+
+    link.href = `movimentacoes.html?produtoCodigo=${encodeURIComponent(codigoProduto)}&acao=entrada&autoHistorico=1`;
+    link.textContent = "Repor estoque";
+    link.className = "acao-repor-estoque";
+
+    celula.appendChild(link);
+    return celula;
+}
+
 function atualizarTabelaMovimentacoes(movimentacoes) {
     elementos.tabelaMovimentacoes.innerHTML = "";
 

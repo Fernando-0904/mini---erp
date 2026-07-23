@@ -92,6 +92,26 @@ button[type="reset"] {
     color: #333;
 }
 
+.botao-secundario {
+    background-color: #e0e7ef;
+    color: #1f2933;
+}
+
+.acao-repor-estoque {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #bcccdc;
+    background-color: #eef2f7;
+    color: #1f2933;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.acao-repor-estoque:hover {
+    background-color: #d9e2ec;
+}
+
 .mensagem-sucesso,
 .mensagem-erro {
     padding: 10px;
@@ -170,6 +190,7 @@ th {
     nav {
         justify-content: flex-start;
     }
+
 }
 
 footer {

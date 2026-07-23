@@ -1,4 +1,6 @@
 function inicializarMovimentacaoController() {
+    aplicarContextoDaUrl();
+
     elementos.botaoRegistrarEntrada.addEventListener("click", function () {
         registrarMovimentacao("entrada");
     });
@@ -20,6 +22,34 @@ function inicializarMovimentacaoController() {
     elementos.formularioMovimentacaoEstoque.addEventListener("submit", function (event) {
         event.preventDefault();
     });
+
+    async function aplicarContextoDaUrl() {
+        if (typeof window === "undefined" || window.location === undefined) {
+            return;
+        }
+
+        const parametros = new URLSearchParams(window.location.search);
+        const codigoTexto = parametros.get("produtoCodigo");
+
+        if (codigoTexto !== null && codigoTexto.trim() !== "") {
+            elementos.campoMovimentacaoCodigo.value = codigoTexto;
+        }
+
+        const acao = parametros.get("acao");
+
+        if (acao === "entrada") {
+            elementos.campoMovimentacaoQuantidade.focus();
+            exibirMensagem("Ação rápida de reposição ativa. Informe a quantidade e registre a entrada.", "sucesso");
+        }
+
+        if (parametros.get("autoHistorico") === "1") {
+            const codigo = obterCodigoMovimentacao();
+
+            if (codigo !== null) {
+                await carregarHistorico(codigo, false);
+            }
+        }
+    }
 
     async function registrarMovimentacao(tipo) {
         const codigo = obterCodigoMovimentacao();

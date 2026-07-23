@@ -41,7 +41,9 @@ const elementos = {
     botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
     tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes"),
     campoCategoriaEstoqueBaixo: document.getElementById("categoriaEstoqueBaixo"),
-    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo")
+    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo"),
+    tabelaAlertasPainel: document.getElementById("tabelaAlertasPainel"),
+    quantidadeAlertasCriticos: document.getElementById("quantidadeAlertasCriticos")
 };
 
 elementos.botaoLimparFormulario = elementos.formulario

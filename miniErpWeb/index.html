@@ -38,6 +38,25 @@
                 <h4>Valor total em estoque</h4>
                 <p id="valorTotalEstoque">R$ 0,00</p>
             </div>
+
+            <div class="card-indicador">
+                <h4>Alertas críticos</h4>
+                <p id="quantidadeAlertasCriticos">0</p>
+            </div>
+        </div>
+    </section>
+    <section aria-label="Alertas de estoque">
+        <h3>Alertas e ações rápidas</h3>
+        <p>Produtos sem estoque ou abaixo do mínimo para você agir rápido no dia a dia.</p>
+        <div class="tabela-movimentacoes" aria-label="Produtos em alerta">
+            <table>
+                <thead>
+                    <tr><th>Código</th><th>Produto</th><th>Categoria</th><th>Saldo</th><th>Mínimo</th><th>Situação</th><th>Ação</th></tr>
+                </thead>
+                <tbody id="tabelaAlertasPainel">
+                    <tr><td colspan="7">Nenhum alerta de estoque no momento.</td></tr>
+                </tbody>
+            </table>
         </div>
     </section>
     <p id="mensagem"></p>
