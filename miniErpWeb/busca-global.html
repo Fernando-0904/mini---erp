@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini ERP - Busca global</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Mini ERP</h1>
+    <h2>Busca global</h2>
+    <nav aria-label="Navegação principal">
+        <a href="index.html">Painel</a>
+        <a href="produtos.html">Produtos</a>
+        <a href="categorias.html">Categorias</a>
+        <a href="fornecedores.html">Fornecedores</a>
+        <a href="movimentacoes.html">Movimentações</a>
+        <a href="estoque-baixo.html">Estoque baixo</a>
+        <a href="busca-global.html" aria-current="page">Busca global</a>
+    </nav>
+</header>
+<main>
+    <section aria-label="Busca global por produtos categorias e fornecedores">
+        <h3>Buscar em todo o ERP</h3>
+        <form id="formBuscaGlobal" novalidate>
+            <div>
+                <label for="termoBuscaGlobal">Termo de busca</label>
+                <input type="text" id="termoBuscaGlobal" name="termoBuscaGlobal" placeholder="Ex.: caneta, papelaria, 1001 ou fornecedor" autocomplete="off">
+            </div>
+            <button type="submit" id="botaoBuscarGlobal">Buscar</button>
+            <button type="button" id="botaoLimparBuscaGlobal">Limpar</button>
+        </form>
+    </section>
+
+    <p id="mensagem"></p>
+
+    <section class="resumo-busca-global" aria-label="Resumo dos resultados da busca global">
+        <h3>Resumo da busca</h3>
+        <div class="cards-indicadores">
+            <div class="card-indicador">
+                <h4>Total de resultados</h4>
+                <p id="totalResultadosGlobal">0</p>
+            </div>
+            <div class="card-indicador">
+                <h4>Produtos</h4>
+                <p id="totalProdutosGlobal">0</p>
+            </div>
+            <div class="card-indicador">
+                <h4>Categorias</h4>
+                <p id="totalCategoriasGlobal">0</p>
+            </div>
+            <div class="card-indicador">
+                <h4>Fornecedores</h4>
+                <p id="totalFornecedoresGlobal">0</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="tabela-busca-global" aria-label="Resultado de produtos">
+        <h3>Produtos encontrados</h3>
+        <table>
+            <thead>
+                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th></tr>
+            </thead>
+            <tbody id="tabelaResultadoProdutos">
+                <tr><td colspan="5">Nenhum produto encontrado.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="tabela-busca-global" aria-label="Resultado de categorias">
+        <h3>Categorias encontradas</h3>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Nome</th></tr>
+            </thead>
+            <tbody id="tabelaResultadoCategorias">
+                <tr><td colspan="2">Nenhuma categoria encontrada.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="tabela-busca-global" aria-label="Resultado de fornecedores">
+        <h3>Fornecedores encontrados</h3>
+        <table>
+            <thead>
+                <tr><th>Código</th><th>Nome</th><th>Documento</th><th>E-mail</th><th>Status</th></tr>
+            </thead>
+            <tbody id="tabelaResultadoFornecedores">
+                <tr><td colspan="5">Nenhum fornecedor encontrado.</td></tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+<footer><p>Mini ERP - Projeto de Aprendizado</p></footer>
+<script src="js/dom-elements.js?v=6"></script>
+<script src="js/api.js?v=6"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/busca-global-controller.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
+</body>
+</html>

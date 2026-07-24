@@ -41,7 +41,18 @@ const elementos = {
     botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
     tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes"),
     campoCategoriaEstoqueBaixo: document.getElementById("categoriaEstoqueBaixo"),
-    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo")
+    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo"),
+    formularioBuscaGlobal: document.getElementById("formBuscaGlobal"),
+    campoTermoBuscaGlobal: document.getElementById("termoBuscaGlobal"),
+    botaoBuscarGlobal: document.getElementById("botaoBuscarGlobal"),
+    botaoLimparBuscaGlobal: document.getElementById("botaoLimparBuscaGlobal"),
+    totalResultadosGlobal: document.getElementById("totalResultadosGlobal"),
+    totalProdutosGlobal: document.getElementById("totalProdutosGlobal"),
+    totalCategoriasGlobal: document.getElementById("totalCategoriasGlobal"),
+    totalFornecedoresGlobal: document.getElementById("totalFornecedoresGlobal"),
+    tabelaResultadoProdutos: document.getElementById("tabelaResultadoProdutos"),
+    tabelaResultadoCategorias: document.getElementById("tabelaResultadoCategorias"),
+    tabelaResultadoFornecedores: document.getElementById("tabelaResultadoFornecedores")
 };
 
 elementos.botaoLimparFormulario = elementos.formulario

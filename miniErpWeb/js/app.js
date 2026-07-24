@@ -21,3 +21,7 @@ if (elementos.formularioMovimentacaoEstoque !== null) {
 if (elementos.tabelaEstoqueBaixo !== null) {
 	inicializarEstoqueBaixoController();
 }
+
+if (elementos.formularioBuscaGlobal) {
+    inicializarBuscaGlobalController();
+}

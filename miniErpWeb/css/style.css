@@ -147,8 +147,13 @@ th {
 .tabela-fornecedores,
 .tabela-categorias,
 .tabela-movimentacoes,
-.tabela-estoque-baixo {
+.tabela-estoque-baixo,
+.tabela-busca-global {
     overflow-x: auto;
+}
+
+.resumo-busca-global .cards-indicadores {
+    grid-template-columns: repeat(4, 1fr);
 }
 
 .linha-sem-estoque {
@@ -157,6 +162,10 @@ th {
 @media (max-width: 600px) {
     .cards-indicadores {
         grid-template-columns: 1fr;
+    }
+
+    .resumo-busca-global .cards-indicadores {
+        grid-template-columns: 1fr 1fr;
     }
     
     header {
