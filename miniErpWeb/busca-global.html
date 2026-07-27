@@ -43,6 +43,19 @@
                 <label for="termoBuscaGlobal">Termo de busca</label>
                 <input type="text" id="termoBuscaGlobal" name="termoBuscaGlobal" placeholder="Ex.: caneta, papelaria, 1001 ou fornecedor" autocomplete="off">
             </div>
+            <div>
+                <label for="filtroTipoBuscaGlobal">Filtrar por tipo</label>
+                <select id="filtroTipoBuscaGlobal" name="filtroTipoBuscaGlobal">
+                    <option value="todos">Todos</option>
+                    <option value="produtos">Produtos</option>
+                    <option value="categorias">Categorias</option>
+                    <option value="fornecedores">Fornecedores</option>
+                </select>
+            </div>
+            <div class="campo-checkbox">
+                <label for="abrirMelhorResultadoBuscaGlobal">Abrir automaticamente o melhor resultado ao pressionar Enter</label>
+                <input type="checkbox" id="abrirMelhorResultadoBuscaGlobal" name="abrirMelhorResultadoBuscaGlobal" checked>
+            </div>
             <button type="submit" id="botaoBuscarGlobal">Buscar</button>
             <button type="button" id="botaoLimparBuscaGlobal">Limpar</button>
         </form>
@@ -72,14 +85,21 @@
         </div>
     </section>
 
+    <section class="atalhos-busca-global" aria-label="Atalhos diretos por tipo">
+        <h3>Atalhos por tipo</h3>
+        <ul id="listaAtalhosBuscaGlobal">
+            <li>Nenhum atalho disponível ainda. Faça uma busca para gerar sugestões.</li>
+        </ul>
+    </section>
+
     <section class="tabela-busca-global" aria-label="Resultado de produtos">
         <h3>Produtos encontrados</h3>
         <table>
             <thead>
-                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th></tr>
+                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th><th>Ação</th></tr>
             </thead>
             <tbody id="tabelaResultadoProdutos">
-                <tr><td colspan="5">Nenhum produto encontrado.</td></tr>
+                <tr><td colspan="6">Nenhum produto encontrado.</td></tr>
             </tbody>
         </table>
     </section>
@@ -88,10 +108,10 @@
         <h3>Categorias encontradas</h3>
         <table>
             <thead>
-                <tr><th>ID</th><th>Nome</th></tr>
+                <tr><th>ID</th><th>Nome</th><th>Ação</th></tr>
             </thead>
             <tbody id="tabelaResultadoCategorias">
-                <tr><td colspan="2">Nenhuma categoria encontrada.</td></tr>
+                <tr><td colspan="3">Nenhuma categoria encontrada.</td></tr>
             </tbody>
         </table>
     </section>
@@ -100,10 +120,10 @@
         <h3>Fornecedores encontrados</h3>
         <table>
             <thead>
-                <tr><th>Código</th><th>Nome</th><th>Documento</th><th>E-mail</th><th>Status</th></tr>
+                <tr><th>Código</th><th>Nome</th><th>Documento</th><th>E-mail</th><th>Status</th><th>Ação</th></tr>
             </thead>
             <tbody id="tabelaResultadoFornecedores">
-                <tr><td colspan="5">Nenhum fornecedor encontrado.</td></tr>
+                <tr><td colspan="6">Nenhum fornecedor encontrado.</td></tr>
             </tbody>
         </table>
     </section>

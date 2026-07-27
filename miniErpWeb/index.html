@@ -54,7 +54,41 @@
                 <h4>Valor total em estoque</h4>
                 <p id="valorTotalEstoque">R$ 0,00</p>
             </div>
+
+            <div class="card-indicador">
+                <h4>Alertas críticos</h4>
+                <p id="quantidadeAlertasCriticos">0</p>
+            </div>
+
+            <div class="card-indicador">
+                <h4>Total de alertas</h4>
+                <p id="quantidadeAlertasTotal">0</p>
+            </div>
         </div>
+    </section>
+
+    <section class="secao-acoes-rapidas" aria-label="Ações rápidas do painel">
+        <h3>Ações rápidas</h3>
+        <p class="texto-apoio">Atalhos para tarefas mais comuns do dia a dia.</p>
+        <div class="grupo-acoes-rapidas">
+            <a class="botao-atalho" href="produtos.html">Cadastrar produto</a>
+            <a class="botao-atalho" href="movimentacoes.html?acao=entrada">Registrar entrada</a>
+            <a class="botao-atalho" href="estoque-baixo.html">Ver estoque baixo</a>
+            <a class="botao-atalho" href="busca-global.html">Buscar item</a>
+        </div>
+    </section>
+
+    <section class="tabela-painel-alertas" aria-label="Alertas operacionais">
+        <h3>Alertas operacionais</h3>
+        <p class="texto-apoio">Priorize o que exige ação imediata para evitar ruptura ou atraso operacional.</p>
+        <table>
+            <thead>
+                <tr><th>Prioridade</th><th>Alerta</th><th>Produto</th><th>Detalhe</th><th>Ação rápida</th></tr>
+            </thead>
+            <tbody id="tabelaAlertasPainel">
+                <tr><td colspan="5">Nenhum alerta operacional no momento.</td></tr>
+            </tbody>
+        </table>
     </section>
     <p id="mensagem"></p>
 </main>

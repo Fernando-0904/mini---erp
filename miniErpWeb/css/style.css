@@ -311,12 +311,112 @@ button[type="reset"]:hover {
 
 .cards-indicadores {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
 }
 
 .resumo-busca-global .cards-indicadores {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.texto-apoio {
+    margin: 0 0 14px;
+    color: var(--text-muted);
+}
+
+.grupo-acoes-rapidas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.botao-atalho {
+    text-decoration: none;
+    text-align: center;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--primary) 88%, #ffffff);
+    color: #ffffff;
+    font-weight: 700;
+    border: 1px solid color-mix(in srgb, var(--primary-strong) 68%, #ffffff);
+    transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.botao-atalho:hover {
+    background: var(--primary-strong);
+    transform: translateY(-1px);
+}
+
+.acao-rapida-link {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--primary-strong);
+    border: 1px solid color-mix(in srgb, var(--primary) 42%, #ffffff);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--surface) 82%, #f2f8ff);
+}
+
+.acao-rapida-link:hover {
+    background: color-mix(in srgb, var(--primary) 14%, #ffffff);
+}
+
+.prioridade-alerta {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.prioridade-critica {
+    color: #8c1d2b;
+    background: #ffe3e7;
+    border-color: #f3b5bf;
+}
+
+.prioridade-atencao {
+    color: #8a5b00;
+    background: #fff3d8;
+    border-color: #f0d194;
+}
+
+.prioridade-info {
+    color: #234f7b;
+    background: #e5f2ff;
+    border-color: #bdd9f5;
+}
+
+html.tema-escuro .prioridade-critica {
+    color: #ffccd5;
+    background: #49232b;
+    border-color: #70414c;
+}
+
+html.tema-escuro .prioridade-atencao {
+    color: #ffd999;
+    background: #47361e;
+    border-color: #6a502a;
+}
+
+html.tema-escuro .prioridade-info {
+    color: #cde6ff;
+    background: #1f3044;
+    border-color: #34506f;
+}
+
+.atalhos-busca-global ul {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 8px;
+}
+
+.atalhos-busca-global li {
+    color: var(--text);
 }
 
 .card-indicador {
@@ -393,7 +493,8 @@ tbody tr:nth-child(even) {
 .tabela-categorias,
 .tabela-movimentacoes,
 .tabela-estoque-baixo,
-.tabela-busca-global {
+.tabela-busca-global,
+.tabela-painel-alertas {
     overflow-x: auto;
     border-radius: 10px;
 }
@@ -468,6 +569,17 @@ footer {
     .cards-indicadores,
     .resumo-busca-global .cards-indicadores {
         grid-template-columns: 1fr;
+    }
+
+    .grupo-acoes-rapidas {
+        grid-template-columns: 1fr;
+    }
+
+    form button,
+    form .botao-atalho,
+    .acao-rapida-link {
+        width: 100%;
+        text-align: center;
     }
 }
 

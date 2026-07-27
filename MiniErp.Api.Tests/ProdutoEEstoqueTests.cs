@@ -170,6 +170,43 @@ public class ProdutoEEstoqueTests
         Assert.Empty(banco.Contexto.MovimentacoesEstoque);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    public void RegistrarMovimentacao_ComQuantidadeInvalida_BloqueiaOperacao(int quantidadeInvalida)
+    {
+        using BancoDeTeste banco = new();
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 5));
+        banco.Contexto.SaveChanges();
+        MovimentacaoEstoqueService service = new(banco.Contexto);
+
+        bool entradaRegistrada = service.RegistrarEntrada(101, quantidadeInvalida, out MovimentacaoEstoque? entrada, out string erroEntrada);
+        bool saidaRegistrada = service.RegistrarSaida(101, quantidadeInvalida, out MovimentacaoEstoque? saida, out string erroSaida);
+
+        Assert.False(entradaRegistrada);
+        Assert.False(saidaRegistrada);
+        Assert.Null(entrada);
+        Assert.Null(saida);
+        Assert.Equal("A quantidade da movimentação deve ser maior que zero.", erroEntrada);
+        Assert.Equal("A quantidade da movimentação deve ser maior que zero.", erroSaida);
+        Assert.Equal(5, banco.Contexto.Produtos.Single().QuantidadeEstoque);
+        Assert.Empty(banco.Contexto.MovimentacoesEstoque);
+    }
+
+    [Fact]
+    public void RegistrarMovimentacao_ComProdutoInexistente_RetornaErroSemHistorico()
+    {
+        using BancoDeTeste banco = new();
+        MovimentacaoEstoqueService service = new(banco.Contexto);
+
+        bool registrado = service.RegistrarEntrada(999, 3, out MovimentacaoEstoque? movimentacao, out string erro);
+
+        Assert.False(registrado);
+        Assert.Null(movimentacao);
+        Assert.Equal("Produto não encontrado.", erro);
+        Assert.Empty(banco.Contexto.MovimentacoesEstoque);
+    }
+
     [Fact]
     public void RegistrarSaida_ComQuantidadeValida_AtualizaEstoqueECriaHistorico()
     {
@@ -254,6 +291,27 @@ public class ProdutoEEstoqueTests
         Assert.Single(produtos);
         Assert.Equal(101, produtos[0].Codigo);
         Assert.Equal(0, produtos[0].QuantidadeEstoque);
+    }
+
+    [Fact]
+    public void ListarProdutosSemEstoque_ComFiltroDeCategoria_RetornaSomenteCategoriaSelecionada()
+    {
+        using BancoDeTeste banco = new();
+        Categoria outraCategoria = new() { Nome = "Outra categoria" };
+        banco.Contexto.Categorias.Add(outraCategoria);
+        banco.Contexto.SaveChanges();
+
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 101, quantidadeEstoque: 0));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 102, quantidadeEstoque: 0, categoriaId: outraCategoria.Id));
+        banco.Contexto.Produtos.Add(CriarProduto(codigo: 103, quantidadeEstoque: 2, categoriaId: outraCategoria.Id));
+        banco.Contexto.SaveChanges();
+        ProdutoService service = new(banco.Contexto);
+
+        List<Produto> produtos = service.ListarProdutosSemEstoque(outraCategoria.Id);
+
+        Assert.Single(produtos);
+        Assert.Equal(102, produtos[0].Codigo);
+        Assert.Equal(outraCategoria.Id, produtos[0].CategoriaId);
     }
 
     private static Produto CriarProduto(int codigo, int quantidadeEstoque = 1, int estoqueMinimo = 0, int categoriaId = 1)

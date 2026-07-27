@@ -1,6 +1,7 @@
 function inicializarProdutoController() {
     const produtos = [];
     let codigoProdutoEmEdicao = null;
+    let contextoUrlAplicado = false;
 
     window.recarregarProdutosNaTela = atualizarProdutosDaApi;
     window.recarregarCategoriasDoProduto = carregarCategoriasDoProduto;
@@ -181,8 +182,10 @@ function inicializarProdutoController() {
         elementos.campoCodigoBusca.focus();
     }
 
-    async function buscarProduto() {
-        const termoBusca = elementos.campoCodigoBusca.value.trim().toLowerCase();
+    async function buscarProduto(termoBuscaInformado) {
+        const termoBusca = normalizarTextoBusca(
+            typeof termoBuscaInformado === "string" ? termoBuscaInformado : elementos.campoCodigoBusca.value
+        );
 
         if (termoBusca === "") {
             exibirMensagem("Informe um código ou nome para buscar.", "erro");
@@ -212,7 +215,7 @@ function inicializarProdutoController() {
         }
 
         const resultados = produtos.filter(function (produto) {
-            const nomeProduto = produto.nome.toLowerCase();
+            const nomeProduto = normalizarTextoBusca(produto.nome);
 
             if (buscaPorCodigo && produto.codigo === codigoBuscado) {
                 return true;
@@ -229,6 +232,14 @@ function inicializarProdutoController() {
 
         atualizarTabela(resultados, editarProduto, removerProduto);
         exibirMensagem("Busca concluída: " + resultados.length + " resultado(s).", "sucesso");
+    }
+
+    function normalizarTextoBusca(texto) {
+        return String(texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
     }
 
     function editarProduto(codigo) {
@@ -315,6 +326,31 @@ function inicializarProdutoController() {
 
         atualizarTabela(produtos, editarProduto, removerProduto);
         atualizarIndicadores(produtos);
+
+        if (!contextoUrlAplicado) {
+            await aplicarContextoDaUrl();
+            contextoUrlAplicado = true;
+        }
+    }
+
+    async function aplicarContextoDaUrl() {
+        const parametros = new URLSearchParams(window.location.search);
+        const codigoEdicaoTexto = parametros.get("codigoEdicao");
+        const buscaTexto = parametros.get("busca");
+
+        if (codigoEdicaoTexto !== null && codigoEdicaoTexto.trim() !== "") {
+            const codigoEdicao = Number(codigoEdicaoTexto);
+
+            if (Number.isInteger(codigoEdicao) && codigoEdicao > 0) {
+                editarProduto(codigoEdicao);
+                return;
+            }
+        }
+
+        if (buscaTexto !== null && buscaTexto.trim() !== "") {
+            elementos.campoCodigoBusca.value = buscaTexto;
+            await buscarProduto(buscaTexto);
+        }
     }
 
     async function carregarCategoriasDoProduto() {

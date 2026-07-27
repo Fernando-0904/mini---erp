@@ -26,7 +26,7 @@ function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
         const celulaVazia = document.createElement("td");
 
         celulaVazia.colSpan = 9;
-        celulaVazia.textContent = "Nenhum produto cadastrado.";
+        celulaVazia.textContent = "Nenhum produto cadastrado. Use o formulário acima para cadastrar o primeiro item.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaProdutos.appendChild(linhaVazia);
         return;
@@ -102,7 +102,7 @@ function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoInativa
         const celulaVazia = document.createElement("td");
 
         celulaVazia.colSpan = 7;
-        celulaVazia.textContent = "Nenhum fornecedor cadastrado.";
+        celulaVazia.textContent = "Nenhum fornecedor cadastrado. Cadastre ao menos um fornecedor para facilitar as reposições.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaFornecedores.appendChild(linhaVazia);
         return;
@@ -229,7 +229,7 @@ function atualizarTabelaEstoqueBaixo(produtos) {
         const celulaVazia = document.createElement("td");
 
         celulaVazia.colSpan = 6;
-        celulaVazia.textContent = "Nenhum produto com estoque baixo.";
+        celulaVazia.textContent = "Nenhum produto com estoque baixo. Estoque saudável no momento.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaEstoqueBaixo.appendChild(linhaVazia);
         return;
@@ -273,6 +273,88 @@ function atualizarIndicadores(produtos) {
     elementos.valorTotalEstoque.textContent = formatarMoeda(valorTotal);
 }
 
+function atualizarResumoAlertasPainel(alertas) {
+    if (elementos.quantidadeAlertasCriticos === null || elementos.quantidadeAlertasTotal === null) {
+        return;
+    }
+
+    const totalCriticos = alertas.filter(function (alerta) {
+        return alerta.prioridade === "Crítico";
+    }).length;
+
+    elementos.quantidadeAlertasCriticos.textContent = String(totalCriticos);
+    elementos.quantidadeAlertasTotal.textContent = String(alertas.length);
+}
+
+function atualizarTabelaAlertasPainel(alertas) {
+    if (elementos.tabelaAlertasPainel === null) {
+        return;
+    }
+
+    elementos.tabelaAlertasPainel.innerHTML = "";
+
+    if (alertas.length === 0) {
+        const linhaVazia = document.createElement("tr");
+        const celulaVazia = document.createElement("td");
+
+        celulaVazia.colSpan = 5;
+        celulaVazia.textContent = "Nenhum alerta operacional no momento.";
+        linhaVazia.appendChild(celulaVazia);
+        elementos.tabelaAlertasPainel.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const alerta of alertas) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelulaPrioridade(alerta.prioridade));
+        linha.appendChild(criarCelula(alerta.titulo));
+        linha.appendChild(criarCelula(alerta.produto));
+        linha.appendChild(criarCelula(alerta.detalhe));
+        linha.appendChild(criarCelulaAcaoRapida(alerta));
+
+        elementos.tabelaAlertasPainel.appendChild(linha);
+    }
+}
+
+function criarCelulaPrioridade(prioridade) {
+    const celula = document.createElement("td");
+    const marcador = document.createElement("span");
+
+    marcador.className = "prioridade-alerta";
+
+    if (prioridade === "Crítico") {
+        marcador.className += " prioridade-critica";
+    } else if (prioridade === "Atenção") {
+        marcador.className += " prioridade-atencao";
+    } else {
+        marcador.className += " prioridade-info";
+    }
+
+    marcador.textContent = prioridade;
+    celula.appendChild(marcador);
+
+    return celula;
+}
+
+function criarCelulaAcaoRapida(alerta) {
+    const celula = document.createElement("td");
+
+    if (!alerta.acao || !alerta.acao.href || !alerta.acao.label) {
+        celula.textContent = "Sem ação";
+        return celula;
+    }
+
+    const link = document.createElement("a");
+
+    link.href = alerta.acao.href;
+    link.className = "acao-rapida-link";
+    link.textContent = alerta.acao.label;
+
+    celula.appendChild(link);
+    return celula;
+}
+
 function atualizarTabelaMovimentacoes(movimentacoes) {
     elementos.tabelaMovimentacoes.innerHTML = "";
 
@@ -281,7 +363,7 @@ function atualizarTabelaMovimentacoes(movimentacoes) {
         const celulaVazia = document.createElement("td");
 
         celulaVazia.colSpan = 6;
-        celulaVazia.textContent = "Nenhuma movimentação registrada.";
+        celulaVazia.textContent = "Nenhuma movimentação registrada. Informe um código e clique em Ver histórico.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaMovimentacoes.appendChild(linhaVazia);
         return;
