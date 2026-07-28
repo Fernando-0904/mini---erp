@@ -23,5 +23,7 @@ if (elementos.tabelaEstoqueBaixo !== null) {
 }
 
 if (elementos.formularioBuscaGlobal) {
-    inicializarBuscaGlobalController();
+	inicializarBuscaGlobalController();
 }
+
+inicializarLoginVisual();

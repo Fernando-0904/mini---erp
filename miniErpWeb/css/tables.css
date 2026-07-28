@@ -1,0 +1,59 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+    background: var(--surface);
+}
+
+thead th {
+    background-color: color-mix(in srgb, var(--surface-alt) 88%, #dbe6f0);
+    color: color-mix(in srgb, var(--text) 84%, #8aa7c0);
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
+th,
+td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+tbody tr:nth-child(even) {
+    background-color: color-mix(in srgb, var(--surface) 90%, #f6f9fc);
+}
+
+.status-sem-estoque,
+.status-estoque-baixo,
+.status-disponivel {
+    font-weight: 700;
+}
+
+.status-sem-estoque {
+    color: color-mix(in srgb, var(--error-text) 92%, #f6b6bf);
+}
+
+.status-estoque-baixo {
+    color: color-mix(in srgb, #d9a441 68%, #f3d99f);
+}
+
+.status-disponivel {
+    color: color-mix(in srgb, var(--success-text) 92%, #b8f2ce);
+}
+
+.linha-sem-estoque {
+    background-color: var(--warning-row);
+}
+
+.tabela-produtos,
+.tabela-fornecedores,
+.tabela-categorias,
+.tabela-movimentacoes,
+.tabela-estoque-baixo,
+.tabela-busca-global,
+.tabela-painel-alertas {
+    overflow-x: auto;
+    border-radius: 10px;
+}

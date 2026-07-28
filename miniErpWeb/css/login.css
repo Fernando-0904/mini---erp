@@ -1,0 +1,264 @@
+.login-visual-area {
+    position: relative;
+}
+
+.botao-login {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    color: #f2f8ff;
+    display: grid;
+    place-items: center;
+    padding: 0;
+}
+
+.botao-login:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.avatar-login {
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.painel-login {
+    position: absolute;
+    top: 48px;
+    right: -10px;
+    z-index: 20;
+    width: 250px;
+    max-width: calc(100vw - 36px);
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 12px;
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+.painel-login[hidden],
+.menu-login-visual[hidden],
+.form-login-visual[hidden],
+.conta-conectada-visual[hidden],
+.confirmar-saida-conta[hidden],
+.mensagem-login-visual[hidden] {
+    display: none;
+}
+
+.titulo-menu-login {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.resumo-menu-login {
+    margin: -2px 0 6px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.menu-login-visual,
+.form-login-visual {
+    display: grid;
+    gap: 8px;
+}
+
+.form-login-visual label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.painel-login button {
+    width: 100%;
+}
+
+.botao-criar-conta {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.botao-criar-conta:hover {
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+.botao-voltar-login {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.botao-voltar-login:hover {
+    background: var(--surface-alt);
+    color: var(--text);
+}
+
+.titulo-form-conta {
+    margin: 2px 0 4px;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.ajuda-form-conta {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.mensagem-login-visual {
+    margin: 0 0 4px;
+    font-size: 0.82rem;
+}
+
+.conta-conectada-visual {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-alt);
+    box-shadow: none;
+}
+
+.conta-conectada-cabecalho {
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.conta-conectada-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #f3f9ff;
+    background: color-mix(in srgb, var(--primary) 88%, #2f5f8a);
+    border: 1px solid color-mix(in srgb, var(--primary-strong) 65%, #ffffff);
+}
+
+.conta-conectada-dados {
+    display: grid;
+    gap: 3px;
+}
+
+.conta-conectada-titulo {
+    margin: 0;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+}
+
+.conta-conectada-nome {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.conta-conectada-email {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.conta-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--success-text);
+    background: color-mix(in srgb, var(--success-bg) 80%, #ffffff);
+    border: 1px solid var(--success-border);
+}
+
+.botao-sair-conta {
+    background: transparent;
+    color: var(--error-text);
+    border: 1px solid color-mix(in srgb, var(--error-border) 85%, var(--border));
+}
+
+.botao-sair-conta:hover {
+    background: color-mix(in srgb, var(--error-bg) 55%, transparent);
+    color: var(--error-text);
+}
+
+.confirmar-saida-conta {
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+    padding-top: 8px;
+    display: grid;
+    gap: 8px;
+}
+
+.confirmar-saida-conta p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.acoes-confirmar-saida {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.botao-confirmar-saida {
+    background: var(--error-text);
+    border: 1px solid color-mix(in srgb, var(--error-text) 70%, #000000);
+    color: #ffffff;
+}
+
+.botao-confirmar-saida:hover {
+    background: color-mix(in srgb, var(--error-text) 85%, #000000);
+}
+
+.botao-cancelar-saida {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.botao-cancelar-saida:hover {
+    background: var(--surface);
+    color: var(--text);
+}
+
+html.tema-escuro .botao-login {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+html.tema-escuro .botao-login:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 1024px) {
+    .painel-login {
+        right: 0;
+        left: auto;
+        width: 310px;
+    }
+}

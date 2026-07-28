@@ -96,6 +96,13 @@ header h1 {
     font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
+.topo-marca {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 header h2 {
     margin: 0;
     font-size: 0.95rem;
@@ -309,6 +316,12 @@ button[type="reset"]:hover {
     color: var(--error-text);
 }
 
+.mensagem-info {
+    background: var(--surface-alt);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
 .cards-indicadores {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -439,66 +452,6 @@ html.tema-escuro .prioridade-info {
     color: color-mix(in srgb, var(--text) 82%, #6ea6d5);
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 720px;
-    background: var(--surface);
-}
-
-thead th {
-    background-color: color-mix(in srgb, var(--surface-alt) 88%, #dbe6f0);
-    color: color-mix(in srgb, var(--text) 84%, #8aa7c0);
-    font-size: 0.88rem;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-}
-
-th,
-td {
-    border: 1px solid var(--border);
-    padding: 10px 12px;
-    text-align: left;
-    vertical-align: middle;
-}
-
-tbody tr:nth-child(even) {
-    background-color: color-mix(in srgb, var(--surface) 90%, #f6f9fc);
-}
-
-.status-sem-estoque,
-.status-estoque-baixo,
-.status-disponivel {
-    font-weight: 700;
-}
-
-.status-sem-estoque {
-    color: color-mix(in srgb, var(--error-text) 92%, #f6b6bf);
-}
-
-.status-estoque-baixo {
-    color: color-mix(in srgb, #d9a441 68%, #f3d99f);
-}
-
-.status-disponivel {
-    color: color-mix(in srgb, var(--success-text) 92%, #b8f2ce);
-}
-
-.linha-sem-estoque {
-    background-color: var(--warning-row);
-}
-
-.tabela-produtos,
-.tabela-fornecedores,
-.tabela-categorias,
-.tabela-movimentacoes,
-.tabela-estoque-baixo,
-.tabela-busca-global,
-.tabela-painel-alertas {
-    overflow-x: auto;
-    border-radius: 10px;
-}
-
 footer {
     grid-column: 2;
     grid-row: 2;
@@ -507,80 +460,6 @@ footer {
     color: #5a6b7b;
     font-size: 0.9rem;
     text-align: center;
-}
-
-@media (max-width: 1024px) {
-    body {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto;
-    }
-
-    header {
-        grid-column: 1;
-        grid-row: 1;
-        height: auto;
-        position: static;
-        box-shadow: none;
-    }
-
-    nav {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding-bottom: 4px;
-    }
-
-    nav a {
-        white-space: nowrap;
-    }
-
-    .botao-tema {
-        margin-top: 8px;
-    }
-
-    main {
-        grid-column: 1;
-        grid-row: 2;
-        width: calc(100% - 28px);
-        margin: 16px auto;
-    }
-
-    footer {
-        grid-column: 1;
-        grid-row: 3;
-        width: calc(100% - 28px);
-        margin-bottom: 16px;
-    }
-
-    .cards-indicadores {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .resumo-busca-global .cards-indicadores {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 640px) {
-    section {
-        padding: 14px;
-    }
-
-    .cards-indicadores,
-    .resumo-busca-global .cards-indicadores {
-        grid-template-columns: 1fr;
-    }
-
-    .grupo-acoes-rapidas {
-        grid-template-columns: 1fr;
-    }
-
-    form button,
-    form .botao-atalho,
-    .acao-rapida-link {
-        width: 100%;
-        text-align: center;
-    }
 }
 
 html.tema-escuro footer {

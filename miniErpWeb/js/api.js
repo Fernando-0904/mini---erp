@@ -248,3 +248,23 @@ async function inativarFornecedorApi(id) {
         method: "PATCH",
     }, "Erro ao inativar fornecedor na API.");
 }
+
+async function autenticarUsuarioApi(email, senha) {
+    return executarRequisicaoApi("/auth/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, senha }),
+    }, "E-mail ou senha inválidos.");
+}
+
+async function cadastrarUsuarioApi(nome, email, senha) {
+    return executarRequisicaoApi("/auth/cadastro", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ nome, email, senha }),
+    }, "Não foi possível criar a conta.");
+}

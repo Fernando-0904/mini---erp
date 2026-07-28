@@ -417,7 +417,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 29 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 39 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -447,6 +447,10 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
 | Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
 | Produtos sem estoque | Lista somente produtos com saldo igual a zero |
+| Cadastro de conta local | Cria uma conta válida e permite autenticação |
+| E-mail de conta duplicado | Impede duas contas com o mesmo e-mail |
+| Senha curta | Exige pelo menos oito caracteres no cadastro |
+| Senha incorreta | Impede a autenticação da conta local |
 
 Para executar a suíte:
 

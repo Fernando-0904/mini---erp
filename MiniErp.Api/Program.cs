@@ -32,6 +32,7 @@ builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
+builder.Services.AddSingleton<UsuarioLocalService>();
 
 var app = builder.Build();
 
@@ -359,6 +360,40 @@ app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorSer
 
     fornecedorService.RemoverFornecedor(id);
     return Results.NoContent();
+});
+
+app.MapPost("/auth/cadastro", (CadastroUsuarioRequest request, UsuarioLocalService usuarioService) =>
+{
+    (UsuarioResponse? usuario, string erro) = usuarioService.Cadastrar(
+        request.Nome,
+        request.Email,
+        request.Senha);
+
+    if (usuario is null)
+    {
+        return erro == "Já existe uma conta com este e-mail."
+            ? Results.Conflict(erro)
+            : Results.BadRequest(erro);
+    }
+
+    return Results.Created("/auth/conta", usuario);
+});
+
+app.MapPost("/auth/login", (LoginRequest request, UsuarioLocalService usuarioService) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Senha))
+    {
+        return Results.BadRequest("E-mail e senha são obrigatórios.");
+    }
+
+    UsuarioResponse? usuario = usuarioService.Autenticar(request.Email, request.Senha);
+
+    if (usuario is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(usuario);
 });
 
 app.Run();
