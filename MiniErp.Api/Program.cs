@@ -32,7 +32,7 @@ builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
-builder.Services.AddSingleton<UsuarioLocalService>();
+builder.Services.AddScoped<UsuarioLocalService>();
 
 var app = builder.Build();
 
@@ -376,7 +376,7 @@ app.MapPost("/auth/cadastro", (CadastroUsuarioRequest request, UsuarioLocalServi
             : Results.BadRequest(erro);
     }
 
-    return Results.Created("/auth/conta", usuario);
+    return Results.Json(usuario, statusCode: StatusCodes.Status201Created);
 });
 
 app.MapPost("/auth/login", (LoginRequest request, UsuarioLocalService usuarioService) =>

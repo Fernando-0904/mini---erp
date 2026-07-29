@@ -1,4 +1,10 @@
-const CHAVE_USUARIO_LOGADO = "miniErpUsuarioLogado";
+const CHAVE_USUARIO_LOGADO = "miniErpUsuarioLogadoSqlite";
+
+try {
+	localStorage.removeItem("miniErpUsuarioLogado");
+} catch {
+	// A indisponibilidade do armazenamento não impede o uso da tela de acesso.
+}
 
 function carregarUsuarioLogado() {
 	try {

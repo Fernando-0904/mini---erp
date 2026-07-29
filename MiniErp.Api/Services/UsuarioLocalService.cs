@@ -1,83 +1,115 @@
 using System.Net.Mail;
 using System.Security.Cryptography;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using MiniErp.Api.Data;
 using MiniErp.Api.DTOs;
+using MiniErp.Api.Models;
 
 namespace MiniErp.Api.Services;
 
 public class UsuarioLocalService
 {
     private const int IteracoesHash = 100_000;
-    private readonly Dictionary<string, ContaLocal> contas = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object bloqueio = new();
+    private readonly AppDbContext contexto;
 
-    public UsuarioLocalService()
+    public UsuarioLocalService(AppDbContext contexto)
     {
-        AdicionarConta("Administrador", "admin@mini-erp.com", "123456", "Admin");
+        this.contexto = contexto;
     }
 
     public (UsuarioResponse? Usuario, string Erro) Cadastrar(string nome, string email, string senha)
     {
-        nome = nome.Trim();
-        email = email.Trim().ToLowerInvariant();
-
-        if (nome.Length < 3)
+        if (string.IsNullOrWhiteSpace(nome) || nome.Trim().Length < 3)
         {
             return (null, "Informe um nome com pelo menos 3 caracteres.");
         }
 
-        if (!MailAddress.TryCreate(email, out _))
+        nome = nome.Trim();
+
+        if (nome.Length > 80)
+        {
+            return (null, "O nome deve possuir no máximo 80 caracteres.");
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
         {
             return (null, "Informe um e-mail válido.");
         }
 
-        if (senha.Length < 8)
+        email = email.Trim().ToLowerInvariant();
+
+        if (email.Length > 254 ||
+            !MailAddress.TryCreate(email, out MailAddress? endereco) ||
+            !endereco.Address.Equals(email, StringComparison.OrdinalIgnoreCase))
+        {
+            return (null, "Informe um e-mail válido.");
+        }
+
+        if (string.IsNullOrEmpty(senha) || senha.Length < 8)
         {
             return (null, "A senha deve possuir pelo menos 8 caracteres.");
         }
 
-        lock (bloqueio)
+        if (senha.Length > 128)
         {
-            if (contas.ContainsKey(email))
-            {
-                return (null, "Já existe uma conta com este e-mail.");
-            }
+            return (null, "A senha deve possuir no máximo 128 caracteres.");
+        }
 
-            ContaLocal conta = CriarConta(nome, email, senha, "Usuário");
-            contas.Add(email, conta);
-            return (MapearUsuario(conta), string.Empty);
+        if (contexto.Usuarios.Any(usuario => usuario.Email == email))
+        {
+            return (null, "Já existe uma conta com este e-mail.");
+        }
+
+        Usuario usuario = CriarUsuario(nome, email, senha, "Usuário");
+        contexto.Usuarios.Add(usuario);
+
+        try
+        {
+            contexto.SaveChanges();
+            return (MapearUsuario(usuario), string.Empty);
+        }
+        catch (DbUpdateException ex) when (IsConstraintViolation(ex))
+        {
+            return (null, "Já existe uma conta com este e-mail.");
         }
     }
 
     public UsuarioResponse? Autenticar(string email, string senha)
     {
-        email = email.Trim().ToLowerInvariant();
-        ContaLocal? conta;
-
-        lock (bloqueio)
-        {
-            contas.TryGetValue(email, out conta);
-        }
-
-        if (conta is null)
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(senha))
         {
             return null;
         }
 
-        byte[] hashInformado = GerarHash(senha, conta.Salt);
-        return CryptographicOperations.FixedTimeEquals(hashInformado, conta.SenhaHash)
-            ? MapearUsuario(conta)
+        email = email.Trim().ToLowerInvariant();
+        Usuario? usuario = contexto.Usuarios
+            .AsNoTracking()
+            .SingleOrDefault(item => item.Email == email);
+
+        if (usuario is null)
+        {
+            return null;
+        }
+
+        byte[] hashInformado = GerarHash(senha, usuario.SenhaSalt);
+        return CryptographicOperations.FixedTimeEquals(hashInformado, usuario.SenhaHash)
+            ? MapearUsuario(usuario)
             : null;
     }
 
-    private void AdicionarConta(string nome, string email, string senha, string perfil)
-    {
-        contas[email] = CriarConta(nome, email, senha, perfil);
-    }
-
-    private static ContaLocal CriarConta(string nome, string email, string senha, string perfil)
+    private static Usuario CriarUsuario(string nome, string email, string senha, string perfil)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(16);
-        return new ContaLocal(nome, email, perfil, salt, GerarHash(senha, salt));
+        return new Usuario
+        {
+            Nome = nome,
+            Email = email,
+            Perfil = perfil,
+            SenhaSalt = salt,
+            SenhaHash = GerarHash(senha, salt),
+            CriadoEmUtc = DateTime.UtcNow
+        };
     }
 
     private static byte[] GerarHash(string senha, byte[] salt)
@@ -90,20 +122,19 @@ public class UsuarioLocalService
             32);
     }
 
-    private static UsuarioResponse MapearUsuario(ContaLocal conta)
+    private static UsuarioResponse MapearUsuario(Usuario usuario)
     {
         return new UsuarioResponse
         {
-            Nome = conta.Nome,
-            Email = conta.Email,
-            Perfil = conta.Perfil
+            Nome = usuario.Nome,
+            Email = usuario.Email,
+            Perfil = usuario.Perfil
         };
     }
 
-    private sealed record ContaLocal(
-        string Nome,
-        string Email,
-        string Perfil,
-        byte[] Salt,
-        byte[] SenhaHash);
+    private static bool IsConstraintViolation(DbUpdateException ex)
+    {
+        return ex.InnerException is SqliteException sqliteException &&
+               sqliteException.SqliteErrorCode == 19;
+    }
 }

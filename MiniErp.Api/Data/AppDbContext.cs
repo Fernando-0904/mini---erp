@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
     public DbSet<MovimentacaoEstoque> MovimentacoesEstoque => Set<MovimentacaoEstoque>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,5 +65,43 @@ public class AppDbContext : DbContext
             .HasIndex(movimentacao => movimentacao.ProdutoCodigo);
         modelBuilder.Entity<MovimentacaoEstoque>()
             .HasIndex(movimentacao => movimentacao.DataMovimentacaoUtc);
+
+        modelBuilder.Entity<Usuario>().HasKey(usuario => usuario.Id);
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.Nome)
+            .HasMaxLength(80)
+            .IsRequired();
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.Email)
+            .HasMaxLength(254)
+            .UseCollation("NOCASE")
+            .IsRequired();
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.Perfil)
+            .HasMaxLength(30)
+            .IsRequired();
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.SenhaHash)
+            .IsRequired();
+        modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.SenhaSalt)
+            .IsRequired();
+        modelBuilder.Entity<Usuario>()
+            .HasIndex(usuario => usuario.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Usuario>().HasData(new Usuario
+        {
+            Id = 1,
+            Nome = "Administrador",
+            Email = "admin@mini-erp.com",
+            Perfil = "Admin",
+            SenhaSalt = Convert.FromBase64String("noExopFskEdytn5nkRiWDA=="),
+            SenhaHash = Convert.FromBase64String("rViskkWPpo95fXV2hgw3bEKVUbvr065wNyCrRoprTTY="),
+            CriadoEmUtc = new DateTime(2026, 7, 28, 0, 0, 0, DateTimeKind.Utc)
+        });
     }
 }

@@ -177,7 +177,7 @@ Além da versão em console e da versão web, o projeto também possui uma API c
 
 A versão web consome a API usando `fetch`, centralizado em `miniErpWeb/js/api.js`. A API e o banco SQLite são a fonte única de dados. Se o backend estiver indisponível, a interface informa o problema sem exibir mensagens técnicas como `Failed to fetch` e sem alterar dados localmente.
 
-Os endpoints de criação e edição recebem DTOs de entrada (`ProdutoRequest`, `CategoriaRequest` e `FornecedorRequest`). No limite da API, esses dados são mapeados para as entidades persistidas e encaminhados aos services, que aplicam as regras de negócio.
+Os endpoints recebem DTOs de entrada para produtos, categorias, fornecedores e autenticação. No limite da API, esses dados são validados e encaminhados aos services, que aplicam as regras de negócio.
 
 A API possui os seguintes endpoints:
 
@@ -204,6 +204,8 @@ A API possui os seguintes endpoints:
 | PUT | `/fornecedores/{id}` | Edita fornecedor |
 | PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
 | DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
+| POST | `/auth/cadastro` | Cria uma conta de usuário persistida no SQLite |
+| POST | `/auth/login` | Valida e-mail e senha e retorna o perfil da conta |
 
 Exemplo de JSON usado no cadastro e na edição:
 
@@ -235,6 +237,30 @@ O fornecedor possui código, nome, documento, e-mail opcional, telefone e status
 
 As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
 
+### Autenticação local persistente
+
+O cadastro solicita nome, e-mail e senha. As contas são armazenadas na tabela `Usuarios` e continuam disponíveis depois que a API é reiniciada. O e-mail é normalizado e possui um índice único com comparação sem diferença entre letras maiúsculas e minúsculas.
+
+A senha nunca é persistida em texto puro. Para cada conta, a API gera um salt aleatório de 16 bytes e deriva um hash de 32 bytes com PBKDF2, SHA-256 e 100.000 iterações. Somente o hash e o salt são gravados no SQLite.
+
+A migration inclui a conta administrativa usada no ambiente local:
+
+```text
+E-mail: admin@mini-erp.com
+Senha: 123456
+```
+
+Essa credencial é apenas para desenvolvimento e deve ser removida ou substituída antes de qualquer publicação real.
+
+Limitações atuais da autenticação:
+
+- o login ainda não emite token nem cookie seguro;
+- os endpoints do ERP ainda não exigem autorização;
+- o navegador guarda somente o perfil visual da sessão no `localStorage`;
+- ainda não existem verificação de e-mail e recuperação de senha;
+- ainda não existem bloqueio por tentativas, auditoria de acesso ou segundo fator;
+- o SQLite e a conta administrativa padrão são adequados ao ambiente local, não a uma implantação de produção.
+
 ![Formulário de movimentação de estoque](miniErpWeb/assets/movimentacao-estoque.png)
 
 ![Histórico de entradas e saídas de estoque](miniErpWeb/assets/historico-movimentacoes.png)
@@ -252,7 +278,7 @@ Algumas respostas esperadas da API:
 
 ## Banco de dados SQLite
 
-A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores e movimentações. Os dados ficam armazenados no arquivo:
+A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores, movimentações e usuários. Os dados ficam armazenados no arquivo:
 
 ```text
 MiniErp.Api/Dados/mini-erp.db
@@ -274,6 +300,7 @@ Comportamento atual da persistência com SQLite:
 - ao cadastrar um produto, o registro é inserido no banco;
 - ao editar um produto, os dados são atualizados no banco;
 - ao remover um produto, o registro é excluído do banco;
+- ao criar uma conta, seus dados e credenciais protegidas são inseridos na tabela `Usuarios`;
 - ao reiniciar a API, todos os dados continuam disponíveis.
 
 As migrations também mantêm a evolução do esquema. Quando a relação entre produtos e categorias foi adicionada, os produtos existentes foram associados automaticamente à categoria padrão `Sem categoria`, evitando dados sem vínculo.
@@ -417,7 +444,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 39 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 43 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -451,6 +478,10 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | E-mail de conta duplicado | Impede duas contas com o mesmo e-mail |
 | Senha curta | Exige pelo menos oito caracteres no cadastro |
 | Senha incorreta | Impede a autenticação da conta local |
+| Persistência de conta | Mantém a autenticação disponível em um novo contexto de banco |
+| Proteção da senha | Armazena hash e salt, sem persistir a senha original |
+| Administrador migrado | Autentica a conta administrativa criada pela migration |
+| Unicidade no banco | Rejeita o mesmo e-mail com outra capitalização |
 
 Para executar a suíte:
 
@@ -600,8 +631,10 @@ Durante o desenvolvimento, foram praticados:
 
 ## Próximos passos possíveis
 
-- melhorar alguns detalhes visuais da interface;
-- reorganizar a solução em camadas de backend, frontend, domínio e testes;
+- emitir uma sessão segura com cookie ou token;
+- exigir autorização nos endpoints do ERP;
+- implementar verificação de e-mail e recuperação de senha;
+- remover a credencial administrativa padrão antes de uma implantação real;
 
 ## Validação técnica da Fase 6
 
