@@ -1,6 +1,7 @@
 bin/
 obj/
 .vs/
+.vscode/
 Desafio-MiniERP-Web.md
 Desafio_Mini_ERP_Web_Fiel.md
 resumo-fundamentos-css.txt

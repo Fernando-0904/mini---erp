@@ -204,8 +204,13 @@ A API possui os seguintes endpoints:
 | PUT | `/fornecedores/{id}` | Edita fornecedor |
 | PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
 | DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
-| POST | `/auth/cadastro` | Cria uma conta de usuário persistida no SQLite |
-| POST | `/auth/login` | Valida e-mail e senha e retorna o perfil da conta |
+| GET | `/auth/csrf` | Emite o token antiforgery usado nas requisições de escrita |
+| POST | `/auth/cadastro` | Cria uma conta persistida no SQLite e inicia a sessão |
+| POST | `/auth/login` | Valida e-mail e senha e inicia a sessão |
+| GET | `/auth/me` | Retorna o perfil da sessão autenticada |
+| POST | `/auth/logout` | Encerra a sessão atual |
+
+As rotas do ERP exigem uma sessão autenticada. Requisições de escrita também exigem o token CSRF no cabeçalho `X-CSRF-TOKEN`.
 
 Exemplo de JSON usado no cadastro e na edição:
 
@@ -237,11 +242,17 @@ O fornecedor possui código, nome, documento, e-mail opcional, telefone e status
 
 As movimentações recebem uma quantidade inteira maior que zero. Entradas aumentam o saldo, saídas reduzem o saldo e cada operação gera um histórico com data, tipo, quantidade, saldo anterior e saldo novo. A API bloqueia saídas que excedem o saldo disponível.
 
-### Autenticação local persistente
+### Autenticação por sessão
 
 O cadastro solicita nome, e-mail e senha. As contas são armazenadas na tabela `Usuarios` e continuam disponíveis depois que a API é reiniciada. O e-mail é normalizado e possui um índice único com comparação sem diferença entre letras maiúsculas e minúsculas.
 
 A senha nunca é persistida em texto puro. Para cada conta, a API gera um salt aleatório de 16 bytes e deriva um hash de 32 bytes com PBKDF2, SHA-256 e 100.000 iterações. Somente o hash e o salt são gravados no SQLite.
+
+Depois do cadastro ou login, a API cria uma sessão em um cookie criptografado chamado `MiniErp.Auth`. Em desenvolvimento local, o cookie é `HttpOnly` e usa `SameSite=Strict`; fora de desenvolvimento, usa `SameSite=None` e `Secure` para permitir que um frontend HTTPS hospedado em outro domínio envie a sessão. A validade é de oito horas com renovação deslizante. O JavaScript não acessa nem persiste a credencial.
+
+O frontend consulta `/auth/me` antes de carregar os dados do ERP. Se a sessão não existir ou expirar, a interface exibe o estado de acesso restrito e solicita um novo login. O `localStorage` guarda somente a preferência visual de tema.
+
+Para impedir requisições forjadas, o frontend obtém um token em `/auth/csrf`, mantém esse valor apenas em memória e o envia no cabeçalho `X-CSRF-TOKEN` em `POST`, `PUT`, `PATCH` e `DELETE`. A API aceita credenciais CORS apenas para as origens configuradas do frontend.
 
 A migration inclui a conta administrativa usada no ambiente local:
 
@@ -254,11 +265,9 @@ Essa credencial é apenas para desenvolvimento e deve ser removida ou substituí
 
 Limitações atuais da autenticação:
 
-- o login ainda não emite token nem cookie seguro;
-- os endpoints do ERP ainda não exigem autorização;
-- o navegador guarda somente o perfil visual da sessão no `localStorage`;
 - ainda não existem verificação de e-mail e recuperação de senha;
 - ainda não existem bloqueio por tentativas, auditoria de acesso ou segundo fator;
+- todos os usuários autenticados possuem o mesmo nível de acesso; ainda não há autorização por perfil ou permissão;
 - o SQLite e a conta administrativa padrão são adequados ao ambiente local, não a uma implantação de produção.
 
 ![Formulário de movimentação de estoque](miniErpWeb/assets/movimentacao-estoque.png)
@@ -420,6 +429,8 @@ Depois que o GitHub Pages estiver ativado, a versão web poderá ser acessada po
 
 [Acessar versão web publicada](https://fernando-0904.github.io/mini---erp/)
 
+Para consumir dados no GitHub Pages, o frontend precisa apontar `window.MINIERP_API_URL` para uma API pública em HTTPS e essa origem deve constar em `Cors:AllowedOrigins`. Sem uma API publicada, a versão do GitHub Pages carrega apenas os arquivos estáticos e não consegue acessar a API local da máquina do usuário.
+
 O arquivo `index.html` da raiz serve apenas para redirecionar o GitHub Pages para a pasta da aplicação web.
 
 Para abrir localmente, use o arquivo abaixo diretamente no navegador:
@@ -444,7 +455,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as regras de negócio sem alterar o banco de dados local. Atualmente, a suíte possui 43 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 55 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -482,6 +493,13 @@ O projeto `MiniErp.Api.Tests` usa xUnit e SQLite em memória para validar as reg
 | Proteção da senha | Armazena hash e salt, sem persistir a senha original |
 | Administrador migrado | Autentica a conta administrativa criada pela migration |
 | Unicidade no banco | Rejeita o mesmo e-mail com outra capitalização |
+| Endpoint protegido sem sessão | Retorna `401 Unauthorized` |
+| Cookie de autenticação | Usa `HttpOnly`, `SameSite=Strict` no ambiente local e `SameSite=None; Secure` fora de desenvolvimento |
+| Perfil da sessão | Retorna o usuário autenticado em `/auth/me` |
+| Requisição de escrita sem CSRF | Retorna `400 Bad Request` |
+| Requisição de escrita com CSRF | Aceita o token emitido pela API |
+| Logout | Invalida a sessão e bloqueia novos acessos autenticados |
+| CORS com credenciais | Autoriza a origem do frontend e rejeita origens diferentes |
 
 Para executar a suíte:
 
@@ -631,9 +649,9 @@ Durante o desenvolvimento, foram praticados:
 
 ## Próximos passos possíveis
 
-- emitir uma sessão segura com cookie ou token;
-- exigir autorização nos endpoints do ERP;
 - implementar verificação de e-mail e recuperação de senha;
+- adicionar perfis e permissões específicas por operação;
+- implementar bloqueio progressivo por tentativas e auditoria de acesso;
 - remover a credencial administrativa padrão antes de uma implantação real;
 
 ## Validação técnica da Fase 6

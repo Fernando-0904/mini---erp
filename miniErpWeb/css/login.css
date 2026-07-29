@@ -246,6 +246,49 @@
     color: var(--text);
 }
 
+.acesso-restrito {
+    min-height: 360px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    border-style: dashed;
+}
+
+.acesso-restrito-marcador {
+    display: inline-flex;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-alt);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.acesso-restrito h3,
+.acesso-restrito p {
+    margin: 0;
+}
+
+.acesso-restrito h3 {
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+
+.acesso-restrito p {
+    max-width: 560px;
+    color: var(--text-muted);
+}
+
+.acesso-restrito button {
+    min-width: 180px;
+    margin-top: 4px;
+}
+
 html.tema-escuro .botao-login {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.16);

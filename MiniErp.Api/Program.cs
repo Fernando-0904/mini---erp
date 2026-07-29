@@ -1,7 +1,13 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MiniErp.Api.Data;
 using MiniErp.Api.DTOs;
 using MiniErp.Api.Models;
+using MiniErp.Api.Security;
 using MiniErp.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,11 +29,60 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "MiniErp.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+        options.Cookie.SameSite = builder.Environment.IsDevelopment()
+            ? SameSiteMode.Strict
+            : SameSiteMode.None;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "MiniErp.Csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = builder.Environment.IsDevelopment()
+        ? SameSiteMode.Strict
+        : SameSiteMode.None;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+string databaseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=Dados/mini-erp.db";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=Dados/mini-erp.db"));
+    options.UseSqlite(databaseConnectionString));
 builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
@@ -42,6 +97,8 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors("MiniErpCors");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/produtos", (ProdutoService produtoService) =>
 {
@@ -90,7 +147,7 @@ app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService,
     }
 
     return Results.Created($"/produtos/{produto.Codigo}", produto);
-});
+}).RequireAntiforgery();
 
 app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
 {
@@ -130,7 +187,7 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, Produt
     }
 
     return Results.Ok(produtoAtualizado);
-});
+}).RequireAntiforgery();
 
 app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
 {
@@ -142,7 +199,7 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
     }
 
     return Results.NoContent();
-});
+}).RequireAntiforgery();
 
 app.MapGet(
     "/produtos/{codigo:int}/movimentacoes",
@@ -175,7 +232,7 @@ app.MapPost(
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
-    });
+    }).RequireAntiforgery();
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/saida",
@@ -194,7 +251,7 @@ app.MapPost(
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
-    });
+    }).RequireAntiforgery();
 
 app.MapGet("/categorias", (CategoriaService categoriaService) =>
 {
@@ -231,7 +288,7 @@ app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoria
     }
 
     return Results.Created($"/categorias/{categoria.Id}", categoria);
-});
+}).RequireAntiforgery();
 
 app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService) =>
 {
@@ -256,7 +313,7 @@ app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaS
     }
 
     return Results.Ok(categoriaAtualizada);
-});
+}).RequireAntiforgery();
 
 app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
 {
@@ -272,7 +329,7 @@ app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService
 
     categoriaService.RemoverCategoria(id);
     return Results.NoContent();
-});
+}).RequireAntiforgery();
 
 app.MapGet("/fornecedores", (FornecedorService fornecedorService) =>
 {
@@ -309,7 +366,7 @@ app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService forne
     }
 
     return Results.Created($"/fornecedores/{fornecedor.Id}", fornecedor);
-});
+}).RequireAntiforgery();
 
 app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService) =>
 {
@@ -334,7 +391,7 @@ app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, Fornece
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
-});
+}).RequireAntiforgery();
 
 app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService) =>
 {
@@ -344,7 +401,7 @@ app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService forne
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
-});
+}).RequireAntiforgery();
 
 app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
 {
@@ -360,9 +417,17 @@ app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorSer
 
     fornecedorService.RemoverFornecedor(id);
     return Results.NoContent();
-});
+}).RequireAntiforgery();
 
-app.MapPost("/auth/cadastro", (CadastroUsuarioRequest request, UsuarioLocalService usuarioService) =>
+app.MapGet("/auth/csrf", (HttpContext context, IAntiforgery antiforgery) =>
+{
+    AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
+    context.Response.Headers.CacheControl = "no-store";
+    return Results.Ok(new { token = tokens.RequestToken });
+})
+    .AllowAnonymous();
+
+app.MapPost("/auth/cadastro", async (CadastroUsuarioRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
 {
     (UsuarioResponse? usuario, string erro) = usuarioService.Cadastrar(
         request.Nome,
@@ -376,10 +441,18 @@ app.MapPost("/auth/cadastro", (CadastroUsuarioRequest request, UsuarioLocalServi
             : Results.BadRequest(erro);
     }
 
-    return Results.Json(usuario, statusCode: StatusCodes.Status201Created);
-});
+    await context.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        CriarPrincipal(usuario),
+        CriarPropriedadesAutenticacao());
 
-app.MapPost("/auth/login", (LoginRequest request, UsuarioLocalService usuarioService) =>
+    context.Response.Headers.CacheControl = "no-store";
+    return Results.Json(usuario, statusCode: StatusCodes.Status201Created);
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapPost("/auth/login", async (LoginRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
 {
     if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Senha))
     {
@@ -393,8 +466,31 @@ app.MapPost("/auth/login", (LoginRequest request, UsuarioLocalService usuarioSer
         return Results.Unauthorized();
     }
 
+    await context.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        CriarPrincipal(usuario),
+        CriarPropriedadesAutenticacao());
+
+    context.Response.Headers.CacheControl = "no-store";
     return Results.Ok(usuario);
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapGet("/auth/me", (ClaimsPrincipal principal, HttpContext context) =>
+{
+    UsuarioResponse? usuario = MapearUsuarioClaims(principal);
+    context.Response.Headers.CacheControl = "no-store";
+    return usuario is null ? Results.Unauthorized() : Results.Ok(usuario);
 });
+
+app.MapPost("/auth/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    context.Response.Headers.CacheControl = "no-store";
+    return Results.NoContent();
+})
+    .RequireAntiforgery();
 
 app.Run();
 
@@ -433,3 +529,52 @@ static Fornecedor MapearFornecedorRequest(FornecedorRequest request)
         Ativo = request.Ativo
     };
 }
+
+static ClaimsPrincipal CriarPrincipal(UsuarioResponse usuario)
+{
+    Claim[] claims =
+    [
+        new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+        new(ClaimTypes.Name, usuario.Nome),
+        new(ClaimTypes.Email, usuario.Email),
+        new(ClaimTypes.Role, usuario.Perfil)
+    ];
+
+    ClaimsIdentity identity = new(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    return new ClaimsPrincipal(identity);
+}
+
+static AuthenticationProperties CriarPropriedadesAutenticacao()
+{
+    return new AuthenticationProperties
+    {
+        AllowRefresh = true,
+        IsPersistent = false
+    };
+}
+
+static UsuarioResponse? MapearUsuarioClaims(ClaimsPrincipal principal)
+{
+    string? id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+    string? nome = principal.FindFirstValue(ClaimTypes.Name);
+    string? email = principal.FindFirstValue(ClaimTypes.Email);
+    string? perfil = principal.FindFirstValue(ClaimTypes.Role);
+
+    if (!int.TryParse(id, out int usuarioId) ||
+        string.IsNullOrWhiteSpace(nome) ||
+        string.IsNullOrWhiteSpace(email) ||
+        string.IsNullOrWhiteSpace(perfil))
+    {
+        return null;
+    }
+
+    return new UsuarioResponse
+    {
+        Id = usuarioId,
+        Nome = nome,
+        Email = email,
+        Perfil = perfil
+    };
+}
+
+public partial class Program;
