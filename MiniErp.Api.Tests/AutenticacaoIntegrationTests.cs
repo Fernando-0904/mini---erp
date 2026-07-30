@@ -102,7 +102,7 @@ public class AutenticacaoIntegrationTests
     }
 
     [Fact]
-    public async Task Cadastro_ComDadosValidos_PersisteUsuarioEIniciaSessao()
+    public async Task Cadastro_ComDadosValidos_PersisteUsuarioEGeraConfirmacaoSemIniciarSessao()
     {
         using MiniErpApiFactory factory = new();
         using HttpClient client = factory.CriarCliente();
@@ -115,16 +115,153 @@ public class AutenticacaoIntegrationTests
             senha = "senha123"
         }, token);
         HttpResponseMessage me = await client.GetAsync("/auth/me");
+        DevEmail[] emails = await ObterEmailsSimulados(client);
 
         using IServiceScope scope = factory.Services.CreateScope();
         AppDbContext contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        bool persistido = await contexto.Usuarios
+        bool persistidoSemConfirmacao = await contexto.Usuarios
             .AsNoTracking()
-            .AnyAsync(usuario => usuario.Email == "integracao@teste.com");
+            .AnyAsync(usuario => usuario.Email == "integracao@teste.com" && !usuario.EmailConfirmado);
 
         Assert.Equal(HttpStatusCode.Created, cadastro.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
-        Assert.True(persistido);
+        Assert.Equal(HttpStatusCode.Unauthorized, me.StatusCode);
+        Assert.True(persistidoSemConfirmacao);
+        Assert.Contains(emails, email =>
+            email.Para == "integracao@teste.com" &&
+            email.Assunto == "Confirme seu e-mail no Mini ERP" &&
+            email.Link.Contains("confirmar-email.html?token=", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Login_ComEmailNaoConfirmado_RetornaBadRequest()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string token = await ObterTokenAntiforgery(client);
+        await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Pendente",
+            email = "pendente@teste.com",
+            senha = "senha123"
+        }, token);
+
+        HttpResponseMessage login = await PostComToken(client, "/auth/login", new
+        {
+            email = "pendente@teste.com",
+            senha = "senha123"
+        }, token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, login.StatusCode);
+        Assert.Contains("Confirme seu e-mail antes de entrar.", await login.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConfirmarEmail_ComTokenValido_LiberaLogin()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string csrf = await ObterTokenAntiforgery(client);
+        await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Confirmado",
+            email = "confirmado@teste.com",
+            senha = "senha123"
+        }, csrf);
+        string token = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+
+        HttpResponseMessage confirmacao = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token
+        }, csrf);
+        HttpResponseMessage login = await PostComToken(client, "/auth/login", new
+        {
+            email = "confirmado@teste.com",
+            senha = "senha123"
+        }, csrf);
+
+        Assert.Equal(HttpStatusCode.OK, confirmacao.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReenviarConfirmacao_InvalidaTokenAnterior()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string csrf = await ObterTokenAntiforgery(client);
+        await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Reenvio",
+            email = "reenvio@teste.com",
+            senha = "senha123"
+        }, csrf);
+        string tokenAntigo = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+
+        await PostComToken(client, "/auth/reenviar-confirmacao", new { email = "reenvio@teste.com" }, csrf);
+        string tokenNovo = ExtrairToken((await ObterEmailsSimulados(client)).First().Link);
+
+        HttpResponseMessage confirmacaoAntiga = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenAntigo
+        }, csrf);
+        HttpResponseMessage confirmacaoNova = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenNovo
+        }, csrf);
+
+        Assert.NotEqual(tokenAntigo, tokenNovo);
+        Assert.Equal(HttpStatusCode.BadRequest, confirmacaoAntiga.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, confirmacaoNova.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecuperacaoSenha_ComTokenValido_AlteraSenhaEUsoUnico()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string csrf = await ObterTokenAntiforgery(client);
+        HttpResponseMessage cadastro = await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Recuperação",
+            email = "recuperacao@teste.com",
+            senha = "senha123"
+        }, csrf);
+        cadastro.EnsureSuccessStatusCode();
+        string tokenConfirmacao = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+        HttpResponseMessage confirmacao = await PostComToken(client, "/auth/confirmar-email", new { token = tokenConfirmacao }, csrf);
+        confirmacao.EnsureSuccessStatusCode();
+
+        HttpResponseMessage solicitacao = await PostComToken(client, "/auth/esqueci-senha", new { email = "recuperacao@teste.com" }, csrf);
+        solicitacao.EnsureSuccessStatusCode();
+        string tokenRedefinicao = ExtrairToken((await ObterEmailsSimulados(client))
+            .First(email => email.Assunto == "Redefina sua senha no Mini ERP")
+            .Link);
+
+        HttpResponseMessage redefinicao = await PostComToken(client, "/auth/redefinir-senha", new
+        {
+            token = tokenRedefinicao,
+            novaSenha = "senha-nova123"
+        }, csrf);
+        HttpResponseMessage reutilizacao = await PostComToken(client, "/auth/redefinir-senha", new
+        {
+            token = tokenRedefinicao,
+            novaSenha = "outra-senha123"
+        }, csrf);
+        HttpResponseMessage loginAntigo = await PostComToken(client, "/auth/login", new
+        {
+            email = "recuperacao@teste.com",
+            senha = "senha123"
+        }, csrf);
+        HttpResponseMessage loginNovo = await PostComToken(client, "/auth/login", new
+        {
+            email = "recuperacao@teste.com",
+            senha = "senha-nova123"
+        }, csrf);
+
+        Assert.Equal(HttpStatusCode.OK, redefinicao.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, reutilizacao.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, loginAntigo.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, loginNovo.StatusCode);
     }
 
     [Fact]
@@ -218,6 +355,17 @@ public class AutenticacaoIntegrationTests
         Assert.False(response.Headers.Contains("Access-Control-Allow-Credentials"));
     }
 
+    [Fact]
+    public async Task DevEmails_EmProducao_NaoFicaPublico()
+    {
+        using MiniErpApiFactory factory = new("Production");
+        using HttpClient client = factory.CriarCliente();
+
+        HttpResponseMessage response = await client.GetAsync("/dev/emails");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private static async Task AutenticarAdministrador(HttpClient client)
     {
         string token = await ObterTokenAntiforgery(client);
@@ -236,6 +384,25 @@ public class AutenticacaoIntegrationTests
         Assert.NotNull(response);
         Assert.False(string.IsNullOrWhiteSpace(response.Token));
         return response.Token;
+    }
+
+    private static async Task<DevEmail[]> ObterEmailsSimulados(HttpClient client)
+    {
+        DevEmail[]? emails = await client.GetFromJsonAsync<DevEmail[]>("/dev/emails");
+        Assert.NotNull(emails);
+        return emails;
+    }
+
+    private static string ExtrairToken(string link)
+    {
+        Uri uri = new(link);
+        return uri.Query
+            .TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => item.Split('=', 2))
+            .Where(partes => partes.Length == 2 && partes[0] == "token")
+            .Select(partes => Uri.UnescapeDataString(partes[1]))
+            .Single();
     }
 
     private static async Task<HttpResponseMessage> PostComToken(
@@ -258,5 +425,12 @@ public class AutenticacaoIntegrationTests
     private sealed class CsrfResponse
     {
         public string Token { get; set; } = string.Empty;
+    }
+
+    private sealed class DevEmail
+    {
+        public string Para { get; set; } = string.Empty;
+        public string Assunto { get; set; } = string.Empty;
+        public string Link { get; set; } = string.Empty;
     }
 }

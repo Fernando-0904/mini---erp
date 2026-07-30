@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
     public DbSet<MovimentacaoEstoque> MovimentacoesEstoque => Set<MovimentacaoEstoque>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<TokenUsuario> TokensUsuario => Set<TokenUsuario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,8 +91,33 @@ public class AppDbContext : DbContext
             .Property(usuario => usuario.SenhaSalt)
             .IsRequired();
         modelBuilder.Entity<Usuario>()
+            .Property(usuario => usuario.EmailConfirmado)
+            .HasDefaultValue(false);
+        modelBuilder.Entity<Usuario>()
             .HasIndex(usuario => usuario.Email)
             .IsUnique();
+
+        modelBuilder.Entity<TokenUsuario>().HasKey(token => token.Id);
+        modelBuilder.Entity<TokenUsuario>()
+            .Property(token => token.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<TokenUsuario>()
+            .Property(token => token.Tipo)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+        modelBuilder.Entity<TokenUsuario>()
+            .Property(token => token.TokenHash)
+            .IsRequired();
+        modelBuilder.Entity<TokenUsuario>()
+            .HasOne(token => token.Usuario)
+            .WithMany()
+            .HasForeignKey(token => token.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TokenUsuario>()
+            .HasIndex(token => new { token.UsuarioId, token.Tipo });
+        modelBuilder.Entity<TokenUsuario>()
+            .HasIndex(token => token.ExpiraEmUtc);
 
         modelBuilder.Entity<Usuario>().HasData(new Usuario
         {
@@ -101,6 +127,8 @@ public class AppDbContext : DbContext
             Perfil = "Admin",
             SenhaSalt = Convert.FromBase64String("noExopFskEdytn5nkRiWDA=="),
             SenhaHash = Convert.FromBase64String("rViskkWPpo95fXV2hgw3bEKVUbvr065wNyCrRoprTTY="),
+            EmailConfirmado = true,
+            EmailConfirmadoEmUtc = new DateTime(2026, 7, 28, 0, 0, 0, DateTimeKind.Utc),
             CriadoEmUtc = new DateTime(2026, 7, 28, 0, 0, 0, DateTimeKind.Utc)
         });
     }

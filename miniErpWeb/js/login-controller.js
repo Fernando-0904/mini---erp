@@ -28,6 +28,8 @@ function inicializarLoginVisual(usuarioInicial = null) {
 	}
 
 	let usuarioLogado = usuarioInicial;
+	let botaoReenviarConfirmacao = null;
+	let botaoEsqueciSenha = null;
 
 	let mensagemLoginVisual = document.getElementById("mensagemLoginVisual");
 	let contaConectadaVisual = document.getElementById("contaConectadaVisual");
@@ -247,6 +249,74 @@ function inicializarLoginVisual(usuarioInicial = null) {
 		}
 	}
 
+	function criarAcoesContaPendente() {
+		if (!(formLoginVisual instanceof HTMLFormElement)) {
+			return;
+		}
+
+		if (botaoReenviarConfirmacao !== null || botaoEsqueciSenha !== null) {
+			return;
+		}
+
+		const container = document.createElement("div");
+		container.className = "acoes-conta-pendente";
+
+		botaoReenviarConfirmacao = document.createElement("button");
+		botaoReenviarConfirmacao.type = "button";
+		botaoReenviarConfirmacao.className = "botao-link-login";
+		botaoReenviarConfirmacao.textContent = "Reenviar confirmação";
+
+		botaoEsqueciSenha = document.createElement("button");
+		botaoEsqueciSenha.type = "button";
+		botaoEsqueciSenha.className = "botao-link-login";
+		botaoEsqueciSenha.textContent = "Esqueci minha senha";
+
+		container.append(botaoReenviarConfirmacao, botaoEsqueciSenha);
+		formLoginVisual.insertBefore(container, formLoginVisual.querySelector(".botao-voltar-login"));
+	}
+
+	function obterEmailLoginPreenchido() {
+		const email = campoLoginEmail instanceof HTMLInputElement
+			? campoLoginEmail.value.trim()
+			: "";
+
+		if (email === "" || !(campoLoginEmail instanceof HTMLInputElement) || !campoLoginEmail.validity.valid) {
+			exibirMensagemLogin("Informe seu e-mail no campo de login.", "erro");
+			return "";
+		}
+
+		return email;
+	}
+
+	async function executarAcaoPorEmail(botao, textoProcessando, acao) {
+		const email = obterEmailLoginPreenchido();
+
+		if (email === "" || !(botao instanceof HTMLButtonElement)) {
+			return;
+		}
+
+		const textoOriginal = botao.textContent;
+		botao.disabled = true;
+		botao.textContent = textoProcessando;
+		atualizarMensagemLogin("Processando solicitação...", "info");
+
+		try {
+			const resultado = await acao(email);
+			const mensagem = resultado && typeof resultado.mensagem === "string"
+				? resultado.mensagem
+				: "Solicitação registrada. Verifique o e-mail simulado no ambiente local.";
+			exibirMensagemLogin(mensagem, "sucesso");
+		} catch (erro) {
+			const mensagem = erro instanceof Error
+				? erro.message
+				: "Não foi possível concluir a solicitação.";
+			exibirMensagemLogin(mensagem, "erro");
+		} finally {
+			botao.disabled = false;
+			botao.textContent = textoOriginal;
+		}
+	}
+
 	function mostrarFormularioLogin() {
 		if (usuarioLogado !== null) {
 			mostrarContaConectada();
@@ -408,6 +478,26 @@ function inicializarLoginVisual(usuarioInicial = null) {
 		});
 	}
 
+	criarAcoesContaPendente();
+
+	if (botaoReenviarConfirmacao instanceof HTMLButtonElement) {
+		botaoReenviarConfirmacao.addEventListener("click", async function () {
+			await executarAcaoPorEmail(
+				botaoReenviarConfirmacao,
+				"Reenviando...",
+				reenviarConfirmacaoEmailApi);
+		});
+	}
+
+	if (botaoEsqueciSenha instanceof HTMLButtonElement) {
+		botaoEsqueciSenha.addEventListener("click", async function () {
+			await executarAcaoPorEmail(
+				botaoEsqueciSenha,
+				"Solicitando...",
+				solicitarRedefinicaoSenhaApi);
+		});
+	}
+
 	if (formCadastroVisual instanceof HTMLFormElement && botaoConfirmarCadastro instanceof HTMLElement) {
 		formCadastroVisual.addEventListener("submit", async function (evento) {
 			evento.preventDefault();
@@ -443,14 +533,17 @@ function inicializarLoginVisual(usuarioInicial = null) {
 			botaoConfirmarCadastro.setAttribute("disabled", "disabled");
 
 			try {
-				const usuario = await cadastrarUsuarioApi(nome, email, senha);
-				usuarioLogado = usuario;
+				const resultado = await cadastrarUsuarioApi(nome, email, senha);
 				formCadastroVisual.reset();
-				limparMensagemLogin();
 				limparMensagemGlobal();
-				mostrarContaConectada();
-				atualizarAvatarConta();
-				window.location.reload();
+				mostrarFormularioLogin();
+				if (campoLoginEmail instanceof HTMLInputElement) {
+					campoLoginEmail.value = email;
+				}
+				const mensagem = resultado && typeof resultado.mensagem === "string"
+					? resultado.mensagem
+					: "Conta criada. Confirme seu e-mail para entrar.";
+				exibirMensagemLogin(mensagem, "sucesso");
 			} catch (erro) {
 				const mensagem = erro instanceof Error
 					? erro.message
