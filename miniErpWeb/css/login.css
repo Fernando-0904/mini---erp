@@ -289,6 +289,77 @@
     margin-top: 4px;
 }
 
+.acoes-conta-pendente {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.botao-link-login {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+}
+
+.botao-link-login:hover,
+.botao-link-login:focus-visible {
+    text-decoration: underline;
+}
+
+.auth-token-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.auth-token-card {
+    width: min(100%, 520px);
+    display: grid;
+    gap: 16px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.auth-token-card h1,
+.auth-token-card p {
+    margin: 0;
+}
+
+.auth-token-mensagem {
+    padding: 12px;
+    border-radius: 14px;
+    font-weight: 700;
+}
+
+.auth-token-info {
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--primary);
+}
+
+.auth-token-sucesso {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--success-text);
+}
+
+.auth-token-erro {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--error-text);
+}
+
+.auth-token-link {
+    color: var(--primary);
+    font-weight: 800;
+}
+
 html.tema-escuro .botao-login {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.16);

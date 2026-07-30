@@ -88,6 +88,8 @@ builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
 builder.Services.AddScoped<UsuarioLocalService>();
+builder.Services.AddSingleton<EmailSimuladoService>();
+builder.Services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<EmailSimuladoService>());
 
 var app = builder.Build();
 
@@ -429,7 +431,7 @@ app.MapGet("/auth/csrf", (HttpContext context, IAntiforgery antiforgery) =>
 
 app.MapPost("/auth/cadastro", async (CadastroUsuarioRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
 {
-    (UsuarioResponse? usuario, string erro) = usuarioService.Cadastrar(
+    (UsuarioResponse? usuario, string erro) = await usuarioService.CadastrarAsync(
         request.Nome,
         request.Email,
         request.Senha);
@@ -441,13 +443,12 @@ app.MapPost("/auth/cadastro", async (CadastroUsuarioRequest request, UsuarioLoca
             : Results.BadRequest(erro);
     }
 
-    await context.SignInAsync(
-        CookieAuthenticationDefaults.AuthenticationScheme,
-        CriarPrincipal(usuario),
-        CriarPropriedadesAutenticacao());
-
     context.Response.Headers.CacheControl = "no-store";
-    return Results.Json(usuario, statusCode: StatusCodes.Status201Created);
+    return Results.Json(new
+    {
+        usuario.Email,
+        mensagem = "Conta criada. Confirme seu e-mail para entrar."
+    }, statusCode: StatusCodes.Status201Created);
 })
     .AllowAnonymous()
     .RequireAntiforgery();
@@ -459,20 +460,65 @@ app.MapPost("/auth/login", async (LoginRequest request, UsuarioLocalService usua
         return Results.BadRequest("E-mail e senha são obrigatórios.");
     }
 
-    UsuarioResponse? usuario = usuarioService.Autenticar(request.Email, request.Senha);
+    ResultadoAutenticacao autenticacao = usuarioService.Autenticar(request.Email, request.Senha);
 
-    if (usuario is null)
+    if (autenticacao.EmailNaoConfirmado)
+    {
+        return Results.BadRequest("Confirme seu e-mail antes de entrar.");
+    }
+
+    if (autenticacao.Usuario is null)
     {
         return Results.Unauthorized();
     }
 
     await context.SignInAsync(
         CookieAuthenticationDefaults.AuthenticationScheme,
-        CriarPrincipal(usuario),
+        CriarPrincipal(autenticacao.Usuario),
         CriarPropriedadesAutenticacao());
 
     context.Response.Headers.CacheControl = "no-store";
-    return Results.Ok(usuario);
+    return Results.Ok(autenticacao.Usuario);
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapPost("/auth/confirmar-email", (ConfirmarEmailRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
+{
+    bool confirmado = usuarioService.ConfirmarEmail(request.Token);
+    context.Response.Headers.CacheControl = "no-store";
+    return confirmado
+        ? Results.Ok(new { mensagem = "E-mail confirmado com sucesso. Você já pode entrar." })
+        : Results.BadRequest("Token de confirmação inválido ou expirado.");
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapPost("/auth/reenviar-confirmacao", async (ReenviarConfirmacaoEmailRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
+{
+    await usuarioService.ReenviarConfirmacaoEmailAsync(request.Email);
+    context.Response.Headers.CacheControl = "no-store";
+    return Results.Ok(new { mensagem = "Se a conta existir e ainda não estiver confirmada, enviaremos uma nova confirmação." });
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapPost("/auth/esqueci-senha", async (EsqueciSenhaRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
+{
+    await usuarioService.SolicitarRedefinicaoSenhaAsync(request.Email);
+    context.Response.Headers.CacheControl = "no-store";
+    return Results.Ok(new { mensagem = "Se o e-mail estiver cadastrado, enviaremos instruções de recuperação." });
+})
+    .AllowAnonymous()
+    .RequireAntiforgery();
+
+app.MapPost("/auth/redefinir-senha", (RedefinirSenhaRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
+{
+    bool redefinida = usuarioService.RedefinirSenha(request.Token, request.NovaSenha);
+    context.Response.Headers.CacheControl = "no-store";
+    return redefinida
+        ? Results.Ok(new { mensagem = "Senha redefinida com sucesso. Entre com sua nova senha." })
+        : Results.BadRequest("Token inválido ou expirado, ou senha fora dos critérios.");
 })
     .AllowAnonymous()
     .RequireAntiforgery();
@@ -491,6 +537,15 @@ app.MapPost("/auth/logout", async (HttpContext context) =>
     return Results.NoContent();
 })
     .RequireAntiforgery();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/dev/emails", (EmailSimuladoService emailService) =>
+    {
+        return Results.Ok(emailService.Listar());
+    })
+        .AllowAnonymous();
+}
 
 app.Run();
 

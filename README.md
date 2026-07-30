@@ -455,7 +455,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 55 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 58 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -485,14 +485,18 @@ O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de se
 | Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
 | Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
 | Produtos sem estoque | Lista somente produtos com saldo igual a zero |
-| Cadastro de conta local | Cria uma conta válida e permite autenticação |
+| Cadastro de conta local | Cria uma conta válida e exige confirmação de e-mail |
 | E-mail de conta duplicado | Impede duas contas com o mesmo e-mail |
 | Senha curta | Exige pelo menos oito caracteres no cadastro |
 | Senha incorreta | Impede a autenticação da conta local |
-| Persistência de conta | Mantém a autenticação disponível em um novo contexto de banco |
+| Persistência de conta | Mantém a autenticação disponível após confirmação em um novo contexto de banco |
 | Proteção da senha | Armazena hash e salt, sem persistir a senha original |
 | Administrador migrado | Autentica a conta administrativa criada pela migration |
 | Unicidade no banco | Rejeita o mesmo e-mail com outra capitalização |
+| E-mail pendente | Bloqueia login até confirmar a conta |
+| E-mail simulado | Registra link de confirmação em `/dev/emails` no ambiente local |
+| Confirmação de e-mail | Libera login com token válido de uso único |
+| Recuperação de senha | Redefine senha com token válido e impede reutilização |
 | Endpoint protegido sem sessão | Retorna `401 Unauthorized` |
 | Cookie de autenticação | Usa `HttpOnly`, `SameSite=Strict` no ambiente local e `SameSite=None; Secure` fora de desenvolvimento |
 | Perfil da sessão | Retorna o usuário autenticado em `/auth/me` |
@@ -649,7 +653,7 @@ Durante o desenvolvimento, foram praticados:
 
 ## Próximos passos possíveis
 
-- implementar verificação de e-mail e recuperação de senha;
+- substituir o e-mail simulado por um provedor real quando houver ambiente de produção;
 - adicionar perfis e permissões específicas por operação;
 - implementar bloqueio progressivo por tentativas e auditoria de acesso;
 - remover a credencial administrativa padrão antes de uma implantação real;

@@ -343,7 +343,7 @@ async function autenticarUsuarioApi(email, senha) {
 }
 
 async function cadastrarUsuarioApi(nome, email, senha) {
-    const usuario = await executarRequisicaoApi("/auth/cadastro", {
+    const resultado = await executarRequisicaoApi("/auth/cadastro", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -352,7 +352,47 @@ async function cadastrarUsuarioApi(nome, email, senha) {
     }, "Não foi possível criar a conta.");
 
     invalidarTokenAntiforgery();
-    return usuario;
+    return resultado;
+}
+
+async function confirmarEmailApi(token) {
+    return executarRequisicaoApi("/auth/confirmar-email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+    }, "Não foi possível confirmar seu e-mail.", false);
+}
+
+async function reenviarConfirmacaoEmailApi(email) {
+    return executarRequisicaoApi("/auth/reenviar-confirmacao", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+    }, "Não foi possível reenviar a confirmação.", false);
+}
+
+async function solicitarRedefinicaoSenhaApi(email) {
+    return executarRequisicaoApi("/auth/esqueci-senha", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+    }, "Não foi possível solicitar a recuperação de senha.", false);
+}
+
+async function redefinirSenhaApi(token, novaSenha) {
+    return executarRequisicaoApi("/auth/redefinir-senha", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, novaSenha }),
+    }, "Não foi possível redefinir sua senha.", false);
 }
 
 async function obterSessaoAtualApi() {
