@@ -184,6 +184,37 @@ public class AutenticacaoIntegrationTests
     }
 
     [Fact]
+    public async Task ReenviarConfirmacao_InvalidaTokenAnterior()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string csrf = await ObterTokenAntiforgery(client);
+        await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Reenvio",
+            email = "reenvio@teste.com",
+            senha = "senha123"
+        }, csrf);
+        string tokenAntigo = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+
+        await PostComToken(client, "/auth/reenviar-confirmacao", new { email = "reenvio@teste.com" }, csrf);
+        string tokenNovo = ExtrairToken((await ObterEmailsSimulados(client)).First().Link);
+
+        HttpResponseMessage confirmacaoAntiga = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenAntigo
+        }, csrf);
+        HttpResponseMessage confirmacaoNova = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenNovo
+        }, csrf);
+
+        Assert.NotEqual(tokenAntigo, tokenNovo);
+        Assert.Equal(HttpStatusCode.BadRequest, confirmacaoAntiga.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, confirmacaoNova.StatusCode);
+    }
+
+    [Fact]
     public async Task RecuperacaoSenha_ComTokenValido_AlteraSenhaEUsoUnico()
     {
         using MiniErpApiFactory factory = new();
@@ -322,6 +353,17 @@ public class AutenticacaoIntegrationTests
 
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
         Assert.False(response.Headers.Contains("Access-Control-Allow-Credentials"));
+    }
+
+    [Fact]
+    public async Task DevEmails_EmProducao_NaoFicaPublico()
+    {
+        using MiniErpApiFactory factory = new("Production");
+        using HttpClient client = factory.CriarCliente();
+
+        HttpResponseMessage response = await client.GetAsync("/dev/emails");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private static async Task AutenticarAdministrador(HttpClient client)

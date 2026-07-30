@@ -1,11 +1,5 @@
 namespace MiniErp.Api.Services;
 
-public interface IEmailService
-{
-    Task EnviarConfirmacaoEmailAsync(string para, string nome, string link, DateTime expiraEmUtc);
-    Task EnviarRedefinicaoSenhaAsync(string para, string nome, string link, DateTime expiraEmUtc);
-}
-
 public sealed class EmailSimuladoService : IEmailService
 {
     private readonly List<EmailSimulado> emails = [];
@@ -63,14 +57,4 @@ public sealed class EmailSimuladoService : IEmailService
             email.Link,
             email.ExpiraEmUtc);
     }
-}
-
-public sealed class EmailSimulado
-{
-    public string Para { get; set; } = string.Empty;
-    public string Assunto { get; set; } = string.Empty;
-    public string Nome { get; set; } = string.Empty;
-    public string Link { get; set; } = string.Empty;
-    public DateTime ExpiraEmUtc { get; set; }
-    public DateTime CriadoEmUtc { get; set; }
 }
