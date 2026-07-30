@@ -193,7 +193,7 @@ function atualizarTabelaCategorias(listaCategorias, aoEditarCategoria, aoRemover
         const celulaVazia = document.createElement("td");
 
         celulaVazia.colSpan = 3;
-        celulaVazia.textContent = "Nenhuma categoria cadastrada.";
+        celulaVazia.textContent = "Nenhuma categoria cadastrada. Cadastre uma categoria para liberar o cadastro de produtos.";
         linhaVazia.appendChild(celulaVazia);
         elementos.tabelaCategorias.appendChild(linhaVazia);
         return;

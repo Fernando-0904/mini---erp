@@ -12,6 +12,9 @@ const elementos = {
     quantidadeProdutos: document.getElementById("quantidadeProdutos"),
     itensEstoque: document.getElementById("itensEstoque"),
     valorTotalEstoque: document.getElementById("valorTotalEstoque"),
+    quantidadeAlertasCriticos: document.getElementById("quantidadeAlertasCriticos"),
+    quantidadeAlertasTotal: document.getElementById("quantidadeAlertasTotal"),
+    tabelaAlertasPainel: document.getElementById("tabelaAlertasPainel"),
     mensagem: document.getElementById("mensagem"),
     formularioBuscaProduto: document.getElementById("formBuscaProduto"),
     campoCodigoBusca: document.getElementById("codigoBusca"),
@@ -41,7 +44,21 @@ const elementos = {
     botaoBuscarHistorico: document.getElementById("botaoBuscarHistorico"),
     tabelaMovimentacoes: document.getElementById("tabelaMovimentacoes"),
     campoCategoriaEstoqueBaixo: document.getElementById("categoriaEstoqueBaixo"),
-    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo")
+    tabelaEstoqueBaixo: document.getElementById("tabelaEstoqueBaixo"),
+    formularioBuscaGlobal: document.getElementById("formBuscaGlobal"),
+    campoTermoBuscaGlobal: document.getElementById("termoBuscaGlobal"),
+    campoFiltroTipoBuscaGlobal: document.getElementById("filtroTipoBuscaGlobal"),
+    campoAbrirMelhorBuscaGlobal: document.getElementById("abrirMelhorResultadoBuscaGlobal"),
+    botaoBuscarGlobal: document.getElementById("botaoBuscarGlobal"),
+    botaoLimparBuscaGlobal: document.getElementById("botaoLimparBuscaGlobal"),
+    listaAtalhosBuscaGlobal: document.getElementById("listaAtalhosBuscaGlobal"),
+    totalResultadosGlobal: document.getElementById("totalResultadosGlobal"),
+    totalProdutosGlobal: document.getElementById("totalProdutosGlobal"),
+    totalCategoriasGlobal: document.getElementById("totalCategoriasGlobal"),
+    totalFornecedoresGlobal: document.getElementById("totalFornecedoresGlobal"),
+    tabelaResultadoProdutos: document.getElementById("tabelaResultadoProdutos"),
+    tabelaResultadoCategorias: document.getElementById("tabelaResultadoCategorias"),
+    tabelaResultadoFornecedores: document.getElementById("tabelaResultadoFornecedores")
 };
 
 elementos.botaoLimparFormulario = elementos.formulario

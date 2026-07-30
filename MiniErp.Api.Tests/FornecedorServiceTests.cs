@@ -92,6 +92,17 @@ public class FornecedorServiceTests
     }
 
     [Fact]
+    public void ValidarFornecedorDoProduto_ComFornecedorNulo_NaoRetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        FornecedorService service = new(banco.Contexto);
+
+        List<string> erros = service.ValidarFornecedorDoProduto(null);
+
+        Assert.Empty(erros);
+    }
+
+    [Fact]
     public void CadastrarFornecedor_Inativo_PersisteStatusInativo()
     {
         using BancoDeTeste banco = new();
@@ -190,6 +201,31 @@ public class FornecedorServiceTests
 
         Assert.True(editado);
         Assert.Equal(segundoFornecedor.Id, banco.Contexto.Produtos.Single().FornecedorId);
+    }
+
+    [Fact]
+    public void CadastrarFornecedor_ComEspacosNasPontas_NormalizaCamposAntesDePersistir()
+    {
+        using BancoDeTeste banco = new();
+        FornecedorService service = new(banco.Contexto);
+        Fornecedor fornecedor = new()
+        {
+            Codigo = 500,
+            Nome = "  Fornecedor ABC  ",
+            Documento = "  55555555000155  ",
+            Email = "  fornecedor@abc.com  ",
+            Telefone = "  1199887766  ",
+            Ativo = true,
+        };
+
+        bool cadastrado = service.CadastrarFornecedor(fornecedor);
+
+        Assert.True(cadastrado);
+        Fornecedor persistido = banco.Contexto.Fornecedores.Single();
+        Assert.Equal("Fornecedor ABC", persistido.Nome);
+        Assert.Equal("55555555000155", persistido.Documento);
+        Assert.Equal("fornecedor@abc.com", persistido.Email);
+        Assert.Equal("1199887766", persistido.Telefone);
     }
 
     private static Fornecedor CriarFornecedor(int codigo = 100, string documento = "11111111000111")

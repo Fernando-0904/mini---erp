@@ -4,11 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini ERP - Controle de Estoque</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/tables.css?v=1">
+    <link rel="stylesheet" href="css/login.css?v=2">
+    <link rel="stylesheet" href="css/responsive.css?v=1">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("miniErpTema") === "escuro") {
+                    document.documentElement.classList.add("tema-escuro");
+                }
+            } catch (erro) {
+                /* Ignora falha de acesso ao localStorage (ex.: modo privado). */
+            }
+        })();
+    </script>
 </head>
 <body>
 <header>
-    <h1>Mini ERP</h1>
+    <div class="topo-marca">
+        <h1>Mini ERP</h1>
+        <div class="login-visual-area">
+            <button type="button" id="botaoLogin" class="botao-login" aria-expanded="false" title="Entrar" aria-label="Entrar">
+                <span class="avatar-login" aria-hidden="true">L</span>
+            </button>
+            <section id="painelLogin" class="painel-login" hidden aria-label="Acesso de usuário">
+                <p class="titulo-menu-login">Acesso ao sistema</p>
+                <p class="resumo-menu-login">Entre para acessar seu perfil ou crie uma conta local.</p>
+                <div id="menuLoginVisual" class="menu-login-visual">
+                    <button type="button" class="botao-abrir-login">Entrar</button>
+                    <button type="button" class="botao-criar-conta">Criar conta</button>
+                </div>
+                <form id="formLoginVisual" class="form-login-visual" hidden novalidate>
+                    <p class="titulo-form-conta">Entrar na conta</p>
+                    <label for="loginEmail">E-mail</label>
+                    <input type="email" id="loginEmail" placeholder="voce@empresa.com" autocomplete="email" maxlength="254" required>
+                    <label for="loginSenha">Senha</label>
+                    <input type="password" id="loginSenha" placeholder="Sua senha" autocomplete="current-password" maxlength="128" required>
+                    <button type="submit" class="botao-confirmar-login">Entrar</button>
+                    <button type="button" class="botao-voltar-login">Voltar</button>
+                </form>
+                <form id="formCadastroVisual" class="form-login-visual" hidden novalidate>
+                    <p class="titulo-form-conta">Criar conta local</p>
+                    <label for="cadastroNome">Nome completo</label>
+                    <input type="text" id="cadastroNome" placeholder="Como deseja ser chamado" autocomplete="name" maxlength="80" required>
+                    <label for="cadastroEmail">E-mail</label>
+                    <input type="email" id="cadastroEmail" placeholder="voce@empresa.com" autocomplete="email" maxlength="254" required>
+                    <label for="cadastroSenha">Senha</label>
+                    <input type="password" id="cadastroSenha" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" minlength="8" maxlength="128" required>
+                    <label for="cadastroConfirmarSenha">Confirmar senha</label>
+                    <input type="password" id="cadastroConfirmarSenha" placeholder="Digite a senha novamente" autocomplete="new-password" minlength="8" maxlength="128" required>
+                    <p class="ajuda-form-conta">Os dados da conta serão armazenados no banco local do Mini ERP.</p>
+                    <button type="submit" class="botao-confirmar-cadastro">Criar minha conta</button>
+                    <button type="button" class="botao-voltar-login">Voltar</button>
+                </form>
+            </section>
+        </div>
+    </div>
     <h2>Painel de estoque</h2>
     <nav aria-label="Navegação principal">
         <a href="index.html" aria-current="page">Painel</a>
@@ -17,7 +69,12 @@
         <a href="fornecedores.html">Fornecedores</a>
         <a href="movimentacoes.html">Movimentações</a>
         <a href="estoque-baixo.html">Estoque baixo</a>
+        <a href="busca-global.html">Busca global</a>
     </nav>
+    <button type="button" id="botaoTema" class="botao-tema" aria-pressed="false" title="Ativar modo escuro" aria-label="Ativar modo escuro">
+        <span class="icone-tema icone-sol" aria-hidden="true">☀</span>
+        <span class="icone-tema icone-lua" aria-hidden="true">🌙</span>
+    </button>
 </header>
 <main>
     <section class="indicadores" aria-label="Indicadores do estoque">
@@ -38,21 +95,59 @@
                 <h4>Valor total em estoque</h4>
                 <p id="valorTotalEstoque">R$ 0,00</p>
             </div>
+
+            <div class="card-indicador">
+                <h4>Alertas críticos</h4>
+                <p id="quantidadeAlertasCriticos">0</p>
+            </div>
+
+            <div class="card-indicador">
+                <h4>Total de alertas</h4>
+                <p id="quantidadeAlertasTotal">0</p>
+            </div>
         </div>
+    </section>
+
+    <section class="secao-acoes-rapidas" aria-label="Ações rápidas do painel">
+        <h3>Ações rápidas</h3>
+        <p class="texto-apoio">Atalhos para tarefas mais comuns do dia a dia.</p>
+        <div class="grupo-acoes-rapidas">
+            <a class="botao-atalho" href="produtos.html">Cadastrar produto</a>
+            <a class="botao-atalho" href="movimentacoes.html?acao=entrada">Registrar entrada</a>
+            <a class="botao-atalho" href="estoque-baixo.html">Ver estoque baixo</a>
+            <a class="botao-atalho" href="busca-global.html">Buscar item</a>
+        </div>
+    </section>
+
+    <section class="tabela-painel-alertas" aria-label="Alertas operacionais">
+        <h3>Alertas operacionais</h3>
+        <p class="texto-apoio">Priorize o que exige ação imediata para evitar ruptura ou atraso operacional.</p>
+        <table>
+            <thead>
+                <tr><th>Prioridade</th><th>Alerta</th><th>Produto</th><th>Detalhe</th><th>Ação rápida</th></tr>
+            </thead>
+            <tbody id="tabelaAlertasPainel">
+                <tr><td colspan="5">Nenhum alerta operacional no momento.</td></tr>
+            </tbody>
+        </table>
     </section>
     <p id="mensagem"></p>
 </main>
 <footer>
-    <p>Mini ERP - Projeto de Aprendizado</p>
+    <p>Mini ERP</p>
 </footer>
-<script src="js/dom-elements.js?v=3"></script>
-<script src="js/api.js?v=3"></script>
-<script src="js/ui.js?v=3"></script>
-<script src="js/produto-controller.js?v=3"></script>
-<script src="js/categoria-controller.js?v=3"></script>
-<script src="js/fornecedor-controller.js?v=3"></script>
-<script src="js/movimentacao-controller.js?v=3"></script>
-<script src="js/painel-controller.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/dom-elements.js?v=6"></script>
+<script src="js/api.js?v=7"></script>
+<script src="js/conta-storage.js?v=2"></script>
+<script src="js/login-controller.js?v=1"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/produto-controller.js?v=6"></script>
+<script src="js/categoria-controller.js?v=6"></script>
+<script src="js/fornecedor-controller.js?v=6"></script>
+<script src="js/movimentacao-controller.js?v=6"></script>
+<script src="js/painel-controller.js?v=6"></script>
+<script src="js/busca-global-controller.js?v=6"></script>
+<script src="js/tema-controller.js?v=2"></script>
+<script src="js/app.js?v=12"></script>
 </body>
 </html>

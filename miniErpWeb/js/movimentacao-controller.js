@@ -1,4 +1,6 @@
 function inicializarMovimentacaoController() {
+    aplicarContextoDaUrl();
+
     elementos.botaoRegistrarEntrada.addEventListener("click", function () {
         registrarMovimentacao("entrada");
     });
@@ -20,6 +22,30 @@ function inicializarMovimentacaoController() {
     elementos.formularioMovimentacaoEstoque.addEventListener("submit", function (event) {
         event.preventDefault();
     });
+
+    async function aplicarContextoDaUrl() {
+        const parametros = new URLSearchParams(window.location.search);
+        const produtoCodigo = parametros.get("produtoCodigo");
+        const acao = parametros.get("acao");
+        const autoHistorico = parametros.get("autoHistorico");
+
+        if (produtoCodigo !== null && produtoCodigo.trim() !== "") {
+            elementos.campoMovimentacaoCodigo.value = produtoCodigo;
+        }
+
+        if (autoHistorico === "1") {
+            const codigo = obterCodigoMovimentacao();
+
+            if (codigo !== null) {
+                await carregarHistorico(codigo, false);
+            }
+        }
+
+        if (acao === "entrada") {
+            elementos.campoMovimentacaoQuantidade.focus();
+            exibirMensagem("Código carregado. Informe a quantidade para registrar a entrada.", "sucesso");
+        }
+    }
 
     async function registrarMovimentacao(tipo) {
         const codigo = obterCodigoMovimentacao();
