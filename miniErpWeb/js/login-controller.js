@@ -1,4 +1,4 @@
-function inicializarLoginVisual() {
+function inicializarLoginVisual(usuarioInicial = null) {
 	const botaoLogin = document.getElementById("botaoLogin");
 	const painelLogin = document.getElementById("painelLogin");
 	const menuLoginVisual = document.getElementById("menuLoginVisual");
@@ -27,7 +27,7 @@ function inicializarLoginVisual() {
 		return;
 	}
 
-	let usuarioLogado = carregarUsuarioLogado();
+	let usuarioLogado = usuarioInicial;
 
 	let mensagemLoginVisual = document.getElementById("mensagemLoginVisual");
 	let contaConectadaVisual = document.getElementById("contaConectadaVisual");
@@ -132,23 +132,27 @@ function inicializarLoginVisual() {
 		}
 	}
 
-	function executarLogout() {
-		usuarioLogado = null;
-		limparUsuarioLogado();
-		limparMensagemLogin();
-		limparMensagemGlobal();
-		esconderConfirmacaoSaida();
-
-		if (campoLoginEmail instanceof HTMLInputElement) {
-			campoLoginEmail.value = "";
+	async function executarLogout() {
+		if (!(botaoConfirmarSaidaConta instanceof HTMLButtonElement)) {
+			return;
 		}
 
-		if (campoLoginSenha instanceof HTMLInputElement) {
-			campoLoginSenha.value = "";
-		}
+		botaoConfirmarSaidaConta.disabled = true;
+		botaoConfirmarSaidaConta.textContent = "Saindo...";
 
-		mostrarMenuInicial();
-		atualizarAvatarConta();
+		try {
+			await encerrarSessaoApi();
+			usuarioLogado = null;
+			limparMensagemGlobal();
+			window.location.reload();
+		} catch (erro) {
+			const mensagem = erro instanceof Error
+				? erro.message
+				: "Não foi possível sair da conta. Tente novamente.";
+			exibirMensagemLogin(mensagem, "erro");
+			botaoConfirmarSaidaConta.disabled = false;
+			botaoConfirmarSaidaConta.textContent = "Sim, sair";
+		}
 	}
 
 	function mostrarContaConectada() {
@@ -354,8 +358,8 @@ function inicializarLoginVisual() {
 	}
 
 	if (botaoConfirmarSaidaConta instanceof HTMLElement) {
-		botaoConfirmarSaidaConta.addEventListener("click", function () {
-			executarLogout();
+		botaoConfirmarSaidaConta.addEventListener("click", async function () {
+			await executarLogout();
 		});
 	}
 
@@ -382,7 +386,6 @@ function inicializarLoginVisual() {
 			try {
 				const usuario = await autenticarUsuarioApi(email, senha);
 				usuarioLogado = usuario;
-				salvarUsuarioLogado(usuarioLogado);
 				limparMensagemLogin();
 				limparMensagemGlobal();
 				mostrarContaConectada();
@@ -391,6 +394,8 @@ function inicializarLoginVisual() {
 				if (campoLoginSenha !== null) {
 					campoLoginSenha.value = "";
 				}
+
+				window.location.reload();
 			} catch (erro) {
 				const mensagem = erro instanceof Error
 					? erro.message
@@ -440,12 +445,12 @@ function inicializarLoginVisual() {
 			try {
 				const usuario = await cadastrarUsuarioApi(nome, email, senha);
 				usuarioLogado = usuario;
-				salvarUsuarioLogado(usuarioLogado);
 				formCadastroVisual.reset();
 				limparMensagemLogin();
 				limparMensagemGlobal();
 				mostrarContaConectada();
 				atualizarAvatarConta();
+				window.location.reload();
 			} catch (erro) {
 				const mensagem = erro instanceof Error
 					? erro.message
@@ -459,6 +464,15 @@ function inicializarLoginVisual() {
 	}
 
 	atualizarPainelConta();
+
+	window.addEventListener("miniErp:sessao-expirada", function () {
+		usuarioLogado = null;
+		atualizarAvatarConta();
+		mostrarMenuInicial();
+		painelLogin.hidden = false;
+		botaoLogin.setAttribute("aria-expanded", "true");
+		atualizarMensagemLogin("Sua sessão expirou. Entre novamente para continuar.", "erro");
+	});
 
 	document.addEventListener("click", function (evento) {
 		const alvo = evento.target;

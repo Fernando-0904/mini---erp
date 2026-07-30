@@ -12,20 +12,63 @@ function obterApiBaseUrl() {
 
 const API_BASE_URL = obterApiBaseUrl();
 const MENSAGEM_ERRO_INESPERADO = "Ocorreu um erro inesperado. Tente novamente.";
+const METODOS_HTTP_SEGUROS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+let tokenAntiforgery = null;
 
-async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao) {
+class ErroApi extends Error {
+    constructor(mensagem, status) {
+        super(mensagem);
+        this.name = "ErroApi";
+        this.status = status;
+    }
+}
+
+async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notificarSessaoExpirada = true, permitirNovaTentativaCsrf = true) {
     let resposta;
+    const opcoesRequisicao = {
+        ...(opcoes || {}),
+        credentials: "include",
+    };
+    const metodo = (opcoesRequisicao.method || "GET").toUpperCase();
+
+    if (!METODOS_HTTP_SEGUROS.has(metodo)) {
+        const token = await obterTokenAntiforgeryApi();
+        opcoesRequisicao.headers = {
+            ...(opcoesRequisicao.headers || {}),
+            "X-CSRF-TOKEN": token,
+        };
+    }
 
     try {
-        resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoes);
+        resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoesRequisicao);
     } catch {
         throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
     }
 
-    return tratarRespostaApi(resposta, mensagemErroPadrao);
+    if (!METODOS_HTTP_SEGUROS.has(metodo) &&
+        permitirNovaTentativaCsrf &&
+        await respostaIndicaErroAntiforgery(resposta)) {
+        invalidarTokenAntiforgery();
+        return executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notificarSessaoExpirada, false);
+    }
+
+    return tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoExpirada);
 }
 
-async function tratarRespostaApi(resposta, mensagemErroPadrao) {
+async function respostaIndicaErroAntiforgery(resposta) {
+    if (resposta.status !== 400) {
+        return false;
+    }
+
+    try {
+        const conteudo = await resposta.clone().text();
+        return /token de segurança ausente ou inválido/i.test(conteudo);
+    } catch {
+        return false;
+    }
+}
+
+async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoExpirada = true) {
     if (resposta.ok) {
         if (resposta.status === 204) {
             return null;
@@ -34,9 +77,12 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao) {
         return resposta.json();
     }
 
-    let mensagemErro = resposta.status >= 500
-        ? MENSAGEM_ERRO_INESPERADO
-        : mensagemErroPadrao;
+    let mensagemErro = resposta.status >= 500 ? MENSAGEM_ERRO_INESPERADO : mensagemErroPadrao;
+
+    if (resposta.status === 401 && notificarSessaoExpirada) {
+        mensagemErro = "Sua sessão expirou. Entre novamente para continuar.";
+        window.dispatchEvent(new CustomEvent("miniErp:sessao-expirada"));
+    }
 
     try {
         const erro = await resposta.json();
@@ -49,7 +95,41 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao) {
         // Mantém a mensagem padrão se a API não retornar JSON.
     }
 
-    throw new Error(normalizarMensagemErroUsuario(mensagemErro));
+    throw new ErroApi(normalizarMensagemErroUsuario(mensagemErro), resposta.status);
+}
+
+async function obterTokenAntiforgeryApi() {
+    if (typeof tokenAntiforgery === "string" && tokenAntiforgery !== "") {
+        return tokenAntiforgery;
+    }
+
+    let resposta;
+
+    try {
+        resposta = await fetch(`${API_BASE_URL}/auth/csrf`, {
+            credentials: "include",
+            cache: "no-store",
+        });
+    } catch {
+        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+    }
+
+    if (!resposta.ok) {
+        throw new ErroApi("Não foi possível preparar a requisição segura.", resposta.status);
+    }
+
+    const dados = await resposta.json();
+
+    if (typeof dados.token !== "string" || dados.token === "") {
+        throw new Error("Não foi possível preparar a requisição segura.");
+    }
+
+    tokenAntiforgery = dados.token;
+    return tokenAntiforgery;
+}
+
+function invalidarTokenAntiforgery() {
+    tokenAntiforgery = null;
 }
 
 function normalizarMensagemErroUsuario(mensagem) {
@@ -250,21 +330,54 @@ async function inativarFornecedorApi(id) {
 }
 
 async function autenticarUsuarioApi(email, senha) {
-    return executarRequisicaoApi("/auth/login", {
+    const usuario = await executarRequisicaoApi("/auth/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, senha }),
-    }, "E-mail ou senha inválidos.");
+    }, "E-mail ou senha inválidos.", false);
+
+    invalidarTokenAntiforgery();
+    return usuario;
 }
 
 async function cadastrarUsuarioApi(nome, email, senha) {
-    return executarRequisicaoApi("/auth/cadastro", {
+    const usuario = await executarRequisicaoApi("/auth/cadastro", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({ nome, email, senha }),
     }, "Não foi possível criar a conta.");
+
+    invalidarTokenAntiforgery();
+    return usuario;
+}
+
+async function obterSessaoAtualApi() {
+    let resposta;
+
+    try {
+        resposta = await fetch(`${API_BASE_URL}/auth/me`, {
+            credentials: "include",
+            cache: "no-store",
+        });
+    } catch {
+        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+    }
+
+    if (resposta.status === 401) {
+        return null;
+    }
+
+    return tratarRespostaApi(resposta, "Não foi possível verificar sua sessão.");
+}
+
+async function encerrarSessaoApi() {
+    await executarRequisicaoApi("/auth/logout", {
+        method: "POST",
+    }, "Não foi possível sair da conta.");
+
+    invalidarTokenAntiforgery();
 }

@@ -126,6 +126,7 @@ public class UsuarioLocalService
     {
         return new UsuarioResponse
         {
+            Id = usuario.Id,
             Nome = usuario.Nome,
             Email = usuario.Email,
             Perfil = usuario.Perfil
