@@ -92,7 +92,7 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
         const erro = await resposta.json();
         const mensagemExtraida = extrairMensagemErroApi(erro);
 
-        if (resposta.status < 500 && mensagemExtraida !== "") {
+        if (resposta.status < 500 && resposta.status !== 403 && mensagemExtraida !== "") {
             mensagemErro = mensagemExtraida;
         }
     } catch {
