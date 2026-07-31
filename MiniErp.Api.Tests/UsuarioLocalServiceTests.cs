@@ -34,7 +34,7 @@ public class UsuarioLocalServiceTests
         Assert.True(confirmado);
         Assert.NotNull(autenticado.Usuario);
         Assert.Equal("Fernando Antunes", autenticado.Usuario.Nome);
-        Assert.Equal("Usuário", autenticado.Usuario.Perfil);
+        Assert.Equal("Operador", autenticado.Usuario.Perfil);
     }
 
     [Fact]

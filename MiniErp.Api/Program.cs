@@ -12,6 +12,13 @@ using MiniErp.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+const string PerfilAdministrador = "Administrador";
+const string PerfilAdminLegado = "Admin";
+const string PerfilOperador = "Operador";
+const string PerfilUsuarioLegado = "Usuário";
+const string PoliticaOperar = "PodeOperar";
+const string PoliticaAdministrar = "PodeAdministrar";
+
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>()
@@ -64,6 +71,14 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
+    options.AddPolicy(PoliticaOperar, policy => policy.RequireRole(
+        PerfilAdministrador,
+        PerfilAdminLegado,
+        PerfilOperador,
+        PerfilUsuarioLegado));
+    options.AddPolicy(PoliticaAdministrar, policy => policy.RequireRole(
+        PerfilAdministrador,
+        PerfilAdminLegado));
 });
 builder.Services.AddAntiforgery(options =>
 {
@@ -149,7 +164,7 @@ app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService,
     }
 
     return Results.Created($"/produtos/{produto.Codigo}", produto);
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
 {
@@ -189,7 +204,7 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, Produt
     }
 
     return Results.Ok(produtoAtualizado);
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
 {
@@ -201,7 +216,7 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
     }
 
     return Results.NoContent();
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
 
 app.MapGet(
     "/produtos/{codigo:int}/movimentacoes",
@@ -234,7 +249,7 @@ app.MapPost(
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
-    }).RequireAntiforgery();
+    }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/saida",
@@ -253,7 +268,7 @@ app.MapPost(
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
-    }).RequireAntiforgery();
+    }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapGet("/categorias", (CategoriaService categoriaService) =>
 {
@@ -290,7 +305,7 @@ app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoria
     }
 
     return Results.Created($"/categorias/{categoria.Id}", categoria);
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService) =>
 {
@@ -315,7 +330,7 @@ app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaS
     }
 
     return Results.Ok(categoriaAtualizada);
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
 {
@@ -331,7 +346,7 @@ app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService
 
     categoriaService.RemoverCategoria(id);
     return Results.NoContent();
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
 
 app.MapGet("/fornecedores", (FornecedorService fornecedorService) =>
 {
@@ -368,7 +383,7 @@ app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService forne
     }
 
     return Results.Created($"/fornecedores/{fornecedor.Id}", fornecedor);
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService) =>
 {
@@ -393,7 +408,7 @@ app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, Fornece
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService) =>
 {
@@ -403,7 +418,7 @@ app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService forne
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
 {
@@ -419,7 +434,7 @@ app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorSer
 
     fornecedorService.RemoverFornecedor(id);
     return Results.NoContent();
-}).RequireAntiforgery();
+}).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
 
 app.MapGet("/auth/csrf", (HttpContext context, IAntiforgery antiforgery) =>
 {

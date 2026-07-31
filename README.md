@@ -221,6 +221,8 @@ A API possui os seguintes endpoints:
 
 As rotas do ERP exigem uma sessão autenticada. Requisições de escrita também exigem o token CSRF no cabeçalho `X-CSRF-TOKEN`.
 
+As permissões usam o perfil salvo no usuário. `Administrador`/`Admin` pode consultar, cadastrar, editar e remover; `Operador`/`Usuário` pode consultar, cadastrar, editar, movimentar e inativar, mas não remover; `Consulta` pode apenas visualizar dados. Operações sem permissão retornam `403 Forbidden`.
+
 Exemplo de JSON usado no cadastro e na edição:
 
 ```json
@@ -280,7 +282,7 @@ Limitações atuais da autenticação:
 
 - o envio de e-mail ainda é simulado e deve ser substituído por um provedor real antes de produção;
 - ainda não existem bloqueio por tentativas, auditoria de acesso ou segundo fator;
-- todos os usuários autenticados possuem o mesmo nível de acesso; ainda não há autorização por perfil ou permissão;
+- ainda não existe tela administrativa para alterar o perfil dos usuários;
 - o SQLite e a conta administrativa padrão são adequados ao ambiente local, não a uma implantação de produção.
 
 ![Formulário de movimentação de estoque](miniErpWeb/assets/movimentacao-estoque.png)
@@ -486,7 +488,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 60 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 63 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -535,6 +537,9 @@ O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de se
 | Requisição de escrita com CSRF | Aceita o token emitido pela API |
 | Logout | Invalida a sessão e bloqueia novos acessos autenticados |
 | CORS com credenciais | Autoriza a origem do frontend e rejeita origens diferentes |
+| Perfil Consulta | Permite leitura e bloqueia operações de escrita |
+| Perfil Operador | Permite cadastro/edição/movimentação e bloqueia remoção |
+| Perfil Administrador | Permite remoção de registros |
 
 Para executar a suíte:
 
@@ -683,13 +688,14 @@ Durante o desenvolvimento, foram praticados:
 - autenticação por sessão com cookie `HttpOnly`;
 - proteção CSRF em requisições de escrita;
 - verificação de e-mail e recuperação de senha com tokens de uso único;
+- perfis e permissões por operação;
 - consultas SQL aplicadas ao banco do MiniERP;
 - versionamento com Git e envio para o GitHub.
 
 ## Próximos passos possíveis
 
 - substituir o e-mail simulado por um provedor real quando houver ambiente de produção;
-- adicionar perfis e permissões específicas por operação;
+- criar uma tela administrativa para alterar perfis de usuários;
 - implementar bloqueio progressivo por tentativas e auditoria de acesso;
 - remover a credencial administrativa padrão antes de uma implantação real;
 

@@ -40,7 +40,7 @@ public class UsuarioLocalService
             return (null, "Já existe uma conta com este e-mail.");
         }
 
-        Usuario usuario = CriarUsuario(nome, email, senha, "Usuário", emailConfirmado: false);
+        Usuario usuario = CriarUsuario(nome, email, senha, "Operador", emailConfirmado: false);
         contexto.Usuarios.Add(usuario);
 
         try

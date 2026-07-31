@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MiniErp.Api.Data;
 using MiniErp.Api.DTOs;
+using MiniErp.Api.Models;
 using Xunit;
 
 namespace MiniErp.Api.Tests;
@@ -366,6 +367,66 @@ public class AutenticacaoIntegrationTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task PerfilConsulta_PodeConsultarMasNaoPodeCadastrar()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        await AutenticarUsuarioComPerfil(client, factory, "consulta@teste.com", "Consulta");
+        string token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage consulta = await client.GetAsync("/produtos");
+        HttpResponseMessage cadastro = await PostComToken(client, "/categorias", new
+        {
+            id = 0,
+            nome = "Categoria negada"
+        }, token);
+
+        Assert.Equal(HttpStatusCode.OK, consulta.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, cadastro.StatusCode);
+    }
+
+    [Fact]
+    public async Task PerfilOperador_PodeCadastrarMasNaoPodeRemover()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        await AutenticarUsuarioComPerfil(client, factory, "operador@teste.com", "Operador");
+        string token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage cadastro = await PostComToken(client, "/categorias", new
+        {
+            id = 0,
+            nome = "Categoria operador"
+        }, token);
+        HttpResponseMessage remocao = await DeleteComToken(client, "/categorias/1", token);
+
+        Assert.Equal(HttpStatusCode.Created, cadastro.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, remocao.StatusCode);
+    }
+
+    [Fact]
+    public async Task PerfilAdministrador_PodeRemover()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        await AutenticarAdministrador(client);
+        string token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage cadastro = await PostComToken(client, "/categorias", new
+        {
+            id = 0,
+            nome = "Categoria removivel"
+        }, token);
+        Categoria? categoria = await cadastro.Content.ReadFromJsonAsync<Categoria>();
+        Assert.NotNull(categoria);
+
+        HttpResponseMessage remocao = await DeleteComToken(client, $"/categorias/{categoria.Id}", token);
+
+        Assert.Equal(HttpStatusCode.Created, cadastro.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, remocao.StatusCode);
+    }
+
     private static async Task AutenticarAdministrador(HttpClient client)
     {
         string token = await ObterTokenAntiforgery(client);
@@ -376,6 +437,42 @@ public class AutenticacaoIntegrationTests
         }, token);
 
         response.EnsureSuccessStatusCode();
+    }
+
+    private static async Task AutenticarUsuarioComPerfil(
+        HttpClient client,
+        MiniErpApiFactory factory,
+        string email,
+        string perfil)
+    {
+        string csrf = await ObterTokenAntiforgery(client);
+        HttpResponseMessage cadastro = await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = $"Usuário {perfil}",
+            email,
+            senha = "senha123"
+        }, csrf);
+        cadastro.EnsureSuccessStatusCode();
+
+        string tokenConfirmacao = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+        HttpResponseMessage confirmacao = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenConfirmacao
+        }, csrf);
+        confirmacao.EnsureSuccessStatusCode();
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Usuario usuario = contexto.Usuarios.Single(item => item.Email == email);
+        usuario.Perfil = perfil;
+        contexto.SaveChanges();
+
+        HttpResponseMessage login = await PostComToken(client, "/auth/login", new
+        {
+            email,
+            senha = "senha123"
+        }, csrf);
+        login.EnsureSuccessStatusCode();
     }
 
     private static async Task<string> ObterTokenAntiforgery(HttpClient client)
@@ -419,6 +516,13 @@ public class AutenticacaoIntegrationTests
             request.Content = JsonContent.Create(body);
         }
 
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> DeleteComToken(HttpClient client, string url, string token)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Delete, url);
+        request.Headers.Add("X-CSRF-TOKEN", token);
         return await client.SendAsync(request);
     }
 

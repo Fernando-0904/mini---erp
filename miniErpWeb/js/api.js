@@ -84,6 +84,10 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
         window.dispatchEvent(new CustomEvent("miniErp:sessao-expirada"));
     }
 
+    if (resposta.status === 403) {
+        mensagemErro = "Seu perfil não tem permissão para executar esta operação.";
+    }
+
     try {
         const erro = await resposta.json();
         const mensagemExtraida = extrairMensagemErroApi(erro);

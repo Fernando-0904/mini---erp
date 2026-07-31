@@ -240,6 +240,25 @@ Rotas protegidas:
 - rotas de fornecedores;
 - rotas de movimentacoes de estoque.
 
+## Perfis e permissoes
+
+O MiniERP usa o campo `Perfil` do usuario como role da sessao. O valor e gravado na claim `ClaimTypes.Role` e usado pelas politicas de autorizacao da API.
+
+Perfis atuais:
+
+| Perfil | Permissoes |
+|---|---|
+| `Administrador` ou `Admin` | Pode consultar, cadastrar, editar, movimentar, inativar e remover registros |
+| `Operador` ou `Usuário` | Pode consultar, cadastrar, editar, movimentar e inativar, mas nao pode remover registros |
+| `Consulta` | Pode apenas consultar dados |
+
+Observacoes:
+
+- `Admin` e aceito como perfil legado da conta administrativa criada por migration;
+- `Usuário` e aceito como perfil legado de contas criadas antes da padronizacao para `Operador`;
+- novos cadastros recebem o perfil `Operador` por padrao;
+- tentativas sem permissao retornam `403 Forbidden`.
+
 ## Conta administrativa local
 
 A migration cria uma conta administrativa para facilitar o uso local:
