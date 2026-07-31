@@ -124,10 +124,11 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para produtos, categorias, fornecedores, movimentações e relatório de estoque baixo, além do tratamento padrão de respostas e falhas de conexão;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para autenticação, produtos, categorias, fornecedores, movimentações e relatório de estoque baixo, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
 - `fornecedor-controller.js`: controla o cadastro, a edição, a inativação e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
+- `login-controller.js`: controla cadastro, login, logout, confirmação de e-mail e recuperação de senha;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
 - `estoque-baixo-controller.js`: carrega o relatório de estoque baixo e aplica o filtro por categoria;
 - `painel-controller.js`: carrega os indicadores consolidados de produtos, itens e valor em estoque;
@@ -135,12 +136,15 @@ Hoje a parte web está organizada assim:
 
 As páginas da versão web são:
 
-- `miniErpWeb/index.html`: painel com indicadores do estoque;
+- `miniErpWeb/index.html`: login, cadastro e painel com indicadores do estoque;
+- `miniErpWeb/busca-global.html`: busca global de produtos, categorias e fornecedores;
 - `miniErpWeb/produtos.html`: cadastro, busca, edição, remoção e listagem de produtos;
 - `miniErpWeb/categorias.html`: cadastro, edição, remoção e listagem de categorias;
 - `miniErpWeb/fornecedores.html`: cadastro, edição, inativação, remoção e listagem de fornecedores;
 - `miniErpWeb/movimentacoes.html`: entradas, saídas e histórico de estoque.
 - `miniErpWeb/estoque-baixo.html`: relatório filtrável de produtos com estoque baixo.
+- `miniErpWeb/confirmar-email.html`: confirmação de conta por token.
+- `miniErpWeb/redefinir-senha.html`: redefinição de senha por token.
 
 Além da separação, a montagem da tabela também foi melhorada. No lugar de gerar HTML em texto com `innerHTML`, as linhas passaram a ser criadas com `document.createElement`, `textContent` e `appendChild`. Os botões de ação deixaram de usar `onclick` direto no HTML e passaram a ser ligados com `addEventListener`, deixando o comportamento controlado pelo JavaScript.
 
@@ -205,10 +209,15 @@ A API possui os seguintes endpoints:
 | PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
 | DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
 | GET | `/auth/csrf` | Emite o token antiforgery usado nas requisições de escrita |
-| POST | `/auth/cadastro` | Cria uma conta persistida no SQLite e inicia a sessão |
+| POST | `/auth/cadastro` | Cria uma conta persistida no SQLite com e-mail pendente de confirmação |
 | POST | `/auth/login` | Valida e-mail e senha e inicia a sessão |
+| POST | `/auth/confirmar-email` | Confirma o e-mail com token de uso único |
+| POST | `/auth/reenviar-confirmacao` | Reenvia a confirmação para contas ainda pendentes |
+| POST | `/auth/esqueci-senha` | Solicita recuperação de senha por e-mail simulado |
+| POST | `/auth/redefinir-senha` | Redefine a senha usando token válido |
 | GET | `/auth/me` | Retorna o perfil da sessão autenticada |
 | POST | `/auth/logout` | Encerra a sessão atual |
+| GET | `/dev/emails` | Lista e-mails simulados no ambiente de desenvolvimento |
 
 As rotas do ERP exigem uma sessão autenticada. Requisições de escrita também exigem o token CSRF no cabeçalho `X-CSRF-TOKEN`.
 
@@ -248,7 +257,7 @@ O cadastro solicita nome, e-mail e senha. As contas são armazenadas na tabela `
 
 A senha nunca é persistida em texto puro. Para cada conta, a API gera um salt aleatório de 16 bytes e deriva um hash de 32 bytes com PBKDF2, SHA-256 e 100.000 iterações. Somente o hash e o salt são gravados no SQLite.
 
-Depois do cadastro ou login, a API cria uma sessão em um cookie criptografado chamado `MiniErp.Auth`. Em desenvolvimento local, o cookie é `HttpOnly` e usa `SameSite=Strict`; fora de desenvolvimento, usa `SameSite=None` e `Secure` para permitir que um frontend HTTPS hospedado em outro domínio envie a sessão. A validade é de oito horas com renovação deslizante. O JavaScript não acessa nem persiste a credencial.
+Depois do login, a API cria uma sessão em um cookie criptografado chamado `MiniErp.Auth`. Em desenvolvimento local, o cookie é `HttpOnly` e usa `SameSite=Strict`; fora de desenvolvimento, usa `SameSite=None` e `Secure` para permitir que um frontend HTTPS hospedado em outro domínio envie a sessão. A validade é de oito horas com renovação deslizante. O JavaScript não acessa nem persiste a credencial.
 
 O frontend consulta `/auth/me` antes de carregar os dados do ERP. Se a sessão não existir ou expirar, a interface exibe o estado de acesso restrito e solicita um novo login. O `localStorage` guarda somente a preferência visual de tema.
 
@@ -263,9 +272,13 @@ Senha: 123456
 
 Essa credencial é apenas para desenvolvimento e deve ser removida ou substituída antes de qualquer publicação real.
 
+O cadastro cria a conta com e-mail pendente de confirmação. Em desenvolvimento, a confirmação e a recuperação de senha usam e-mail simulado: os links são registrados em log e também podem ser consultados em `/dev/emails`. Os tokens são armazenados apenas como hash, possuem expiração e são marcados como usados após a confirmação ou redefinição.
+
+Mais detalhes do fluxo estão em [docs/autenticacao.md](docs/autenticacao.md).
+
 Limitações atuais da autenticação:
 
-- ainda não existem verificação de e-mail e recuperação de senha;
+- o envio de e-mail ainda é simulado e deve ser substituído por um provedor real antes de produção;
 - ainda não existem bloqueio por tentativas, auditoria de acesso ou segundo fator;
 - todos os usuários autenticados possuem o mesmo nível de acesso; ainda não há autorização por perfil ou permissão;
 - o SQLite e a conta administrativa padrão são adequados ao ambiente local, não a uma implantação de produção.
@@ -287,7 +300,7 @@ Algumas respostas esperadas da API:
 
 ## Banco de dados SQLite
 
-A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores, movimentações e usuários. Os dados ficam armazenados no arquivo:
+A API utiliza SQLite com Entity Framework Core para persistir produtos, categorias, fornecedores, movimentações, usuários e tokens de autenticação. Os dados ficam armazenados no arquivo:
 
 ```text
 MiniErp.Api/Dados/mini-erp.db
@@ -310,6 +323,7 @@ Comportamento atual da persistência com SQLite:
 - ao editar um produto, os dados são atualizados no banco;
 - ao remover um produto, o registro é excluído do banco;
 - ao criar uma conta, seus dados e credenciais protegidas são inseridos na tabela `Usuarios`;
+- ao confirmar e-mail ou redefinir senha, os tokens de uso único são controlados na tabela `TokensUsuario`;
 - ao reiniciar a API, todos os dados continuam disponíveis.
 
 As migrations também mantêm a evolução do esquema. Quando a relação entre produtos e categorias foi adicionada, os produtos existentes foram associados automaticamente à categoria padrão `Sem categoria`, evitando dados sem vínculo.
@@ -340,7 +354,11 @@ projeto erp/
 │   │   └── AppDbContext.cs
 │   ├── DTOs/
 │   │   ├── CategoriaRequest.cs
+│   │   ├── CadastroUsuarioRequest.cs
+│   │   ├── ConfirmarEmailRequest.cs
+│   │   ├── EsqueciSenhaRequest.cs
 │   │   ├── FornecedorRequest.cs
+│   │   ├── LoginRequest.cs
 │   │   └── ProdutoRequest.cs
 │   ├── Migrations/
 │   ├── Models/
@@ -348,12 +366,17 @@ projeto erp/
 │   │   ├── Fornecedor.cs
 │   │   ├── MovimentacaoEstoque.cs
 │   │   ├── MovimentacaoEstoqueRequest.cs
-│   │   └── Produto.cs
+│   │   ├── Produto.cs
+│   │   ├── TokenUsuario.cs
+│   │   └── Usuario.cs
+│   ├── Security/
 │   ├── Services/
 │   │   ├── CategoriaService.cs
+│   │   ├── EmailSimuladoService.cs
 │   │   ├── FornecedorService.cs
 │   │   ├── MovimentacaoEstoqueService.cs
-│   │   └── ProdutoService.cs
+│   │   ├── ProdutoService.cs
+│   │   └── UsuarioLocalService.cs
 │   ├── Program.cs
 │   ├── MiniErp.Api.csproj
 │   └── MiniErp.Api.http
@@ -369,17 +392,25 @@ projeto erp/
 │   ├── js/
 │   │   ├── app.js
 │   │   ├── api.js
+│   │   ├── auth-token-controller.js
+│   │   ├── busca-global-controller.js
 │   │   ├── categoria-controller.js
 │   │   ├── dom-elements.js
 │   │   ├── fornecedor-controller.js
 │   │   ├── estoque-baixo-controller.js
+│   │   ├── login-controller.js
 │   │   ├── movimentacao-controller.js
 │   │   ├── painel-controller.js
 │   │   ├── produto-controller.js
+│   │   ├── tema-controller.js
 │   │   └── ui.js
 │   └── assets/
 │       └── evidencias/
 ├── docs/
+│   ├── autenticacao.md
+│   ├── banco-de-dados.md
+│   ├── consultas-sql.md
+│   ├── fixacao-fase-7.md
 │   ├── pr-fase-6.md
 │   └── validacao-fase-6.md
 └── .gitignore
@@ -455,7 +486,7 @@ Para iniciar a aplicação do zero, siga esta ordem:
 
 ## Testes automatizados
 
-O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 58 testes automatizados.
+O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de services e bancos SQLite temporários para os testes HTTP, sem alterar o banco de dados local. Atualmente, a suíte possui 60 testes automatizados.
 
 | Regra validada | Resultado esperado |
 |---|---|
@@ -649,6 +680,10 @@ Durante o desenvolvimento, foram praticados:
 - criação e aplicação de migrations;
 - relacionamento entre produtos e categorias;
 - movimentações de estoque com histórico e validação de saldo;
+- autenticação por sessão com cookie `HttpOnly`;
+- proteção CSRF em requisições de escrita;
+- verificação de e-mail e recuperação de senha com tokens de uso único;
+- consultas SQL aplicadas ao banco do MiniERP;
 - versionamento com Git e envio para o GitHub.
 
 ## Próximos passos possíveis
@@ -661,6 +696,13 @@ Durante o desenvolvimento, foram praticados:
 ## Validação técnica da Fase 6
 
 O checklist completo de execução, critérios do MD, comandos, evidências e cenários manuais está em [docs/validacao-fase-6.md](docs/validacao-fase-6.md). Ele deve ser atualizado quando uma nova validação for executada e pode ser anexado ao Pull Request como evidência.
+
+## Documentação complementar
+
+- [Mapeamento do banco de dados](docs/banco-de-dados.md)
+- [Consultas SQL aplicadas ao MiniERP](docs/consultas-sql.md)
+- [Fixação da Fase 7](docs/fixacao-fase-7.md)
+- [Autenticação, sessão e recuperação de senha](docs/autenticacao.md)
 
 ---
 
