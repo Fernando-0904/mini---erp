@@ -51,6 +51,10 @@ function inicializarControllersDaPagina() {
 		inicializarEstoqueBaixoController();
 	}
 
+	if (elementos.formularioRelatorios !== null) {
+		inicializarRelatoriosController();
+	}
+
 	if (elementos.formularioBuscaGlobal) {
 		inicializarBuscaGlobalController();
 	}

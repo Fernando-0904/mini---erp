@@ -102,6 +102,7 @@ builder.Services.AddScoped<ProdutoService>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
+builder.Services.AddScoped<RelatorioService>();
 builder.Services.AddScoped<UsuarioLocalService>();
 builder.Services.AddSingleton<EmailSimuladoService>();
 builder.Services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<EmailSimuladoService>());
@@ -435,6 +436,31 @@ app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorSer
     fornecedorService.RemoverFornecedor(id);
     return Results.NoContent();
 }).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
+
+app.MapGet("/relatorios/produtos-estoque-baixo", async (RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarProdutosEstoqueBaixoAsync());
+});
+
+app.MapGet("/relatorios/produtos-sem-estoque", async (RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarProdutosSemEstoqueAsync());
+});
+
+app.MapGet("/relatorios/valor-estoque-por-categoria", async (RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarValorEstoquePorCategoriaAsync());
+});
+
+app.MapGet("/relatorios/produtos-sem-fornecedor", async (RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarProdutosSemFornecedorAsync());
+});
+
+app.MapGet("/relatorios/ultimas-movimentacoes", async (int? limite, RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarUltimasMovimentacoesAsync(limite ?? 10));
+});
 
 app.MapGet("/auth/csrf", (HttpContext context, IAntiforgery antiforgery) =>
 {

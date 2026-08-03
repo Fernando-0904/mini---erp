@@ -259,6 +259,31 @@ async function listarProdutosSemEstoqueApi(categoriaId) {
     return executarRequisicaoApi(caminho, undefined, "Erro ao listar produtos sem estoque na API.");
 }
 
+async function listarRelatorioProdutosEstoqueBaixoApi() {
+    return executarRequisicaoApi("/relatorios/produtos-estoque-baixo", undefined, "Erro ao carregar o relatório de produtos com estoque baixo.");
+}
+
+async function listarRelatorioProdutosSemEstoqueApi() {
+    return executarRequisicaoApi("/relatorios/produtos-sem-estoque", undefined, "Erro ao carregar o relatório de produtos sem estoque.");
+}
+
+async function listarRelatorioValorEstoquePorCategoriaApi() {
+    return executarRequisicaoApi("/relatorios/valor-estoque-por-categoria", undefined, "Erro ao carregar o relatório de valor por categoria.");
+}
+
+async function listarRelatorioProdutosSemFornecedorApi() {
+    return executarRequisicaoApi("/relatorios/produtos-sem-fornecedor", undefined, "Erro ao carregar o relatório de produtos sem fornecedor.");
+}
+
+async function listarRelatorioUltimasMovimentacoesApi(limite) {
+    const limiteNumerico = Number(limite);
+    const caminho = Number.isFinite(limiteNumerico)
+        ? `/relatorios/ultimas-movimentacoes?limite=${encodeURIComponent(limiteNumerico)}`
+        : "/relatorios/ultimas-movimentacoes";
+
+    return executarRequisicaoApi(caminho, undefined, "Erro ao carregar o relatório das últimas movimentações.");
+}
+
 async function listarCategoriasApi() {
     return executarRequisicaoApi("/categorias", undefined, "Erro ao listar categorias na API.");
 }
