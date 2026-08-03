@@ -10,13 +10,17 @@ namespace MiniErp.Api.Tests;
 public sealed class MiniErpApiFactory : WebApplicationFactory<Program>
 {
     private readonly string environmentName;
-    private readonly string databasePath = Path.Combine(
-        Path.GetTempPath(),
-        $"mini-erp-tests-{Guid.NewGuid():N}.db");
+    private readonly string databasePath;
 
     public MiniErpApiFactory(string environmentName = "Development")
     {
         this.environmentName = environmentName;
+
+        string workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        string databaseDirectory = Path.Combine(workspaceRoot, ".tmp-tests");
+        Directory.CreateDirectory(databaseDirectory);
+
+        databasePath = Path.Combine(databaseDirectory, $"mini-erp-tests-{Guid.NewGuid():N}.db");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

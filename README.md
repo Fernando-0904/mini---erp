@@ -47,7 +47,7 @@ Essa etapa ajudou a praticar estruturas básicas de programação, como `if`, `s
 
 Depois da versão em console, foi criada uma interface web para representar o sistema de forma visual.
 
-A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores, movimentações de estoque e relatório de estoque baixo.
+A interface é dividida em páginas para manter cada fluxo de trabalho organizado: painel de indicadores, produtos, categorias, fornecedores, movimentações de estoque, relatório de estoque baixo e relatórios gerenciais.
 
 Com JavaScript, a tela passou a funcionar diretamente no navegador. A versão web permite:
 
@@ -76,6 +76,7 @@ Com a evolução para regras de ERP, a tela também permite:
 - consultar produtos com saldo menor ou igual ao estoque mínimo;
 - filtrar o relatório de estoque baixo por categoria;
 - destacar produtos sem estoque.
+- consultar relatórios analíticos de estoque e movimentação;
 
 ![Cadastro de produto com categoria](miniErpWeb/assets/cadastro-produto.png)
 
@@ -124,13 +125,14 @@ Hoje a parte web está organizada assim:
 
 - `dom-elements.js`: centraliza a captura dos elementos da tela, deixando os demais arquivos livres de chamadas repetidas de seleção de elementos;
 - `ui.js`: concentra as funções que desenham e atualizam a interface, como montar a tabela, atualizar os indicadores e exibir mensagens;
-- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para autenticação, produtos, categorias, fornecedores, movimentações e relatório de estoque baixo, além do tratamento padrão de respostas e falhas de conexão;
+- `api.js`: concentra todas as chamadas HTTP disponíveis na interface para autenticação, produtos, categorias, fornecedores, movimentações e relatórios, além do tratamento padrão de respostas e falhas de conexão;
 - `produto-controller.js`: reúne o estado, as regras e os eventos das ações de cadastrar, editar, remover e buscar;
 - `categoria-controller.js`: controla o cadastro, a edição e a remoção de categorias;
 - `fornecedor-controller.js`: controla o cadastro, a edição, a inativação e a remoção de fornecedores e atualiza o seletor opcional de fornecedor dos produtos;
 - `login-controller.js`: controla cadastro, login, logout, confirmação de e-mail e recuperação de senha;
 - `movimentacao-controller.js`: valida e registra entradas, saídas e consultas de histórico;
 - `estoque-baixo-controller.js`: carrega o relatório de estoque baixo e aplica o filtro por categoria;
+- `relatorio-controller.js`: carrega relatórios consolidados e alterna os tipos de análise disponíveis;
 - `painel-controller.js`: carrega os indicadores consolidados de produtos, itens e valor em estoque;
 - `app.js`: serve apenas como ponto de entrada, iniciando a aplicação.
 
@@ -143,6 +145,7 @@ As páginas da versão web são:
 - `miniErpWeb/fornecedores.html`: cadastro, edição, inativação, remoção e listagem de fornecedores;
 - `miniErpWeb/movimentacoes.html`: entradas, saídas e histórico de estoque.
 - `miniErpWeb/estoque-baixo.html`: relatório filtrável de produtos com estoque baixo.
+- `miniErpWeb/relatorios.html`: relatórios gerenciais de estoque e movimentações.
 - `miniErpWeb/confirmar-email.html`: confirmação de conta por token.
 - `miniErpWeb/redefinir-senha.html`: redefinição de senha por token.
 
@@ -208,6 +211,11 @@ A API possui os seguintes endpoints:
 | PUT | `/fornecedores/{id}` | Edita fornecedor |
 | PATCH | `/fornecedores/{id}/inativar` | Inativa um fornecedor ativo |
 | DELETE | `/fornecedores/{id}` | Remove fornecedor sem produtos vinculados |
+| GET | `/relatorios/produtos-estoque-baixo` | Lista produtos com saldo menor ou igual ao estoque mínimo |
+| GET | `/relatorios/produtos-sem-estoque` | Lista produtos com saldo igual a zero |
+| GET | `/relatorios/valor-estoque-por-categoria` | Lista valor total em estoque agrupado por categoria |
+| GET | `/relatorios/produtos-sem-fornecedor` | Lista produtos sem fornecedor vinculado |
+| GET | `/relatorios/ultimas-movimentacoes` | Lista movimentações recentes; aceita `limite` opcional |
 | GET | `/auth/csrf` | Emite o token antiforgery usado nas requisições de escrita |
 | POST | `/auth/cadastro` | Cria uma conta persistida no SQLite com e-mail pendente de confirmação |
 | POST | `/auth/login` | Valida e-mail e senha e inicia a sessão |
@@ -518,6 +526,11 @@ O projeto `MiniErp.Api.Tests` usa xUnit, SQLite em memória para os testes de se
 | Relatório de estoque baixo | Lista produtos com saldo menor ou igual ao mínimo |
 | Filtro do relatório por categoria | Retorna apenas os produtos da categoria selecionada |
 | Produtos sem estoque | Lista somente produtos com saldo igual a zero |
+| Relatório de produtos abaixo do mínimo (endpoint) | Retorna os produtos com menor ou igual ao estoque mínimo |
+| Relatório de produtos sem estoque (endpoint) | Retorna somente produtos com saldo zerado |
+| Relatório de valor por categoria (endpoint) | Consolida o valor em estoque por categoria |
+| Relatório de produtos sem fornecedor (endpoint) | Lista produtos que não possuem fornecedor vinculado |
+| Relatório de últimas movimentações (endpoint) | Retorna as movimentações mais recentes ordenadas por data e respeita o limite informado |
 | Cadastro de conta local | Cria uma conta válida e exige confirmação de e-mail |
 | E-mail de conta duplicado | Impede duas contas com o mesmo e-mail |
 | Senha curta | Exige pelo menos oito caracteres no cadastro |

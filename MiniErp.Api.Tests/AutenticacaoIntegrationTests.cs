@@ -300,11 +300,12 @@ public class AutenticacaoIntegrationTests
         using HttpClient client = factory.CriarCliente();
         await AutenticarAdministrador(client);
         string token = await ObterTokenAntiforgery(client);
+        string nomeCategoria = $"Categoria protegida {Guid.NewGuid():N}";
 
         HttpResponseMessage response = await PostComToken(client, "/categorias", new
         {
             id = 0,
-            nome = "Categoria protegida"
+            nome = nomeCategoria
         }, token);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
