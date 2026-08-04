@@ -1,9 +1,32 @@
+let temporizadorMensagemSucesso = null;
+let tokenMensagemAtual = 0;
+
 function exibirMensagem(texto, tipo) {
+    tokenMensagemAtual += 1;
+    const tokenLocal = tokenMensagemAtual;
+
+    if (temporizadorMensagemSucesso !== null) {
+        clearTimeout(temporizadorMensagemSucesso);
+        temporizadorMensagemSucesso = null;
+    }
+
     elementos.mensagem.textContent = texto;
     elementos.mensagem.className = "";
 
     if (tipo === "sucesso") {
         elementos.mensagem.className = "mensagem-sucesso";
+
+        if (texto.trim() !== "") {
+            temporizadorMensagemSucesso = setTimeout(function () {
+                if (tokenLocal !== tokenMensagemAtual) {
+                    return;
+                }
+
+                elementos.mensagem.textContent = "";
+                elementos.mensagem.className = "";
+                temporizadorMensagemSucesso = null;
+            }, 4000);
+        }
     }
 
     if (tipo === "erro") {
