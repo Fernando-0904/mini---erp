@@ -1,22 +1,37 @@
 function inicializarMovimentacaoController() {
     aplicarContextoDaUrl();
 
-    elementos.botaoRegistrarEntrada.addEventListener("click", function () {
-        registrarMovimentacao("entrada");
+    elementos.botaoRegistrarEntrada.addEventListener("click", async function () {
+        await executarComBotaoCarregando(
+            elementos.botaoRegistrarEntrada,
+            "Registrando...",
+            async function () {
+                await registrarMovimentacao("entrada");
+            });
     });
 
-    elementos.botaoRegistrarSaida.addEventListener("click", function () {
-        registrarMovimentacao("saida");
+    elementos.botaoRegistrarSaida.addEventListener("click", async function () {
+        await executarComBotaoCarregando(
+            elementos.botaoRegistrarSaida,
+            "Registrando...",
+            async function () {
+                await registrarMovimentacao("saida");
+            });
     });
 
     elementos.botaoBuscarHistorico.addEventListener("click", async function () {
-        const codigo = obterCodigoMovimentacao();
+        await executarComBotaoCarregando(
+            elementos.botaoBuscarHistorico,
+            "Buscando...",
+            async function () {
+                const codigo = obterCodigoMovimentacao();
 
-        if (codigo === null) {
-            return;
-        }
+                if (codigo === null) {
+                    return;
+                }
 
-        await carregarHistorico(codigo);
+                await carregarHistorico(codigo);
+            });
     });
 
     elementos.formularioMovimentacaoEstoque.addEventListener("submit", function (event) {

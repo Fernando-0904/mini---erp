@@ -18,6 +18,43 @@ function formatarMoeda(valor) {
     });
 }
 
+async function executarComBotaoCarregando(botao, textoCarregando, acaoAsync) {
+    if (typeof acaoAsync !== "function") {
+        return;
+    }
+
+    if (!(botao instanceof HTMLButtonElement)) {
+        return acaoAsync();
+    }
+
+    if (botao.dataset.carregando === "1") {
+        return;
+    }
+
+    const textoOriginal = botao.textContent;
+
+    botao.dataset.carregando = "1";
+    botao.disabled = true;
+    botao.setAttribute("aria-busy", "true");
+
+    if (typeof textoCarregando === "string" && textoCarregando.trim() !== "") {
+        botao.textContent = textoCarregando;
+    }
+
+    try {
+        return await acaoAsync();
+    } finally {
+        botao.disabled = false;
+        botao.removeAttribute("aria-busy");
+
+        if (typeof textoCarregando === "string" && botao.textContent === textoCarregando) {
+            botao.textContent = textoOriginal;
+        }
+
+        delete botao.dataset.carregando;
+    }
+}
+
 function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
     elementos.tabelaProdutos.innerHTML = "";
 

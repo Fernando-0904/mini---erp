@@ -7,60 +7,65 @@ function inicializarCategoriaController() {
     elementos.formularioCategoria.addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        const idTexto = elementos.campoCategoriaId.value.trim();
-        const nome = elementos.campoCategoriaNome.value.trim();
-        const id = Number(idTexto);
+        await executarComBotaoCarregando(
+            elementos.botaoSalvarCategoria,
+            idCategoriaEmEdicao === null ? "Cadastrando..." : "Salvando...",
+            async function () {
+                const idTexto = elementos.campoCategoriaId.value.trim();
+                const nome = elementos.campoCategoriaNome.value.trim();
+                const id = Number(idTexto);
 
-        if (!validarCategoria(idTexto, nome, id)) {
-            return;
-        }
+                if (!validarCategoria(idTexto, nome, id)) {
+                    return;
+                }
 
-        if (idCategoriaEmEdicao === null) {
-            const categoria = {
-                id: idTexto === "" ? 0 : id,
-                nome: nome
-            };
+                if (idCategoriaEmEdicao === null) {
+                    const categoria = {
+                        id: idTexto === "" ? 0 : id,
+                        nome: nome
+                    };
 
-            try {
-                const categoriaCadastrada = await cadastrarCategoriaApi(categoria);
-                upsertCategoriaNoArray(categoriaCadastrada);
-                await atualizarCategoriasDoProduto();
-                exibirMensagem("Categoria cadastrada com sucesso.", "sucesso");
-            } catch (erro) {
-                exibirMensagem(erro.message, "erro");
-                return;
-            }
-        } else {
-            const categoriaExistente = categorias.find(function (categoria) {
-                return categoria.id === idCategoriaEmEdicao;
+                    try {
+                        const categoriaCadastrada = await cadastrarCategoriaApi(categoria);
+                        upsertCategoriaNoArray(categoriaCadastrada);
+                        await atualizarCategoriasDoProduto();
+                        exibirMensagem("Categoria cadastrada com sucesso.", "sucesso");
+                    } catch (erro) {
+                        exibirMensagem(erro.message, "erro");
+                        return;
+                    }
+                } else {
+                    const categoriaExistente = categorias.find(function (categoria) {
+                        return categoria.id === idCategoriaEmEdicao;
+                    });
+
+                    if (categoriaExistente === undefined) {
+                        exibirMensagem("Categoria não encontrada para edição.", "erro");
+                        return;
+                    }
+
+                    const categoriaAtualizada = {
+                        id: idCategoriaEmEdicao,
+                        nome: nome
+                    };
+
+                    try {
+                        const categoriaEditada = await editarCategoriaApi(idCategoriaEmEdicao, categoriaAtualizada);
+                        aplicarDadosCategoria(categoriaExistente, categoriaEditada);
+                        await atualizarCategoriasDoProduto();
+                        exibirMensagem("Categoria editada com sucesso.", "sucesso");
+                    } catch (erro) {
+                        exibirMensagem(erro.message, "erro");
+                        return;
+                    }
+
+                    limparModoEdicaoCategoria();
+                }
+
+                atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+                elementos.formularioCategoria.reset();
+                elementos.campoCategoriaId.focus();
             });
-
-            if (categoriaExistente === undefined) {
-                exibirMensagem("Categoria não encontrada para edição.", "erro");
-                return;
-            }
-
-            const categoriaAtualizada = {
-                id: idCategoriaEmEdicao,
-                nome: nome
-            };
-
-            try {
-                const categoriaEditada = await editarCategoriaApi(idCategoriaEmEdicao, categoriaAtualizada);
-                aplicarDadosCategoria(categoriaExistente, categoriaEditada);
-                await atualizarCategoriasDoProduto();
-                exibirMensagem("Categoria editada com sucesso.", "sucesso");
-            } catch (erro) {
-                exibirMensagem(erro.message, "erro");
-                return;
-            }
-
-            limparModoEdicaoCategoria();
-        }
-
-        atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
-        elementos.formularioCategoria.reset();
-        elementos.campoCategoriaId.focus();
     });
 
     elementos.botaoLimparCategoria.addEventListener("click", function () {

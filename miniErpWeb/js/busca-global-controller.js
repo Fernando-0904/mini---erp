@@ -15,7 +15,12 @@ function inicializarBuscaGlobalController() {
 		event.preventDefault();
 		const abrirMelhorResultado = ultimoDisparoPorEnter && elementos.campoAbrirMelhorBuscaGlobal.checked;
 		ultimoDisparoPorEnter = false;
-		await buscarGlobal({ abrirMelhorResultado: abrirMelhorResultado });
+		await executarComBotaoCarregando(
+			elementos.botaoBuscarGlobal,
+			"Buscando...",
+			async function () {
+				await buscarGlobal({ abrirMelhorResultado: abrirMelhorResultado });
+			});
 	});
 
 	elementos.campoTermoBuscaGlobal.addEventListener("keydown", function (event) {
@@ -26,7 +31,12 @@ function inicializarBuscaGlobalController() {
 
 	elementos.botaoBuscarGlobal.addEventListener("click", async function () {
 		ultimoDisparoPorEnter = false;
-		await buscarGlobal({ abrirMelhorResultado: false });
+		await executarComBotaoCarregando(
+			elementos.botaoBuscarGlobal,
+			"Buscando...",
+			async function () {
+				await buscarGlobal({ abrirMelhorResultado: false });
+			});
 	});
 
 	elementos.botaoLimparBuscaGlobal.addEventListener("click", function () {

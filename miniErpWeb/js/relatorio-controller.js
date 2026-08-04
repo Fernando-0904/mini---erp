@@ -7,10 +7,16 @@ function inicializarRelatoriosController() {
     }
 
     const descricaoRelatorio = document.getElementById("descricaoRelatorioAtual");
+    const botaoGerarRelatorio = elementos.formularioRelatorios.querySelector("button[type='submit']");
 
     elementos.formularioRelatorios.addEventListener("submit", async function (evento) {
         evento.preventDefault();
-        await carregarRelatorioSelecionado();
+        await executarComBotaoCarregando(
+            botaoGerarRelatorio,
+            "Carregando...",
+            async function () {
+                await carregarRelatorioSelecionado();
+            });
     });
 
     elementos.campoTipoRelatorio.addEventListener("change", function () {

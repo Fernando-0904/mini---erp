@@ -14,85 +14,90 @@ function inicializarProdutoController() {
     elementos.formulario.addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        const codigoTexto = elementos.campoCodigo.value.trim();
-        const nome = elementos.campoNome.value.trim();
-        const precoTexto = elementos.campoPreco.value.trim();
-        const quantidadeTexto = elementos.campoQuantidade.value.trim();
-        const estoqueMinimoTexto = elementos.campoEstoqueMinimo.value.trim();
-        const categoriaIdTexto = elementos.campoCategoriaProduto.value;
-        const fornecedorIdTexto = elementos.campoFornecedorProduto.value;
+        await executarComBotaoCarregando(
+            elementos.botaoSalvarProduto,
+            codigoProdutoEmEdicao === null ? "Cadastrando..." : "Salvando...",
+            async function () {
+                const codigoTexto = elementos.campoCodigo.value.trim();
+                const nome = elementos.campoNome.value.trim();
+                const precoTexto = elementos.campoPreco.value.trim();
+                const quantidadeTexto = elementos.campoQuantidade.value.trim();
+                const estoqueMinimoTexto = elementos.campoEstoqueMinimo.value.trim();
+                const categoriaIdTexto = elementos.campoCategoriaProduto.value;
+                const fornecedorIdTexto = elementos.campoFornecedorProduto.value;
 
-        const codigo = Number(codigoTexto);
-        const preco = Number(precoTexto);
-        const quantidade = Number(quantidadeTexto);
-        const estoqueMinimo = estoqueMinimoTexto === "" ? 0 : Number(estoqueMinimoTexto);
-        const categoriaId = Number(categoriaIdTexto);
-        const fornecedorId = fornecedorIdTexto === "" ? null : Number(fornecedorIdTexto);
+                const codigo = Number(codigoTexto);
+                const preco = Number(precoTexto);
+                const quantidade = Number(quantidadeTexto);
+                const estoqueMinimo = estoqueMinimoTexto === "" ? 0 : Number(estoqueMinimoTexto);
+                const categoriaId = Number(categoriaIdTexto);
+                const fornecedorId = fornecedorIdTexto === "" ? null : Number(fornecedorIdTexto);
 
-        if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId)) {
-            return;
-        }
+                if (!validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId)) {
+                    return;
+                }
 
-        if (codigoProdutoEmEdicao === null) {
-            const produto = {
-                codigo: codigo,
-                nome: nome,
-                preco: preco,
-                quantidade: quantidade,
-                estoqueMinimo: estoqueMinimo,
-                categoriaId: categoriaId,
-                fornecedorId: fornecedorId
-            };
+                if (codigoProdutoEmEdicao === null) {
+                    const produto = {
+                        codigo: codigo,
+                        nome: nome,
+                        preco: preco,
+                        quantidade: quantidade,
+                        estoqueMinimo: estoqueMinimo,
+                        categoriaId: categoriaId,
+                        fornecedorId: fornecedorId
+                    };
 
-            try {
-                const produtoCadastrado = await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
+                    try {
+                        const produtoCadastrado = await cadastrarProdutoApi(converterProdutoTelaParaApi(produto));
 
-                upsertProdutoNoArray(converterProdutoApiParaTela(produtoCadastrado));
-                exibirMensagem("Produto cadastrado com sucesso pela API.", "sucesso");
-            } catch (erro) {
-                exibirMensagem(erro.message, "erro");
-                 return;
-            }
-        } else {
-            const produtoParaEditar = produtos.find(function (produto) {
-                return produto.codigo === codigoProdutoEmEdicao;
+                        upsertProdutoNoArray(converterProdutoApiParaTela(produtoCadastrado));
+                        exibirMensagem("Produto cadastrado com sucesso pela API.", "sucesso");
+                    } catch (erro) {
+                        exibirMensagem(erro.message, "erro");
+                        return;
+                    }
+                } else {
+                    const produtoParaEditar = produtos.find(function (produto) {
+                        return produto.codigo === codigoProdutoEmEdicao;
+                    });
+
+                    if (produtoParaEditar === undefined) {
+                        exibirMensagem("Produto não encontrado para edição.", "erro");
+                        return;
+                    }
+
+                    const produtoAtualizado = {
+                        codigo: codigo,
+                        nome: nome,
+                        preco: preco,
+                        quantidade: quantidade,
+                        estoqueMinimo: estoqueMinimo,
+                        categoriaId: categoriaId,
+                        fornecedorId: fornecedorId
+                    };
+
+                    try {
+                        const produtoEditado = await editarProdutoApi(
+                            codigoProdutoEmEdicao,
+                            converterProdutoTelaParaApi(produtoAtualizado)
+                        );
+
+                        aplicarDadosProduto(produtoParaEditar, converterProdutoApiParaTela(produtoEditado));
+                        exibirMensagem("Produto editado com sucesso pela API.", "sucesso");
+                    } catch (erro) {
+                        exibirMensagem(erro.message, "erro");
+                        return;
+                    }
+
+                    limparModoEdicao();
+                }
+
+                atualizarTabela(produtos, editarProduto, removerProduto);
+                atualizarIndicadores(produtos);
+                elementos.formulario.reset();
+                elementos.campoCodigo.focus();
             });
-
-            if (produtoParaEditar === undefined) {
-                exibirMensagem("Produto não encontrado para edição.", "erro");
-                return;
-            }
-
-            const produtoAtualizado = {
-                codigo: codigo,
-                nome: nome,
-                preco: preco,
-                quantidade: quantidade,
-                estoqueMinimo: estoqueMinimo,
-                categoriaId: categoriaId,
-                fornecedorId: fornecedorId
-            };
-
-            try {
-                const produtoEditado = await editarProdutoApi(
-                    codigoProdutoEmEdicao,
-                    converterProdutoTelaParaApi(produtoAtualizado)
-                );
-
-                aplicarDadosProduto(produtoParaEditar, converterProdutoApiParaTela(produtoEditado));
-                exibirMensagem("Produto editado com sucesso pela API.", "sucesso");
-            } catch (erro) {
-                exibirMensagem(erro.message, "erro");
-                return;
-            }
-
-            limparModoEdicao();
-        }
-
-        atualizarTabela(produtos, editarProduto, removerProduto);
-        atualizarIndicadores(produtos);
-        elementos.formulario.reset();
-        elementos.campoCodigo.focus();
     });
 
     elementos.botaoLimparFormulario.addEventListener("click", function () {
@@ -100,13 +105,13 @@ function inicializarProdutoController() {
         exibirMensagem("", "");
     });
 
-    elementos.botaoBuscar.addEventListener("click", function () {
-        buscarProduto();
+    elementos.botaoBuscar.addEventListener("click", async function () {
+        await buscarProdutoComCarregamento();
     });
 
-    elementos.formularioBuscaProduto.addEventListener("submit", function (event) {
+    elementos.formularioBuscaProduto.addEventListener("submit", async function (event) {
         event.preventDefault();
-        buscarProduto();
+        await buscarProdutoComCarregamento();
     });
 
     elementos.botaoLimparBusca.addEventListener("click", function () {
@@ -180,6 +185,15 @@ function inicializarProdutoController() {
         atualizarTabela(produtos, editarProduto, removerProduto);
         exibirMensagem("", "");
         elementos.campoCodigoBusca.focus();
+    }
+
+    async function buscarProdutoComCarregamento() {
+        await executarComBotaoCarregando(
+            elementos.botaoBuscar,
+            "Buscando...",
+            async function () {
+                await buscarProduto();
+            });
     }
 
     async function buscarProduto(termoBuscaInformado) {
