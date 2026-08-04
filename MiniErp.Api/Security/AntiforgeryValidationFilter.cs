@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MiniErp.Api.Security;
 
@@ -21,7 +22,23 @@ public class AntiforgeryValidationFilter : IEndpointFilter
         }
         catch (AntiforgeryValidationException)
         {
-            return Results.BadRequest("Token de segurança ausente ou inválido.");
+            ProblemDetails problemDetails = new()
+            {
+                Title = "Token de segurança inválido.",
+                Detail = "Token de segurança ausente ou inválido.",
+                Status = StatusCodes.Status400BadRequest,
+                Type = "https://httpstatuses.com/400",
+                Instance = context.HttpContext.Request.Path
+            };
+            problemDetails.Extensions["correlationId"] = context.HttpContext.TraceIdentifier;
+
+            return Results.Problem(
+                detail: problemDetails.Detail,
+                statusCode: problemDetails.Status,
+                title: problemDetails.Title,
+                type: problemDetails.Type,
+                instance: problemDetails.Instance,
+                extensions: problemDetails.Extensions);
         }
 
         return await next(context);

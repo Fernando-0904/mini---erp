@@ -57,15 +57,21 @@ builder.Services
             : CookieSecurePolicy.Always;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
-        options.Events.OnRedirectToLogin = context =>
+        options.Events.OnRedirectToLogin = async context =>
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
+            await EscreverProblemAsync(
+                context.HttpContext,
+                StatusCodes.Status401Unauthorized,
+                "Sessão expirada ou não autenticada.",
+                "Faça login para continuar.");
         };
-        options.Events.OnRedirectToAccessDenied = context =>
+        options.Events.OnRedirectToAccessDenied = async context =>
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return Task.CompletedTask;
+            await EscreverProblemAsync(
+                context.HttpContext,
+                StatusCodes.Status403Forbidden,
+                "Acesso negado.",
+                "Seu perfil não tem permissão para executar esta operação.");
         };
     });
 builder.Services.AddAuthorization(options =>
@@ -152,6 +158,32 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    HttpContext context = statusCodeContext.HttpContext;
+
+    if (context.Response.HasStarted)
+    {
+        return;
+    }
+
+    if (context.Response.ContentLength is > 0)
+    {
+        return;
+    }
+
+    int statusCode = context.Response.StatusCode;
+
+    if (statusCode == StatusCodes.Status404NotFound)
+    {
+        await EscreverProblemAsync(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "O recurso solicitado não foi localizado.");
+    }
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -176,19 +208,23 @@ app.MapGet("/produtos/sem-estoque", (int? categoriaId, ProdutoService produtoSer
     return Results.Ok(produtoService.ListarProdutosSemEstoque(categoriaId));
 });
 
-app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
+app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService, HttpContext context) =>
 {
     Produto? produto = produtoService.BuscarPorCodigo(codigo);
 
     if (produto == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Produto não encontrado.");
     }
 
     return Results.Ok(produto);
 });
 
-app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
+app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, HttpContext context) =>
 {
     Produto produto = MapearProdutoRequest(request);
     List<string> erros = produtoService.ValidarProduto(produto);
@@ -197,27 +233,39 @@ app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService,
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool cadastrado = produtoService.CadastrarProduto(produto);
 
     if (!cadastrado)
     {
-        return Results.Conflict("Já existe um produto com esse código.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status409Conflict,
+            "Conflito de dados.",
+            "Já existe um produto com esse código.");
     }
 
     return Results.Created($"/produtos/{produto.Codigo}", produto);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService) =>
+app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, HttpContext context) =>
 {
     Produto produtoAtualizado = MapearProdutoRequest(request);
     Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
 
     if (produtoExistente == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Produto não encontrado.");
     }
 
     List<string> erros = produtoService.ValidarProduto(produtoAtualizado);
@@ -237,26 +285,38 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, Produt
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool editado = produtoService.EditarProduto(codigo, produtoAtualizado);
 
     if (!editado)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Produto não encontrado.");
     }
 
     return Results.Ok(produtoAtualizado);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService) =>
+app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService, HttpContext context) =>
 {
     bool removido = produtoService.RemoverProduto(codigo);
 
     if (!removido)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Produto não encontrado.");
     }
 
     return Results.NoContent();
@@ -264,13 +324,17 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
 
 app.MapGet(
     "/produtos/{codigo:int}/movimentacoes",
-    (int codigo, ProdutoService produtoService, MovimentacaoEstoqueService movimentacaoService) =>
+    (int codigo, ProdutoService produtoService, MovimentacaoEstoqueService movimentacaoService, HttpContext context) =>
     {
         Produto? produto = produtoService.BuscarPorCodigo(codigo);
 
         if (produto == null)
         {
-            return Results.NotFound();
+            return CriarProblem(
+                context,
+                StatusCodes.Status404NotFound,
+                "Recurso não encontrado.",
+                "Produto não encontrado.");
         }
 
         return Results.Ok(movimentacaoService.ListarMovimentacoesPorProduto(codigo));
@@ -278,7 +342,7 @@ app.MapGet(
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/entrada",
-    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService) =>
+    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, HttpContext context) =>
     {
         bool movimentado = movimentacaoService.RegistrarEntrada(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
 
@@ -286,10 +350,18 @@ app.MapPost(
         {
             if (erro == "Produto não encontrado.")
             {
-                return Results.NotFound(erro);
+                return CriarProblem(
+                    context,
+                    StatusCodes.Status404NotFound,
+                    "Recurso não encontrado.",
+                    erro);
             }
 
-            return Results.BadRequest(erro);
+            return CriarProblem(
+                context,
+                StatusCodes.Status400BadRequest,
+                "Dados inválidos.",
+                erro);
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
@@ -297,7 +369,7 @@ app.MapPost(
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/saida",
-    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService) =>
+    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, HttpContext context) =>
     {
         bool movimentado = movimentacaoService.RegistrarSaida(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
 
@@ -305,10 +377,18 @@ app.MapPost(
         {
             if (erro == "Produto não encontrado.")
             {
-                return Results.NotFound(erro);
+                return CriarProblem(
+                    context,
+                    StatusCodes.Status404NotFound,
+                    "Recurso não encontrado.",
+                    erro);
             }
 
-            return Results.BadRequest(erro);
+            return CriarProblem(
+                context,
+                StatusCodes.Status400BadRequest,
+                "Dados inválidos.",
+                erro);
         }
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
@@ -319,39 +399,51 @@ app.MapGet("/categorias", (CategoriaService categoriaService) =>
     return Results.Ok(categoriaService.ListarCategorias());
 });
 
-app.MapGet("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
+app.MapGet("/categorias/{id:int}", (int id, CategoriaService categoriaService, HttpContext context) =>
 {
     Categoria? categoria = categoriaService.BuscarPorId(id);
 
     if (categoria == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Categoria não encontrada.");
     }
 
     return Results.Ok(categoria);
 });
 
-app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoriaService) =>
+app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoriaService, HttpContext context) =>
 {
     Categoria categoria = MapearCategoriaRequest(request);
     List<string> erros = categoriaService.ValidarCategoria(categoria);
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool cadastrada = categoriaService.CadastrarCategoria(categoria);
 
     if (!cadastrada)
     {
-        return Results.Conflict("Já existe uma categoria com esse nome.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status409Conflict,
+            "Conflito de dados.",
+            "Já existe uma categoria com esse nome.");
     }
 
     return Results.Created($"/categorias/{categoria.Id}", categoria);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService) =>
+app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService, HttpContext context) =>
 {
     Categoria categoriaAtualizada = MapearCategoriaRequest(request);
     List<string> erros = categoriaService.ValidarCategoria(categoriaAtualizada);
@@ -363,29 +455,45 @@ app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaS
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool editada = categoriaService.EditarCategoria(id, categoriaAtualizada);
 
     if (!editada)
     {
-        return Results.NotFound("Categoria não encontrada ou nome já está em uso.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Categoria não encontrada ou nome já está em uso.");
     }
 
     return Results.Ok(categoriaAtualizada);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService) =>
+app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService, HttpContext context) =>
 {
     if (categoriaService.BuscarPorId(id) == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Categoria não encontrada.");
     }
 
     if (categoriaService.PossuiProdutosVinculados(id))
     {
-        return Results.BadRequest("Não é possível remover uma categoria vinculada a produtos.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Operação inválida.",
+            "Não é possível remover uma categoria vinculada a produtos.");
     }
 
     categoriaService.RemoverCategoria(id);
@@ -397,43 +505,59 @@ app.MapGet("/fornecedores", (FornecedorService fornecedorService) =>
     return Results.Ok(fornecedorService.ListarFornecedores());
 });
 
-app.MapGet("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
+app.MapGet("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService, HttpContext context) =>
 {
     Fornecedor? fornecedor = fornecedorService.BuscarPorId(id);
 
     if (fornecedor == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Fornecedor não encontrado.");
     }
 
     return Results.Ok(fornecedor);
 });
 
-app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService fornecedorService) =>
+app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService fornecedorService, HttpContext context) =>
 {
     Fornecedor fornecedor = MapearFornecedorRequest(request);
     List<string> erros = fornecedorService.ValidarFornecedor(fornecedor);
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool cadastrado = fornecedorService.CadastrarFornecedor(fornecedor);
 
     if (!cadastrado)
     {
-        return Results.Conflict("Já existe um fornecedor com esse código ou documento.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status409Conflict,
+            "Conflito de dados.",
+            "Já existe um fornecedor com esse código ou documento.");
     }
 
     return Results.Created($"/fornecedores/{fornecedor.Id}", fornecedor);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService) =>
+app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService, HttpContext context) =>
 {
     if (fornecedorService.BuscarPorId(id) == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Fornecedor não encontrado.");
     }
 
     Fornecedor fornecedorAtualizado = MapearFornecedorRequest(request);
@@ -441,39 +565,59 @@ app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, Fornece
 
     if (erros.Count > 0)
     {
-        return Results.BadRequest(erros);
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            string.Join(" ", erros));
     }
 
     bool editado = fornecedorService.EditarFornecedor(id, fornecedorAtualizado);
 
     if (!editado)
     {
-        return Results.Conflict("Já existe um fornecedor com esse código ou documento.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status409Conflict,
+            "Conflito de dados.",
+            "Já existe um fornecedor com esse código ou documento.");
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService) =>
+app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService, HttpContext context) =>
 {
     if (!fornecedorService.InativarFornecedor(id))
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Fornecedor não encontrado.");
     }
 
     return Results.Ok(fornecedorService.BuscarPorId(id));
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService) =>
+app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService, HttpContext context) =>
 {
     if (fornecedorService.BuscarPorId(id) == null)
     {
-        return Results.NotFound();
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Fornecedor não encontrado.");
     }
 
     if (fornecedorService.PossuiProdutosVinculados(id))
     {
-        return Results.BadRequest("Não é possível remover um fornecedor vinculado a produtos.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Operação inválida.",
+            "Não é possível remover um fornecedor vinculado a produtos.");
     }
 
     fornecedorService.RemoverFornecedor(id);
@@ -523,8 +667,8 @@ app.MapPost("/auth/cadastro", async (CadastroUsuarioRequest request, UsuarioLoca
     if (usuario is null)
     {
         return erro == "Já existe uma conta com este e-mail."
-            ? Results.Conflict(erro)
-            : Results.BadRequest(erro);
+            ? CriarProblem(context, StatusCodes.Status409Conflict, "Conflito de dados.", erro)
+            : CriarProblem(context, StatusCodes.Status400BadRequest, "Dados inválidos.", erro);
     }
 
     context.Response.Headers.CacheControl = "no-store";
@@ -541,19 +685,31 @@ app.MapPost("/auth/login", async (LoginRequest request, UsuarioLocalService usua
 {
     if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Senha))
     {
-        return Results.BadRequest("E-mail e senha são obrigatórios.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            "E-mail e senha são obrigatórios.");
     }
 
     ResultadoAutenticacao autenticacao = usuarioService.Autenticar(request.Email, request.Senha);
 
     if (autenticacao.EmailNaoConfirmado)
     {
-        return Results.BadRequest("Confirme seu e-mail antes de entrar.");
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Confirmação pendente.",
+            "Confirme seu e-mail antes de entrar.");
     }
 
     if (autenticacao.Usuario is null)
     {
-        return Results.Unauthorized();
+        return CriarProblem(
+            context,
+            StatusCodes.Status401Unauthorized,
+            "Não autenticado.",
+            "E-mail ou senha inválidos.");
     }
 
     await context.SignInAsync(
@@ -573,7 +729,11 @@ app.MapPost("/auth/confirmar-email", (ConfirmarEmailRequest request, UsuarioLoca
     context.Response.Headers.CacheControl = "no-store";
     return confirmado
         ? Results.Ok(new { mensagem = "E-mail confirmado com sucesso. Você já pode entrar." })
-        : Results.BadRequest("Token de confirmação inválido ou expirado.");
+        : CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Token inválido.",
+            "Token de confirmação inválido ou expirado.");
 })
     .AllowAnonymous()
     .RequireAntiforgery();
@@ -602,7 +762,11 @@ app.MapPost("/auth/redefinir-senha", (RedefinirSenhaRequest request, UsuarioLoca
     context.Response.Headers.CacheControl = "no-store";
     return redefinida
         ? Results.Ok(new { mensagem = "Senha redefinida com sucesso. Entre com sua nova senha." })
-        : Results.BadRequest("Token inválido ou expirado, ou senha fora dos critérios.");
+        : CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Token inválido.",
+            "Token inválido ou expirado, ou senha fora dos critérios.");
 })
     .AllowAnonymous()
     .RequireAntiforgery();
@@ -611,7 +775,13 @@ app.MapGet("/auth/me", (ClaimsPrincipal principal, HttpContext context) =>
 {
     UsuarioResponse? usuario = MapearUsuarioClaims(principal);
     context.Response.Headers.CacheControl = "no-store";
-    return usuario is null ? Results.Unauthorized() : Results.Ok(usuario);
+    return usuario is null
+        ? CriarProblem(
+            context,
+            StatusCodes.Status401Unauthorized,
+            "Sessão expirada ou não autenticada.",
+            "Faça login para continuar.")
+        : Results.Ok(usuario);
 });
 
 app.MapPost("/auth/logout", async (HttpContext context) =>
@@ -714,6 +884,43 @@ static UsuarioResponse? MapearUsuarioClaims(ClaimsPrincipal principal)
         Email = email,
         Perfil = perfil
     };
+}
+
+static IResult CriarProblem(HttpContext context, int statusCode, string title, string detail)
+{
+    return Results.Problem(
+        detail: detail,
+        statusCode: statusCode,
+        title: title,
+        type: $"https://httpstatuses.com/{statusCode}",
+        instance: context.Request.Path,
+        extensions: new Dictionary<string, object?>
+        {
+            ["correlationId"] = context.TraceIdentifier
+        });
+}
+
+static async Task EscreverProblemAsync(HttpContext context, int statusCode, string title, string detail)
+{
+    if (context.Response.HasStarted)
+    {
+        return;
+    }
+
+    context.Response.StatusCode = statusCode;
+    context.Response.ContentType = "application/problem+json";
+
+    ProblemDetails problemDetails = new()
+    {
+        Title = title,
+        Detail = detail,
+        Status = statusCode,
+        Type = $"https://httpstatuses.com/{statusCode}",
+        Instance = context.Request.Path
+    };
+    problemDetails.Extensions["correlationId"] = context.TraceIdentifier;
+
+    await context.Response.WriteAsJsonAsync(problemDetails);
 }
 
 public partial class Program;
