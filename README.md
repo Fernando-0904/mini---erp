@@ -96,6 +96,13 @@ Além das funções já existentes, a versão web recebeu melhorias no fluxo de 
 - buscar produtos por código ou nome;
 - executar busca pressionando Enter no campo de busca.
 
+Também foram adicionados ajustes de experiência para deixar o uso mais claro no dia a dia:
+
+- botões de ações assíncronas mostram estado de carregamento durante chamadas da API;
+- o botão fica temporariamente desabilitado enquanto a operação está em andamento;
+- mensagens de sucesso são ocultadas automaticamente após alguns segundos;
+- mensagens de erro permanecem visíveis até a próxima ação.
+
 Fluxo da edição de produto:
 
 1. Ao clicar em Editar, os dados do item voltam para o formulário.
@@ -230,6 +237,23 @@ A API possui os seguintes endpoints:
 As rotas do ERP exigem uma sessão autenticada. Requisições de escrita também exigem o token CSRF no cabeçalho `X-CSRF-TOKEN`.
 
 As permissões usam o perfil salvo no usuário. `Administrador`/`Admin` pode consultar, cadastrar, editar e remover; `Operador`/`Usuário` pode consultar, cadastrar, editar, movimentar e inativar, mas não remover; `Consulta` pode apenas visualizar dados. Operações sem permissão retornam `403 Forbidden`.
+
+### Padronização de erros da API
+
+A API passou a responder erros de forma padronizada com `ProblemDetails`, mantendo um contrato único para facilitar frontend, suporte e diagnóstico.
+
+As respostas de erro incluem:
+
+- `status`: código HTTP da falha;
+- `title`: resumo curto da situação;
+- `detail`: mensagem descritiva da falha;
+- `type`: referência do tipo de erro baseada no status HTTP;
+- `instance`: rota que gerou a falha;
+- `correlationId`: identificador para rastreio no servidor.
+
+Além do corpo, a API também envia `X-Correlation-Id` no cabeçalho da resposta.
+
+Esse padrão está aplicado nos principais cenários de erro da aplicação, incluindo validações de dados, recursos não encontrados, acesso não autorizado, acesso negado e erros de antiforgery.
 
 Exemplo de JSON usado no cadastro e na edição:
 
