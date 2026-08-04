@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MiniErp.Api.Data;
 using MiniErp.Api.DTOs;
 using MiniErp.Api.Models;
@@ -106,8 +108,49 @@ builder.Services.AddScoped<RelatorioService>();
 builder.Services.AddScoped<UsuarioLocalService>();
 builder.Services.AddSingleton<EmailSimuladoService>();
 builder.Services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<EmailSimuladoService>());
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        IExceptionHandlerFeature? exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        ILoggerFactory loggerFactory = context.RequestServices.GetRequiredService<ILoggerFactory>();
+        ILogger logger = loggerFactory.CreateLogger("GlobalExceptionHandler");
+
+        logger.LogError(
+            exceptionFeature?.Error,
+            "Erro não tratado na API. CorrelationId: {CorrelationId}",
+            context.TraceIdentifier);
+
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        ProblemDetails problemDetails = new()
+        {
+            Title = "Erro inesperado.",
+            Detail = "Ocorreu um erro inesperado. Tente novamente e informe o código de correlação se o problema persistir.",
+            Status = StatusCodes.Status500InternalServerError,
+            Type = "https://httpstatuses.com/500",
+            Instance = context.Request.Path
+        };
+        problemDetails.Extensions["correlationId"] = context.TraceIdentifier;
+
+        await context.Response.WriteAsJsonAsync(problemDetails);
+    });
+});
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Correlation-Id"] = context.TraceIdentifier;
+    await next();
+});
 
 if (!app.Environment.IsDevelopment())
 {

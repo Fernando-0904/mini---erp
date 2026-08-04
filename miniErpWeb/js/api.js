@@ -16,10 +16,11 @@ const METODOS_HTTP_SEGUROS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 let tokenAntiforgery = null;
 
 class ErroApi extends Error {
-    constructor(mensagem, status) {
+    constructor(mensagem, status, correlationId = null) {
         super(mensagem);
         this.name = "ErroApi";
         this.status = status;
+        this.correlationId = correlationId;
     }
 }
 
@@ -77,7 +78,10 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
         return resposta.json();
     }
 
-    let mensagemErro = resposta.status >= 500 ? MENSAGEM_ERRO_INESPERADO : mensagemErroPadrao;
+    const correlationId = resposta.headers.get("X-Correlation-Id");
+    let mensagemErro = resposta.status >= 500
+        ? "Não foi possível concluir a operação agora. Tente novamente em instantes."
+        : mensagemErroPadrao;
 
     if (resposta.status === 401 && notificarSessaoExpirada) {
         mensagemErro = "Sua sessão expirou. Entre novamente para continuar.";
@@ -92,14 +96,14 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
         const erro = await resposta.json();
         const mensagemExtraida = extrairMensagemErroApi(erro);
 
-        if (resposta.status < 500 && resposta.status !== 403 && mensagemExtraida !== "") {
-            mensagemErro = mensagemExtraida;
+        if (resposta.status < 500 && resposta.status !== 403) {
+            mensagemErro = resolverMensagemErroAmigavel(mensagemExtraida, mensagemErroPadrao, resposta.status);
         }
     } catch {
-        // Mantém a mensagem padrão se a API não retornar JSON.
+        mensagemErro = resolverMensagemErroAmigavel("", mensagemErroPadrao, resposta.status);
     }
 
-    throw new ErroApi(normalizarMensagemErroUsuario(mensagemErro), resposta.status);
+    throw new ErroApi(normalizarMensagemErroUsuario(mensagemErro), resposta.status, correlationId);
 }
 
 async function obterTokenAntiforgeryApi() {
@@ -183,6 +187,85 @@ function extrairMensagemErroApi(erro) {
     }
 
     return "";
+}
+
+function resolverMensagemErroAmigavel(mensagemApi, mensagemPadrao, status) {
+    const mensagemBase = (typeof mensagemApi === "string" ? mensagemApi.trim() : "");
+    const mensagemLower = mensagemBase.toLowerCase();
+
+    if (mensagemLower.includes("token de segurança") || mensagemLower.includes("csrf") || mensagemLower.includes("antiforgery")) {
+        return "Sua sessão de segurança expirou. Atualize a página e tente novamente.";
+    }
+
+    if (mensagemLower.includes("estoque insuficiente") || mensagemLower.includes("saldo insuficiente")) {
+        return "Não foi possível registrar a saída porque o saldo em estoque é insuficiente.";
+    }
+
+    if (mensagemLower.includes("produto não encontrado")) {
+        return "Não encontramos esse produto. Confira o código e tente novamente.";
+    }
+
+    if (mensagemLower.includes("categoria não encontrada") || mensagemLower.includes("categoria inexistente")) {
+        return "A categoria informada não existe mais. Atualize os dados e tente novamente.";
+    }
+
+    if (mensagemLower.includes("fornecedor informado não existe")) {
+        return "O fornecedor informado não foi encontrado. Atualize os dados e tente novamente.";
+    }
+
+    if (mensagemLower.includes("fornecedor informado está inativo")) {
+        return "Esse fornecedor está inativo. Escolha um fornecedor ativo para continuar.";
+    }
+
+    if (mensagemLower.includes("já existe um produto com esse código")) {
+        return "Já existe um produto com esse código. Use outro código para continuar.";
+    }
+
+    if (mensagemLower.includes("já existe uma categoria com esse nome")) {
+        return "Já existe uma categoria com esse nome. Informe um nome diferente.";
+    }
+
+    if (mensagemLower.includes("já existe um fornecedor com esse código ou documento")) {
+        return "Já existe fornecedor com esse código ou documento. Revise os dados e tente novamente.";
+    }
+
+    if (mensagemLower.includes("e-mail e senha são obrigatórios")) {
+        return "Informe e-mail e senha para entrar.";
+    }
+
+    if (mensagemLower.includes("confirme seu e-mail antes de entrar")) {
+        return "Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada e confirme antes de entrar.";
+    }
+
+    if (mensagemLower.includes("token inválido") || mensagemLower.includes("token de confirmação inválido")) {
+        return "O link usado não é mais válido. Solicite um novo link e tente novamente.";
+    }
+
+    if (mensagemBase !== "") {
+        return mensagemBase;
+    }
+
+    if (status === 404) {
+        return "Não encontramos o registro solicitado.";
+    }
+
+    if (status === 409) {
+        return "Já existe um registro com esses dados. Revise e tente novamente.";
+    }
+
+    if (status === 400) {
+        return "Não foi possível concluir a operação. Revise os dados informados e tente novamente.";
+    }
+
+    if (status === 401) {
+        return "Sua sessão expirou. Entre novamente para continuar.";
+    }
+
+    if (status === 403) {
+        return "Seu perfil não tem permissão para executar esta operação.";
+    }
+
+    return mensagemPadrao;
 }
 
 async function listarProdutosApi() {
