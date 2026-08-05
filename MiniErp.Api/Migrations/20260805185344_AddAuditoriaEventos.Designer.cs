@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniErp.Api.Data;
 
@@ -10,9 +11,11 @@ using MiniErp.Api.Data;
 namespace MiniErp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805185344_AddAuditoriaEventos")]
+    partial class AddAuditoriaEventos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
@@ -65,7 +68,7 @@ namespace MiniErp.Api.Migrations
 
                     b.HasIndex("Entidade", "EntidadeId");
 
-                    b.ToTable("AuditoriaEventos", (string)null);
+                    b.ToTable("AuditoriaEventos");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.Categoria", b =>
@@ -83,7 +86,7 @@ namespace MiniErp.Api.Migrations
                     b.HasIndex("Nome")
                         .IsUnique();
 
-                    b.ToTable("Categorias", (string)null);
+                    b.ToTable("Categorias");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.Fornecedor", b =>
@@ -122,7 +125,7 @@ namespace MiniErp.Api.Migrations
                     b.HasIndex("Documento")
                         .IsUnique();
 
-                    b.ToTable("Fornecedores", (string)null);
+                    b.ToTable("Fornecedores");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.MovimentacaoEstoque", b =>
@@ -156,7 +159,7 @@ namespace MiniErp.Api.Migrations
 
                     b.HasIndex("ProdutoCodigo");
 
-                    b.ToTable("MovimentacoesEstoque", (string)null);
+                    b.ToTable("MovimentacoesEstoque");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.Produto", b =>
@@ -190,7 +193,7 @@ namespace MiniErp.Api.Migrations
 
                     b.HasIndex("FornecedorId");
 
-                    b.ToTable("Produtos", (string)null);
+                    b.ToTable("Produtos");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.TokenUsuario", b =>
@@ -226,7 +229,7 @@ namespace MiniErp.Api.Migrations
 
                     b.HasIndex("UsuarioId", "Tipo");
 
-                    b.ToTable("TokensUsuario", (string)null);
+                    b.ToTable("TokensUsuario");
                 });
 
             modelBuilder.Entity("MiniErp.Api.Models.Usuario", b =>
@@ -275,7 +278,7 @@ namespace MiniErp.Api.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Usuarios", (string)null);
+                    b.ToTable("Usuarios");
 
                     b.HasData(
                         new

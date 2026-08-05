@@ -8,6 +8,7 @@ function inicializarRelatoriosController() {
 
     const descricaoRelatorio = document.getElementById("descricaoRelatorioAtual");
     const botaoGerarRelatorio = elementos.formularioRelatorios.querySelector("button[type='submit']");
+    const botaoExportarRelatorio = elementos.botaoExportarRelatorio;
 
     elementos.formularioRelatorios.addEventListener("submit", async function (evento) {
         evento.preventDefault();
@@ -22,6 +23,17 @@ function inicializarRelatoriosController() {
     elementos.campoTipoRelatorio.addEventListener("change", function () {
         atualizarVisibilidadeLimite();
     });
+
+    if (botaoExportarRelatorio instanceof HTMLButtonElement) {
+        botaoExportarRelatorio.addEventListener("click", async function () {
+            await executarComBotaoCarregando(
+                botaoExportarRelatorio,
+                "Exportando...",
+                async function () {
+                    await exportarRelatorioSelecionado();
+                });
+        });
+    }
 
     atualizarVisibilidadeLimite();
     carregarRelatorioSelecionado();
@@ -50,6 +62,15 @@ function inicializarRelatoriosController() {
             renderizarLinhas([]);
             exibirMensagem(erro instanceof Error ? erro.message : "Não foi possível carregar o relatório.", "erro");
         }
+    }
+
+    async function exportarRelatorioSelecionado() {
+        const tipoRelatorio = elementos.campoTipoRelatorio.value;
+        const limite = obterLimiteRelatorioSelecionado();
+        const arquivo = await exportarRelatorioCsvApi(tipoRelatorio, limite);
+
+        baixarArquivo(arquivo.blob, arquivo.nomeArquivo);
+        exibirMensagem("Relatório exportado com sucesso.", "sucesso");
     }
 
     async function buscarDadosRelatorio() {
@@ -117,15 +138,7 @@ function inicializarRelatoriosController() {
             };
         }
 
-        const limitePadrao = 10;
-        let limite = limitePadrao;
-
-        if (elementos.campoLimiteRelatorio instanceof HTMLInputElement) {
-            const valorInformado = Number(elementos.campoLimiteRelatorio.value);
-            if (Number.isFinite(valorInformado) && valorInformado > 0) {
-                limite = Math.trunc(valorInformado);
-            }
-        }
+        const limite = obterLimiteRelatorioSelecionado();
 
         const itens = await listarRelatorioUltimasMovimentacoesApi(limite);
         return {
@@ -142,6 +155,34 @@ function inicializarRelatoriosController() {
                 ];
             })
         };
+    }
+
+    function obterLimiteRelatorioSelecionado() {
+        const limitePadrao = 10;
+
+        if (!(elementos.campoLimiteRelatorio instanceof HTMLInputElement)) {
+            return limitePadrao;
+        }
+
+        const valorInformado = Number(elementos.campoLimiteRelatorio.value);
+
+        if (Number.isFinite(valorInformado) && valorInformado > 0) {
+            return Math.trunc(valorInformado);
+        }
+
+        return limitePadrao;
+    }
+
+    function baixarArquivo(blob, nomeArquivo) {
+        const urlTemporaria = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = urlTemporaria;
+        link.download = nomeArquivo || "relatorio.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(urlTemporaria);
     }
 
     function configurarCabecalho(colunas) {

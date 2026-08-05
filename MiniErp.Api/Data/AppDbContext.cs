@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<MovimentacaoEstoque> MovimentacoesEstoque => Set<MovimentacaoEstoque>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<TokenUsuario> TokensUsuario => Set<TokenUsuario>();
+    public DbSet<AuditoriaEvento> AuditoriaEventos => Set<AuditoriaEvento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,39 @@ public class AppDbContext : DbContext
             .HasIndex(token => new { token.UsuarioId, token.Tipo });
         modelBuilder.Entity<TokenUsuario>()
             .HasIndex(token => token.ExpiraEmUtc);
+
+        modelBuilder.Entity<AuditoriaEvento>().HasKey(evento => evento.Id);
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.Acao)
+            .HasMaxLength(40)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.Entidade)
+            .HasMaxLength(40)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.EntidadeId)
+            .HasMaxLength(80)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.Descricao)
+            .HasMaxLength(300)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.UsuarioEmail)
+            .HasMaxLength(254)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .Property(evento => evento.Dados)
+            .HasMaxLength(2000)
+            .IsRequired();
+        modelBuilder.Entity<AuditoriaEvento>()
+            .HasIndex(evento => evento.DataUtc);
+        modelBuilder.Entity<AuditoriaEvento>()
+            .HasIndex(evento => new { evento.Entidade, evento.EntidadeId });
 
         modelBuilder.Entity<Usuario>().HasData(new Usuario
         {

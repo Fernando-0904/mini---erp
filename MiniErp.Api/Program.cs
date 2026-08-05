@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -111,6 +112,7 @@ builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<FornecedorService>();
 builder.Services.AddScoped<MovimentacaoEstoqueService>();
 builder.Services.AddScoped<RelatorioService>();
+builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<UsuarioLocalService>();
 builder.Services.AddSingleton<EmailSimuladoService>();
 builder.Services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<EmailSimuladoService>());
@@ -224,7 +226,7 @@ app.MapGet("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService,
     return Results.Ok(produto);
 });
 
-app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, HttpContext context) =>
+app.MapPost("/produtos", async (ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     Produto produto = MapearProdutoRequest(request);
     List<string> erros = produtoService.ValidarProduto(produto);
@@ -251,10 +253,18 @@ app.MapPost("/produtos", (ProdutoRequest request, ProdutoService produtoService,
             "Já existe um produto com esse código.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Cadastro",
+        "Produto",
+        produto.Codigo.ToString(),
+        $"Produto {produto.Codigo} - {produto.Nome} cadastrado.",
+        new { produto.Codigo, produto.Nome, produto.CategoriaId, produto.FornecedorId });
+
     return Results.Created($"/produtos/{produto.Codigo}", produto);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, HttpContext context) =>
+app.MapPut("/produtos/{codigo:int}", async (int codigo, ProdutoRequest request, ProdutoService produtoService, CategoriaService categoriaService, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     Produto produtoAtualizado = MapearProdutoRequest(request);
     Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
@@ -303,11 +313,30 @@ app.MapPut("/produtos/{codigo:int}", (int codigo, ProdutoRequest request, Produt
             "Produto não encontrado.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Edição",
+        "Produto",
+        codigo.ToString(),
+        $"Produto {codigo} atualizado.",
+        new { produtoAtualizado.Nome, produtoAtualizado.PrecoUnitario, produtoAtualizado.EstoqueMinimo, produtoAtualizado.CategoriaId, produtoAtualizado.FornecedorId });
+
     return Results.Ok(produtoAtualizado);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoService, HttpContext context) =>
+app.MapDelete("/produtos/{codigo:int}", async (int codigo, ProdutoService produtoService, AuditoriaService auditoriaService, HttpContext context) =>
 {
+    Produto? produtoExistente = produtoService.BuscarPorCodigo(codigo);
+
+    if (produtoExistente == null)
+    {
+        return CriarProblem(
+            context,
+            StatusCodes.Status404NotFound,
+            "Recurso não encontrado.",
+            "Produto não encontrado.");
+    }
+
     bool removido = produtoService.RemoverProduto(codigo);
 
     if (!removido)
@@ -318,6 +347,14 @@ app.MapDelete("/produtos/{codigo:int}", (int codigo, ProdutoService produtoServi
             "Recurso não encontrado.",
             "Produto não encontrado.");
     }
+
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Remoção",
+        "Produto",
+        codigo.ToString(),
+        $"Produto {codigo} removido.",
+        new { produtoExistente.Nome, produtoExistente.CategoriaId, produtoExistente.FornecedorId });
 
     return Results.NoContent();
 }).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
@@ -342,7 +379,7 @@ app.MapGet(
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/entrada",
-    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, HttpContext context) =>
+    async (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, AuditoriaService auditoriaService, HttpContext context) =>
     {
         bool movimentado = movimentacaoService.RegistrarEntrada(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
 
@@ -364,12 +401,20 @@ app.MapPost(
                 erro);
         }
 
+        await auditoriaService.RegistrarAsync(
+            context,
+            "Movimentação",
+            "Estoque",
+            codigo.ToString(),
+            $"Entrada de {request.Quantidade} unidade(s) no produto {codigo}.",
+            new { Tipo = "Entrada", request.Quantidade, movimentacao!.SaldoAnterior, movimentacao.SaldoNovo });
+
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
     }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
 app.MapPost(
     "/produtos/{codigo:int}/movimentacoes/saida",
-    (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, HttpContext context) =>
+    async (int codigo, MovimentacaoEstoqueRequest request, MovimentacaoEstoqueService movimentacaoService, AuditoriaService auditoriaService, HttpContext context) =>
     {
         bool movimentado = movimentacaoService.RegistrarSaida(codigo, request.Quantidade, out MovimentacaoEstoque? movimentacao, out string erro);
 
@@ -390,6 +435,14 @@ app.MapPost(
                 "Dados inválidos.",
                 erro);
         }
+
+        await auditoriaService.RegistrarAsync(
+            context,
+            "Movimentação",
+            "Estoque",
+            codigo.ToString(),
+            $"Saída de {request.Quantidade} unidade(s) no produto {codigo}.",
+            new { Tipo = "Saída", request.Quantidade, movimentacao!.SaldoAnterior, movimentacao.SaldoNovo });
 
         return Results.Created($"/produtos/{codigo}/movimentacoes/{movimentacao!.Id}", movimentacao);
     }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
@@ -415,7 +468,7 @@ app.MapGet("/categorias/{id:int}", (int id, CategoriaService categoriaService, H
     return Results.Ok(categoria);
 });
 
-app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoriaService, HttpContext context) =>
+app.MapPost("/categorias", async (CategoriaRequest request, CategoriaService categoriaService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     Categoria categoria = MapearCategoriaRequest(request);
     List<string> erros = categoriaService.ValidarCategoria(categoria);
@@ -440,10 +493,18 @@ app.MapPost("/categorias", (CategoriaRequest request, CategoriaService categoria
             "Já existe uma categoria com esse nome.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Cadastro",
+        "Categoria",
+        categoria.Id.ToString(),
+        $"Categoria {categoria.Id} - {categoria.Nome} cadastrada.",
+        new { categoria.Id, categoria.Nome });
+
     return Results.Created($"/categorias/{categoria.Id}", categoria);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaService categoriaService, HttpContext context) =>
+app.MapPut("/categorias/{id:int}", async (int id, CategoriaRequest request, CategoriaService categoriaService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     Categoria categoriaAtualizada = MapearCategoriaRequest(request);
     List<string> erros = categoriaService.ValidarCategoria(categoriaAtualizada);
@@ -473,12 +534,22 @@ app.MapPut("/categorias/{id:int}", (int id, CategoriaRequest request, CategoriaS
             "Categoria não encontrada ou nome já está em uso.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Edição",
+        "Categoria",
+        id.ToString(),
+        $"Categoria {id} atualizada para {categoriaAtualizada.Nome}.",
+        new { categoriaAtualizada.Id, categoriaAtualizada.Nome });
+
     return Results.Ok(categoriaAtualizada);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService, HttpContext context) =>
+app.MapDelete("/categorias/{id:int}", async (int id, CategoriaService categoriaService, AuditoriaService auditoriaService, HttpContext context) =>
 {
-    if (categoriaService.BuscarPorId(id) == null)
+    Categoria? categoria = categoriaService.BuscarPorId(id);
+
+    if (categoria == null)
     {
         return CriarProblem(
             context,
@@ -497,6 +568,15 @@ app.MapDelete("/categorias/{id:int}", (int id, CategoriaService categoriaService
     }
 
     categoriaService.RemoverCategoria(id);
+
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Remoção",
+        "Categoria",
+        id.ToString(),
+        $"Categoria {id} - {categoria.Nome} removida.",
+        new { categoria.Id, categoria.Nome });
+
     return Results.NoContent();
 }).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
 
@@ -521,7 +601,7 @@ app.MapGet("/fornecedores/{id:int}", (int id, FornecedorService fornecedorServic
     return Results.Ok(fornecedor);
 });
 
-app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService fornecedorService, HttpContext context) =>
+app.MapPost("/fornecedores", async (FornecedorRequest request, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     Fornecedor fornecedor = MapearFornecedorRequest(request);
     List<string> erros = fornecedorService.ValidarFornecedor(fornecedor);
@@ -546,10 +626,18 @@ app.MapPost("/fornecedores", (FornecedorRequest request, FornecedorService forne
             "Já existe um fornecedor com esse código ou documento.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Cadastro",
+        "Fornecedor",
+        fornecedor.Id.ToString(),
+        $"Fornecedor {fornecedor.Codigo} - {fornecedor.Nome} cadastrado.",
+        new { fornecedor.Id, fornecedor.Codigo, fornecedor.Nome, fornecedor.Ativo });
+
     return Results.Created($"/fornecedores/{fornecedor.Id}", fornecedor);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, FornecedorService fornecedorService, HttpContext context) =>
+app.MapPut("/fornecedores/{id:int}", async (int id, FornecedorRequest request, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     if (fornecedorService.BuscarPorId(id) == null)
     {
@@ -583,10 +671,18 @@ app.MapPut("/fornecedores/{id:int}", (int id, FornecedorRequest request, Fornece
             "Já existe um fornecedor com esse código ou documento.");
     }
 
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Edição",
+        "Fornecedor",
+        id.ToString(),
+        $"Fornecedor {id} atualizado.",
+        new { fornecedorAtualizado.Codigo, fornecedorAtualizado.Nome, fornecedorAtualizado.Ativo });
+
     return Results.Ok(fornecedorService.BuscarPorId(id));
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService fornecedorService, HttpContext context) =>
+app.MapPatch("/fornecedores/{id:int}/inativar", async (int id, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
     if (!fornecedorService.InativarFornecedor(id))
     {
@@ -597,12 +693,24 @@ app.MapPatch("/fornecedores/{id:int}/inativar", (int id, FornecedorService forne
             "Fornecedor não encontrado.");
     }
 
-    return Results.Ok(fornecedorService.BuscarPorId(id));
+    Fornecedor? fornecedor = fornecedorService.BuscarPorId(id);
+
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Inativação",
+        "Fornecedor",
+        id.ToString(),
+        $"Fornecedor {id} inativado.",
+        new { fornecedor?.Codigo, fornecedor?.Nome });
+
+    return Results.Ok(fornecedor);
 }).RequireAuthorization(PoliticaOperar).RequireAntiforgery();
 
-app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorService, HttpContext context) =>
+app.MapDelete("/fornecedores/{id:int}", async (int id, FornecedorService fornecedorService, AuditoriaService auditoriaService, HttpContext context) =>
 {
-    if (fornecedorService.BuscarPorId(id) == null)
+    Fornecedor? fornecedor = fornecedorService.BuscarPorId(id);
+
+    if (fornecedor == null)
     {
         return CriarProblem(
             context,
@@ -621,8 +729,27 @@ app.MapDelete("/fornecedores/{id:int}", (int id, FornecedorService fornecedorSer
     }
 
     fornecedorService.RemoverFornecedor(id);
+
+    await auditoriaService.RegistrarAsync(
+        context,
+        "Remoção",
+        "Fornecedor",
+        id.ToString(),
+        $"Fornecedor {id} - {fornecedor.Nome} removido.",
+        new { fornecedor.Id, fornecedor.Codigo, fornecedor.Nome });
+
     return Results.NoContent();
 }).RequireAuthorization(PoliticaAdministrar).RequireAntiforgery();
+
+app.MapGet("/relatorios/alertas-operacionais", async (RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarAlertasOperacionaisAsync());
+});
+
+app.MapGet("/relatorios/auditoria", async (int? limite, RelatorioService relatorioService) =>
+{
+    return Results.Ok(await relatorioService.ListarAuditoriaAsync(limite ?? 30));
+}).RequireAuthorization(PoliticaAdministrar);
 
 app.MapGet("/relatorios/produtos-estoque-baixo", async (RelatorioService relatorioService) =>
 {
@@ -647,6 +774,77 @@ app.MapGet("/relatorios/produtos-sem-fornecedor", async (RelatorioService relato
 app.MapGet("/relatorios/ultimas-movimentacoes", async (int? limite, RelatorioService relatorioService) =>
 {
     return Results.Ok(await relatorioService.ListarUltimasMovimentacoesAsync(limite ?? 10));
+});
+
+app.MapGet("/relatorios/exportar", async (string tipo, int? limite, RelatorioService relatorioService, HttpContext context) =>
+{
+    if (string.IsNullOrWhiteSpace(tipo))
+    {
+        return CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            "Informe o tipo do relatório para exportação.");
+    }
+
+    string tipoNormalizado = tipo.Trim().ToLowerInvariant();
+
+    return tipoNormalizado switch
+    {
+        "produtos-estoque-baixo" => CriarArquivoCsv(
+            "relatorio-produtos-estoque-baixo",
+            GerarCsv(
+                ["codigo", "nome", "categoria", "quantidadeEstoque", "estoqueMinimo"],
+                (await relatorioService.ListarProdutosEstoqueBaixoAsync())
+                    .Select(item =>
+                        new[] { item.Codigo.ToString(), item.Nome, item.Categoria, item.QuantidadeEstoque.ToString(), item.EstoqueMinimo.ToString() }))),
+
+        "produtos-sem-estoque" => CriarArquivoCsv(
+            "relatorio-produtos-sem-estoque",
+            GerarCsv(
+                ["codigo", "nome", "categoria", "quantidadeEstoque"],
+                (await relatorioService.ListarProdutosSemEstoqueAsync())
+                    .Select(item =>
+                        new[] { item.Codigo.ToString(), item.Nome, item.Categoria, item.QuantidadeEstoque.ToString() }))),
+
+        "valor-estoque-por-categoria" => CriarArquivoCsv(
+            "relatorio-valor-estoque-por-categoria",
+            GerarCsv(
+                ["categoria", "valorTotal"],
+                (await relatorioService.ListarValorEstoquePorCategoriaAsync())
+                    .Select(item =>
+                        new[] { item.Categoria, item.ValorTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) }))),
+
+        "produtos-sem-fornecedor" => CriarArquivoCsv(
+            "relatorio-produtos-sem-fornecedor",
+            GerarCsv(
+                ["codigo", "nome", "categoria"],
+                (await relatorioService.ListarProdutosSemFornecedorAsync())
+                    .Select(item =>
+                        new[] { item.Codigo.ToString(), item.Nome, item.Categoria }))),
+
+        "ultimas-movimentacoes" => CriarArquivoCsv(
+            "relatorio-ultimas-movimentacoes",
+            GerarCsv(
+                ["produto", "tipo", "quantidade", "saldoAnterior", "saldoNovo", "dataMovimentacaoUtc"],
+                (await relatorioService.ListarUltimasMovimentacoesAsync(limite ?? 10))
+                    .Select(item =>
+                        new[]
+                        {
+                            item.Produto,
+                            item.Tipo,
+                            item.Quantidade.ToString(),
+                            item.SaldoAnterior.ToString(),
+                            item.SaldoNovo.ToString(),
+                            item.DataMovimentacaoUtc.ToString("O")
+                        }))),
+
+        _ => CriarProblem(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Dados inválidos.",
+            "Tipo de relatório não suportado para exportação.")
+    };
 });
 
 app.MapGet("/auth/csrf", (HttpContext context, IAntiforgery antiforgery) =>
@@ -921,6 +1119,42 @@ static async Task EscreverProblemAsync(HttpContext context, int statusCode, stri
     problemDetails.Extensions["correlationId"] = context.TraceIdentifier;
 
     await context.Response.WriteAsJsonAsync(problemDetails);
+}
+
+static string GerarCsv(IEnumerable<string> cabecalho, IEnumerable<IEnumerable<string>> linhas)
+{
+    StringBuilder csv = new();
+    csv.AppendLine(string.Join(";", cabecalho.Select(EscapeCsvCampo)));
+
+    foreach (IEnumerable<string> linha in linhas)
+    {
+        csv.AppendLine(string.Join(";", linha.Select(EscapeCsvCampo)));
+    }
+
+    return csv.ToString();
+}
+
+static string EscapeCsvCampo(string? valor)
+{
+    string texto = valor ?? string.Empty;
+    bool precisaEscape = texto.Contains(';') || texto.Contains('"') || texto.Contains('\n') || texto.Contains('\r');
+
+    if (!precisaEscape)
+    {
+        return texto;
+    }
+
+    return $"\"{texto.Replace("\"", "\"\"")}\"";
+}
+
+static IResult CriarArquivoCsv(string nomeBase, string conteudo)
+{
+    byte[] bytesConteudo = Encoding.UTF8.GetPreamble()
+        .Concat(Encoding.UTF8.GetBytes(conteudo))
+        .ToArray();
+
+    string nomeArquivo = $"{nomeBase}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+    return Results.File(bytesConteudo, "text/csv; charset=utf-8", nomeArquivo);
 }
 
 public partial class Program;

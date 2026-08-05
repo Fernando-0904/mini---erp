@@ -51,6 +51,7 @@ const elementos = {
     formularioRelatorios: document.getElementById("formRelatorios"),
     campoTipoRelatorio: document.getElementById("tipoRelatorio"),
     campoLimiteRelatorio: document.getElementById("limiteRelatorio"),
+    botaoExportarRelatorio: document.getElementById("botaoExportarRelatorio"),
     cabecalhoTabelaRelatorios: document.getElementById("cabecalhoTabelaRelatorios"),
     tabelaRelatorios: document.getElementById("tabelaRelatorios"),
     formularioBuscaGlobal: document.getElementById("formBuscaGlobal"),

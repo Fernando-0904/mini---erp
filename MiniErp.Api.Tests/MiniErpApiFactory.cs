@@ -54,7 +54,40 @@ public sealed class MiniErpApiFactory : WebApplicationFactory<Program>
 
         if (disposing && File.Exists(databasePath))
         {
-            File.Delete(databasePath);
+            ExcluirBancoComTentativas(databasePath);
+        }
+    }
+
+    private static void ExcluirBancoComTentativas(string caminhoArquivo)
+    {
+        const int totalTentativas = 8;
+        const int esperaMs = 120;
+
+        for (int tentativa = 1; tentativa <= totalTentativas; tentativa += 1)
+        {
+            try
+            {
+                if (!File.Exists(caminhoArquivo))
+                {
+                    return;
+                }
+
+                File.Delete(caminhoArquivo);
+                return;
+            }
+            catch (IOException) when (tentativa < totalTentativas)
+            {
+                Thread.Sleep(esperaMs);
+            }
+            catch (UnauthorizedAccessException) when (tentativa < totalTentativas)
+            {
+                Thread.Sleep(esperaMs);
+            }
+        }
+
+        if (File.Exists(caminhoArquivo))
+        {
+            File.Delete(caminhoArquivo);
         }
     }
 }

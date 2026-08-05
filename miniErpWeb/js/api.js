@@ -367,6 +367,57 @@ async function listarRelatorioUltimasMovimentacoesApi(limite) {
     return executarRequisicaoApi(caminho, undefined, "Erro ao carregar o relatório das últimas movimentações.");
 }
 
+async function listarAlertasOperacionaisApi() {
+    return executarRequisicaoApi("/relatorios/alertas-operacionais", undefined, "Erro ao carregar os alertas operacionais.");
+}
+
+async function exportarRelatorioCsvApi(tipoRelatorio, limite) {
+    const parametros = new URLSearchParams();
+    parametros.set("tipo", tipoRelatorio);
+
+    if (Number.isFinite(Number(limite)) && Number(limite) > 0) {
+        parametros.set("limite", String(Math.trunc(Number(limite))));
+    }
+
+    let resposta;
+
+    try {
+        resposta = await fetch(`${API_BASE_URL}/relatorios/exportar?${parametros.toString()}`, {
+            credentials: "include",
+            cache: "no-store"
+        });
+    } catch {
+        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+    }
+
+    if (!resposta.ok) {
+        await tratarRespostaApi(resposta, "Não foi possível exportar o relatório.");
+    }
+
+    const blob = await resposta.blob();
+    const contentDisposition = resposta.headers.get("Content-Disposition") || "";
+    const nomeArquivo = extrairNomeArquivoContentDisposition(contentDisposition)
+        || `relatorio-${tipoRelatorio}.csv`;
+
+    return { blob, nomeArquivo };
+}
+
+function extrairNomeArquivoContentDisposition(contentDisposition) {
+    const correspondenciaUtf8 = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+    if (correspondenciaUtf8 && correspondenciaUtf8[1]) {
+        return decodeURIComponent(correspondenciaUtf8[1].trim().replace(/^"|"$/g, ""));
+    }
+
+    const correspondenciaPadrao = contentDisposition.match(/filename=([^;]+)/i);
+
+    if (correspondenciaPadrao && correspondenciaPadrao[1]) {
+        return correspondenciaPadrao[1].trim().replace(/^"|"$/g, "");
+    }
+
+    return "";
+}
+
 async function listarCategoriasApi() {
     return executarRequisicaoApi("/categorias", undefined, "Erro ao listar categorias na API.");
 }
