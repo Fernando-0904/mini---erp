@@ -115,7 +115,7 @@ function inicializarCategoriaController() {
     }
 
     function aplicarFiltroRapidoCategorias() {
-        const termo = normalizarTexto(String(elementos.campoFiltroRapidoCategorias?.value || ""));
+        const termo = normalizarTextoParaBusca(String(elementos.campoFiltroRapidoCategorias?.value || ""));
 
         if (termo === "") {
             atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
@@ -124,7 +124,7 @@ function inicializarCategoriaController() {
 
         const filtradas = categorias.filter(function (categoria) {
             const id = String(categoria.id);
-            const nome = normalizarTexto(categoria.nome);
+            const nome = normalizarTextoParaBusca(categoria.nome);
 
             return id.includes(termo) || nome.includes(termo);
         });
@@ -142,14 +142,6 @@ function inicializarCategoriaController() {
                 atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
             }
         });
-    }
-
-    function normalizarTexto(texto) {
-        return String(texto || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
     }
 
     function editarCategoria(id) {

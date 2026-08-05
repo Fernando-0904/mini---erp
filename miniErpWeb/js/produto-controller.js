@@ -194,7 +194,7 @@ function inicializarProdutoController() {
     }
 
     function aplicarFiltroRapido() {
-        const termoFiltro = normalizarTextoBusca(elementos.campoFiltroRapidoProdutos?.value);
+        const termoFiltro = normalizarTextoParaBusca(elementos.campoFiltroRapidoProdutos?.value);
 
         if (termoFiltro === "") {
             atualizarTabela(produtos, editarProduto, removerProduto);
@@ -203,9 +203,9 @@ function inicializarProdutoController() {
 
         const listaFiltrada = produtos.filter(function (produto) {
             const codigo = String(produto.codigo);
-            const nome = normalizarTextoBusca(produto.nome);
-            const categoria = normalizarTextoBusca(produto.categoriaNome);
-            const fornecedor = normalizarTextoBusca(produto.fornecedorNome);
+            const nome = normalizarTextoParaBusca(produto.nome);
+            const categoria = normalizarTextoParaBusca(produto.categoriaNome);
+            const fornecedor = normalizarTextoParaBusca(produto.fornecedorNome);
 
             return codigo.includes(termoFiltro)
                 || nome.includes(termoFiltro)
@@ -238,7 +238,7 @@ function inicializarProdutoController() {
     }
 
     async function buscarProduto(termoBuscaInformado) {
-        const termoBusca = normalizarTextoBusca(
+        const termoBusca = normalizarTextoParaBusca(
             typeof termoBuscaInformado === "string" ? termoBuscaInformado : elementos.campoCodigoBusca.value
         );
 
@@ -270,7 +270,7 @@ function inicializarProdutoController() {
         }
 
         const resultados = produtos.filter(function (produto) {
-            const nomeProduto = normalizarTextoBusca(produto.nome);
+            const nomeProduto = normalizarTextoParaBusca(produto.nome);
 
             if (buscaPorCodigo && produto.codigo === codigoBuscado) {
                 return true;
@@ -287,14 +287,6 @@ function inicializarProdutoController() {
 
         atualizarTabela(resultados, editarProduto, removerProduto);
         exibirMensagem("Busca concluída: " + resultados.length + " resultado(s).", "sucesso");
-    }
-
-    function normalizarTextoBusca(texto) {
-        return String(texto || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
     }
 
     function editarProduto(codigo) {

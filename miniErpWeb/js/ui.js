@@ -66,6 +66,14 @@ function formatarMoeda(valor) {
     });
 }
 
+function normalizarTextoParaBusca(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
 async function executarComBotaoCarregando(botao, textoCarregando, acaoAsync) {
     if (typeof acaoAsync !== "function") {
         return;

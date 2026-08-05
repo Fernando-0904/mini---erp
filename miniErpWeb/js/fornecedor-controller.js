@@ -110,7 +110,7 @@ function inicializarFornecedorController() {
     }
 
     function aplicarFiltroRapidoFornecedores() {
-        const termo = normalizarTexto(String(elementos.campoFiltroRapidoFornecedores?.value || ""));
+        const termo = normalizarTextoParaBusca(String(elementos.campoFiltroRapidoFornecedores?.value || ""));
 
         if (termo === "") {
             atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
@@ -119,9 +119,9 @@ function inicializarFornecedorController() {
 
         const filtrados = fornecedores.filter(function (fornecedor) {
             const codigo = String(fornecedor.codigo);
-            const nome = normalizarTexto(fornecedor.nome);
-            const documento = normalizarTexto(fornecedor.documento);
-            const email = normalizarTexto(fornecedor.email);
+            const nome = normalizarTextoParaBusca(fornecedor.nome);
+            const documento = normalizarTextoParaBusca(fornecedor.documento);
+            const email = normalizarTextoParaBusca(fornecedor.email);
             const status = fornecedor.ativo ? "ativo" : "inativo";
 
             return codigo.includes(termo)
@@ -144,14 +144,6 @@ function inicializarFornecedorController() {
                 atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
             }
         });
-    }
-
-    function normalizarTexto(texto) {
-        return String(texto || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
     }
 
     function editarFornecedor(id) {
