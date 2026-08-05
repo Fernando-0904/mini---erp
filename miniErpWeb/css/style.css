@@ -296,6 +296,18 @@ button[type="reset"]:hover {
     margin: 0 0 14px;
 }
 
+.filtro-rapido-area {
+    display: grid;
+    gap: 6px;
+    margin: 0 0 12px;
+    max-width: 420px;
+}
+
+.filtro-rapido-area label {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
 .mensagem {
     padding: 10px 12px;
     border-radius: 8px;

@@ -62,7 +62,7 @@ function inicializarCategoriaController() {
                     limparModoEdicaoCategoria();
                 }
 
-                atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+                aplicarFiltroRapidoCategorias();
                 elementos.formularioCategoria.reset();
                 elementos.campoCategoriaId.focus();
             });
@@ -72,6 +72,12 @@ function inicializarCategoriaController() {
         limparModoEdicaoCategoria();
         exibirMensagem("", "");
     });
+
+    if (elementos.campoFiltroRapidoCategorias instanceof HTMLInputElement) {
+        elementos.campoFiltroRapidoCategorias.addEventListener("input", function () {
+            aplicarFiltroRapidoCategorias();
+        });
+    }
 
     function validarCategoria(idTexto, nome, id) {
         if (idCategoriaEmEdicao === null) {
@@ -101,11 +107,49 @@ function inicializarCategoriaController() {
                 categorias.push(categoria);
             }
 
-            atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+            aplicarFiltroRapidoCategorias();
         } catch (erro) {
-            atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+            aplicarFiltroRapidoCategorias();
             exibirMensagem(erro.message, "erro");
         }
+    }
+
+    function aplicarFiltroRapidoCategorias() {
+        const termo = normalizarTexto(String(elementos.campoFiltroRapidoCategorias?.value || ""));
+
+        if (termo === "") {
+            atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+            return;
+        }
+
+        const filtradas = categorias.filter(function (categoria) {
+            const id = String(categoria.id);
+            const nome = normalizarTexto(categoria.nome);
+
+            return id.includes(termo) || nome.includes(termo);
+        });
+
+        atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria, {
+            lista: filtradas,
+            mensagemVazia: "Nenhuma categoria encontrada para este filtro.",
+            textoAcaoVazia: "Limpar filtro",
+            acaoVazia: function () {
+                if (elementos.campoFiltroRapidoCategorias instanceof HTMLInputElement) {
+                    elementos.campoFiltroRapidoCategorias.value = "";
+                    elementos.campoFiltroRapidoCategorias.focus();
+                }
+
+                atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+            }
+        });
+    }
+
+    function normalizarTexto(texto) {
+        return String(texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
     }
 
     function editarCategoria(id) {
@@ -162,7 +206,7 @@ function inicializarCategoriaController() {
             return;
         }
 
-        atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria);
+        aplicarFiltroRapidoCategorias();
     }
 
     function upsertCategoriaNoArray(categoria) {
@@ -190,24 +234,35 @@ function inicializarCategoriaController() {
     }
 }
 
-function atualizarTabelaCategorias(listaCategorias, aoEditarCategoria, aoRemoverCategoria) {
+function atualizarTabelaCategorias(listaCategorias, aoEditarCategoria, aoRemoverCategoria, opcoes = {}) {
+    const listaRenderizacao = Array.isArray(opcoes.lista) ? opcoes.lista : listaCategorias;
+    const mensagemVazia = typeof opcoes.mensagemVazia === "string"
+        ? opcoes.mensagemVazia
+        : "Nenhuma categoria cadastrada.";
+    const textoAcaoVazia = typeof opcoes.textoAcaoVazia === "string"
+        ? opcoes.textoAcaoVazia
+        : "Cadastrar categoria";
+    const acaoVazia = typeof opcoes.acaoVazia === "function"
+        ? opcoes.acaoVazia
+        : function () {
+            focarElementoComSuavidade(elementos.campoCategoriaNome);
+        };
+
     elementos.tabelaCategorias.innerHTML = "";
 
-    if (listaCategorias.length === 0) {
+    if (listaRenderizacao.length === 0) {
         const linhaVazia = criarLinhaEstadoVazio(
             3,
-            "Nenhuma categoria cadastrada.",
-            "Cadastrar categoria",
-            function () {
-                focarElementoComSuavidade(elementos.campoCategoriaNome);
-            }
+            mensagemVazia,
+            textoAcaoVazia,
+            acaoVazia
         );
 
         elementos.tabelaCategorias.appendChild(linhaVazia);
         return;
     }
 
-    for (const categoria of listaCategorias) {
+    for (const categoria of listaRenderizacao) {
         const linha = document.createElement("tr");
 
         linha.appendChild(criarCelulaCategoria(categoria.id));

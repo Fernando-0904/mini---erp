@@ -47,7 +47,7 @@ function inicializarFornecedorController() {
                         exibirMensagem("Fornecedor editado com sucesso.", "sucesso");
                     }
 
-                    atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+                    aplicarFiltroRapidoFornecedores();
                     await atualizarFornecedoresDoProduto();
                     elementos.formularioFornecedor.reset();
                     elementos.campoFornecedorCodigo.focus();
@@ -61,6 +61,12 @@ function inicializarFornecedorController() {
         limparModoEdicaoFornecedor();
         exibirMensagem("", "");
     });
+
+    if (elementos.campoFiltroRapidoFornecedores instanceof HTMLInputElement) {
+        elementos.campoFiltroRapidoFornecedores.addEventListener("input", function () {
+            aplicarFiltroRapidoFornecedores();
+        });
+    }
 
     function validarFornecedor(codigoTexto, nome, documento, email, codigo) {
         if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
@@ -100,7 +106,52 @@ function inicializarFornecedorController() {
             exibirMensagem(erro.message, "erro");
         }
 
-        atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+        aplicarFiltroRapidoFornecedores();
+    }
+
+    function aplicarFiltroRapidoFornecedores() {
+        const termo = normalizarTexto(String(elementos.campoFiltroRapidoFornecedores?.value || ""));
+
+        if (termo === "") {
+            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+            return;
+        }
+
+        const filtrados = fornecedores.filter(function (fornecedor) {
+            const codigo = String(fornecedor.codigo);
+            const nome = normalizarTexto(fornecedor.nome);
+            const documento = normalizarTexto(fornecedor.documento);
+            const email = normalizarTexto(fornecedor.email);
+            const status = fornecedor.ativo ? "ativo" : "inativo";
+
+            return codigo.includes(termo)
+                || nome.includes(termo)
+                || documento.includes(termo)
+                || email.includes(termo)
+                || status.includes(termo);
+        });
+
+        atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor, {
+            lista: filtrados,
+            mensagemVazia: "Nenhum fornecedor encontrado para este filtro.",
+            textoAcaoVazia: "Limpar filtro",
+            acaoVazia: function () {
+                if (elementos.campoFiltroRapidoFornecedores instanceof HTMLInputElement) {
+                    elementos.campoFiltroRapidoFornecedores.value = "";
+                    elementos.campoFiltroRapidoFornecedores.focus();
+                }
+
+                atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+            }
+        });
+    }
+
+    function normalizarTexto(texto) {
+        return String(texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
     }
 
     function editarFornecedor(id) {
@@ -143,7 +194,7 @@ function inicializarFornecedorController() {
         try {
             await removerFornecedorApi(id);
             fornecedores.splice(indiceFornecedor, 1);
-            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+            aplicarFiltroRapidoFornecedores();
             await atualizarFornecedoresDoProduto();
             exibirMensagem("Fornecedor removido com sucesso.", "sucesso");
         } catch (erro) {
@@ -168,7 +219,7 @@ function inicializarFornecedorController() {
         try {
             const fornecedorInativado = await inativarFornecedorApi(id);
             fornecedores[indiceFornecedor] = fornecedorInativado;
-            atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor);
+            aplicarFiltroRapidoFornecedores();
             await atualizarFornecedoresDoProduto();
             exibirMensagem("Fornecedor inativado com sucesso.", "sucesso");
         } catch (erro) {

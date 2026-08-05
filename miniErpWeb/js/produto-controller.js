@@ -93,7 +93,7 @@ function inicializarProdutoController() {
                     limparModoEdicao();
                 }
 
-                atualizarTabela(produtos, editarProduto, removerProduto);
+                aplicarFiltroRapido();
                 atualizarIndicadores(produtos);
                 elementos.formulario.reset();
                 elementos.campoCodigo.focus();
@@ -117,6 +117,12 @@ function inicializarProdutoController() {
     elementos.botaoLimparBusca.addEventListener("click", function () {
         limparBusca();
     });
+
+    if (elementos.campoFiltroRapidoProdutos instanceof HTMLInputElement) {
+        elementos.campoFiltroRapidoProdutos.addEventListener("input", function () {
+            aplicarFiltroRapido();
+        });
+    }
 
     function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId) {
         if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
@@ -182,9 +188,44 @@ function inicializarProdutoController() {
 
     function limparBusca() {
         elementos.campoCodigoBusca.value = "";
-        atualizarTabela(produtos, editarProduto, removerProduto);
+        aplicarFiltroRapido();
         exibirMensagem("", "");
         elementos.campoCodigoBusca.focus();
+    }
+
+    function aplicarFiltroRapido() {
+        const termoFiltro = normalizarTextoBusca(elementos.campoFiltroRapidoProdutos?.value);
+
+        if (termoFiltro === "") {
+            atualizarTabela(produtos, editarProduto, removerProduto);
+            return;
+        }
+
+        const listaFiltrada = produtos.filter(function (produto) {
+            const codigo = String(produto.codigo);
+            const nome = normalizarTextoBusca(produto.nome);
+            const categoria = normalizarTextoBusca(produto.categoriaNome);
+            const fornecedor = normalizarTextoBusca(produto.fornecedorNome);
+
+            return codigo.includes(termoFiltro)
+                || nome.includes(termoFiltro)
+                || categoria.includes(termoFiltro)
+                || fornecedor.includes(termoFiltro);
+        });
+
+        atualizarTabela(produtos, editarProduto, removerProduto, {
+            lista: listaFiltrada,
+            mensagemVazia: "Nenhum produto encontrado para este filtro.",
+            textoAcaoVazia: "Limpar filtro",
+            acaoVazia: function () {
+                if (elementos.campoFiltroRapidoProdutos instanceof HTMLInputElement) {
+                    elementos.campoFiltroRapidoProdutos.value = "";
+                    elementos.campoFiltroRapidoProdutos.focus();
+                }
+
+                atualizarTabela(produtos, editarProduto, removerProduto);
+            }
+        });
     }
 
     async function buscarProdutoComCarregamento() {
@@ -317,7 +358,7 @@ function inicializarProdutoController() {
             return;
         }
 
-        atualizarTabela(produtos, editarProduto, removerProduto);
+        aplicarFiltroRapido();
         atualizarIndicadores(produtos);
     }
 
@@ -338,7 +379,7 @@ function inicializarProdutoController() {
             produtos.push(converterProdutoApiParaTela(produto));
         }
 
-        atualizarTabela(produtos, editarProduto, removerProduto);
+        aplicarFiltroRapido();
         atualizarIndicadores(produtos);
 
         if (!contextoUrlAplicado) {

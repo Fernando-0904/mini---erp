@@ -145,28 +145,39 @@ function criarLinhaEstadoVazio(colSpan, mensagem, textoAcao, aoExecutarAcao) {
     return linhaVazia;
 }
 
-function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
+function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto, opcoes = {}) {
+    const listaRenderizacao = Array.isArray(opcoes.lista) ? opcoes.lista : listaProdutos;
+    const mensagemVazia = typeof opcoes.mensagemVazia === "string"
+        ? opcoes.mensagemVazia
+        : "Nenhum produto cadastrado.";
+    const textoAcaoVazia = typeof opcoes.textoAcaoVazia === "string"
+        ? opcoes.textoAcaoVazia
+        : "Cadastrar produto";
+    const acaoVazia = typeof opcoes.acaoVazia === "function"
+        ? opcoes.acaoVazia
+        : function () {
+            const campoPrincipal = elementos.campoNome instanceof HTMLElement
+                ? elementos.campoNome
+                : elementos.campoCodigo;
+
+            focarElementoComSuavidade(campoPrincipal);
+        };
+
     elementos.tabelaProdutos.innerHTML = "";
 
-    if (listaProdutos.length === 0) {
+    if (listaRenderizacao.length === 0) {
         const linhaVazia = criarLinhaEstadoVazio(
             9,
-            "Nenhum produto cadastrado.",
-            "Cadastrar produto",
-            function () {
-                const campoPrincipal = elementos.campoNome instanceof HTMLElement
-                    ? elementos.campoNome
-                    : elementos.campoCodigo;
-
-                focarElementoComSuavidade(campoPrincipal);
-            }
+            mensagemVazia,
+            textoAcaoVazia,
+            acaoVazia
         );
 
         elementos.tabelaProdutos.appendChild(linhaVazia);
         return;
     }
 
-    for (const produto of listaProdutos) {
+    for (const produto of listaRenderizacao) {
         const linha = document.createElement("tr");
         const valorTotal = produto.preco * produto.quantidade;
         const situacao = obterSituacaoEstoque(produto.quantidade, produto.estoqueMinimo);
@@ -228,28 +239,39 @@ function atualizarSelectFornecedores(fornecedores, fornecedorSelecionadoId) {
     elementos.campoFornecedorProduto.value = fornecedorSelecionadoId || "";
 }
 
-function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoInativarFornecedor, aoRemoverFornecedor) {
+function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoInativarFornecedor, aoRemoverFornecedor, opcoes = {}) {
+    const listaRenderizacao = Array.isArray(opcoes.lista) ? opcoes.lista : fornecedores;
+    const mensagemVazia = typeof opcoes.mensagemVazia === "string"
+        ? opcoes.mensagemVazia
+        : "Nenhum fornecedor cadastrado.";
+    const textoAcaoVazia = typeof opcoes.textoAcaoVazia === "string"
+        ? opcoes.textoAcaoVazia
+        : "Cadastrar fornecedor";
+    const acaoVazia = typeof opcoes.acaoVazia === "function"
+        ? opcoes.acaoVazia
+        : function () {
+            const campoPrincipal = elementos.campoFornecedorCodigo instanceof HTMLElement
+                ? elementos.campoFornecedorCodigo
+                : elementos.campoFornecedorNome;
+
+            focarElementoComSuavidade(campoPrincipal);
+        };
+
     elementos.tabelaFornecedores.innerHTML = "";
 
-    if (fornecedores.length === 0) {
+    if (listaRenderizacao.length === 0) {
         const linhaVazia = criarLinhaEstadoVazio(
             7,
-            "Nenhum fornecedor cadastrado.",
-            "Cadastrar fornecedor",
-            function () {
-                const campoPrincipal = elementos.campoFornecedorCodigo instanceof HTMLElement
-                    ? elementos.campoFornecedorCodigo
-                    : elementos.campoFornecedorNome;
-
-                focarElementoComSuavidade(campoPrincipal);
-            }
+            mensagemVazia,
+            textoAcaoVazia,
+            acaoVazia
         );
 
         elementos.tabelaFornecedores.appendChild(linhaVazia);
         return;
     }
 
-    for (const fornecedor of fornecedores) {
+    for (const fornecedor of listaRenderizacao) {
         const linha = document.createElement("tr");
 
         linha.appendChild(criarCelula(fornecedor.codigo));
