@@ -296,12 +296,15 @@ button[type="reset"]:hover {
     margin: 0 0 14px;
 }
 
-.mensagem-sucesso,
-.mensagem-erro {
+.mensagem {
     padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid transparent;
     font-weight: 600;
+}
+
+.mensagem:empty {
+    display: none;
 }
 
 .mensagem-sucesso {
@@ -316,10 +319,38 @@ button[type="reset"]:hover {
     color: var(--error-text);
 }
 
+.mensagem-aviso {
+    background: #fff4dd;
+    border-color: #ffd08a;
+    color: #684100;
+}
+
 .mensagem-info {
     background: var(--surface-alt);
     border-color: var(--border);
     color: var(--text-muted);
+}
+
+.estado-vazio-celula {
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+
+.estado-vazio {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.estado-vazio-mensagem {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.estado-vazio-acao {
+    white-space: nowrap;
 }
 
 .cards-indicadores {

@@ -194,12 +194,15 @@ function atualizarTabelaCategorias(listaCategorias, aoEditarCategoria, aoRemover
     elementos.tabelaCategorias.innerHTML = "";
 
     if (listaCategorias.length === 0) {
-        const linhaVazia = document.createElement("tr");
-        const celulaVazia = document.createElement("td");
+        const linhaVazia = criarLinhaEstadoVazio(
+            3,
+            "Nenhuma categoria cadastrada.",
+            "Cadastrar categoria",
+            function () {
+                focarElementoComSuavidade(elementos.campoCategoriaNome);
+            }
+        );
 
-        celulaVazia.colSpan = 3;
-        celulaVazia.textContent = "Nenhuma categoria cadastrada. Cadastre uma categoria para liberar o cadastro de produtos.";
-        linhaVazia.appendChild(celulaVazia);
         elementos.tabelaCategorias.appendChild(linhaVazia);
         return;
     }

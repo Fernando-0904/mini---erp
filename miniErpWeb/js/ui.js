@@ -1,36 +1,61 @@
 let temporizadorMensagemSucesso = null;
 let tokenMensagemAtual = 0;
+const DURACAO_MENSAGEM_SUCESSO_MS = 4000;
+const CLASSE_TIPO_MENSAGEM = {
+    sucesso: "mensagem-sucesso",
+    erro: "mensagem-erro",
+    aviso: "mensagem-aviso",
+    info: "mensagem-info"
+};
+
+function normalizarTipoMensagem(tipo) {
+    if (typeof tipo !== "string") {
+        return "info";
+    }
+
+    const tipoNormalizado = tipo.trim().toLowerCase();
+
+    if (Object.prototype.hasOwnProperty.call(CLASSE_TIPO_MENSAGEM, tipoNormalizado)) {
+        return tipoNormalizado;
+    }
+
+    return "info";
+}
 
 function exibirMensagem(texto, tipo) {
+    if (!(elementos.mensagem instanceof HTMLElement)) {
+        return;
+    }
+
     tokenMensagemAtual += 1;
     const tokenLocal = tokenMensagemAtual;
+    const tipoNormalizado = normalizarTipoMensagem(tipo);
+    const textoNormalizado = typeof texto === "string" ? texto.trim() : "";
 
     if (temporizadorMensagemSucesso !== null) {
         clearTimeout(temporizadorMensagemSucesso);
         temporizadorMensagemSucesso = null;
     }
 
-    elementos.mensagem.textContent = texto;
+    elementos.mensagem.textContent = textoNormalizado;
     elementos.mensagem.className = "";
 
-    if (tipo === "sucesso") {
-        elementos.mensagem.className = "mensagem-sucesso";
-
-        if (texto.trim() !== "") {
-            temporizadorMensagemSucesso = setTimeout(function () {
-                if (tokenLocal !== tokenMensagemAtual) {
-                    return;
-                }
-
-                elementos.mensagem.textContent = "";
-                elementos.mensagem.className = "";
-                temporizadorMensagemSucesso = null;
-            }, 4000);
-        }
+    if (textoNormalizado === "") {
+        return;
     }
 
-    if (tipo === "erro") {
-        elementos.mensagem.className = "mensagem-erro";
+    elementos.mensagem.className = `mensagem ${CLASSE_TIPO_MENSAGEM[tipoNormalizado]}`;
+
+    if (tipoNormalizado === "sucesso") {
+        temporizadorMensagemSucesso = setTimeout(function () {
+            if (tokenLocal !== tokenMensagemAtual) {
+                return;
+            }
+
+            elementos.mensagem.textContent = "";
+            elementos.mensagem.className = "";
+            temporizadorMensagemSucesso = null;
+        }, DURACAO_MENSAGEM_SUCESSO_MS);
     }
 }
 
@@ -78,16 +103,65 @@ async function executarComBotaoCarregando(botao, textoCarregando, acaoAsync) {
     }
 }
 
+function focarElementoComSuavidade(elemento) {
+    if (!(elemento instanceof HTMLElement)) {
+        return;
+    }
+
+    elemento.focus();
+    elemento.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+function criarLinhaEstadoVazio(colSpan, mensagem, textoAcao, aoExecutarAcao) {
+    const linhaVazia = document.createElement("tr");
+    const celulaVazia = document.createElement("td");
+    const conteudo = document.createElement("div");
+    const textoMensagem = document.createElement("p");
+
+    celulaVazia.colSpan = colSpan;
+    celulaVazia.className = "estado-vazio-celula";
+    conteudo.className = "estado-vazio";
+    textoMensagem.className = "estado-vazio-mensagem";
+    textoMensagem.textContent = mensagem;
+
+    conteudo.appendChild(textoMensagem);
+
+    if (typeof aoExecutarAcao === "function" && typeof textoAcao === "string" && textoAcao.trim() !== "") {
+        const botaoAcao = document.createElement("button");
+
+        botaoAcao.type = "button";
+        botaoAcao.className = "estado-vazio-acao";
+        botaoAcao.textContent = textoAcao;
+        botaoAcao.addEventListener("click", aoExecutarAcao);
+        conteudo.appendChild(botaoAcao);
+    }
+
+    celulaVazia.appendChild(conteudo);
+    linhaVazia.appendChild(celulaVazia);
+
+    return linhaVazia;
+}
+
 function atualizarTabela(listaProdutos, aoEditarProduto, aoRemoverProduto) {
     elementos.tabelaProdutos.innerHTML = "";
 
     if (listaProdutos.length === 0) {
-        const linhaVazia = document.createElement("tr");
-        const celulaVazia = document.createElement("td");
+        const linhaVazia = criarLinhaEstadoVazio(
+            9,
+            "Nenhum produto cadastrado.",
+            "Cadastrar produto",
+            function () {
+                const campoPrincipal = elementos.campoNome instanceof HTMLElement
+                    ? elementos.campoNome
+                    : elementos.campoCodigo;
 
-        celulaVazia.colSpan = 9;
-        celulaVazia.textContent = "Nenhum produto cadastrado. Use o formulário acima para cadastrar o primeiro item.";
-        linhaVazia.appendChild(celulaVazia);
+                focarElementoComSuavidade(campoPrincipal);
+            }
+        );
+
         elementos.tabelaProdutos.appendChild(linhaVazia);
         return;
     }
@@ -158,12 +232,19 @@ function atualizarTabelaFornecedores(fornecedores, aoEditarFornecedor, aoInativa
     elementos.tabelaFornecedores.innerHTML = "";
 
     if (fornecedores.length === 0) {
-        const linhaVazia = document.createElement("tr");
-        const celulaVazia = document.createElement("td");
+        const linhaVazia = criarLinhaEstadoVazio(
+            7,
+            "Nenhum fornecedor cadastrado.",
+            "Cadastrar fornecedor",
+            function () {
+                const campoPrincipal = elementos.campoFornecedorCodigo instanceof HTMLElement
+                    ? elementos.campoFornecedorCodigo
+                    : elementos.campoFornecedorNome;
 
-        celulaVazia.colSpan = 7;
-        celulaVazia.textContent = "Nenhum fornecedor cadastrado. Cadastre ao menos um fornecedor para facilitar as reposições.";
-        linhaVazia.appendChild(celulaVazia);
+                focarElementoComSuavidade(campoPrincipal);
+            }
+        );
+
         elementos.tabelaFornecedores.appendChild(linhaVazia);
         return;
     }
@@ -285,12 +366,15 @@ function atualizarTabelaEstoqueBaixo(produtos) {
     elementos.tabelaEstoqueBaixo.innerHTML = "";
 
     if (produtos.length === 0) {
-        const linhaVazia = document.createElement("tr");
-        const celulaVazia = document.createElement("td");
+        const linhaVazia = criarLinhaEstadoVazio(
+            6,
+            "Nenhum produto com estoque baixo.",
+            "Ir para produtos",
+            function () {
+                window.location.href = "produtos.html";
+            }
+        );
 
-        celulaVazia.colSpan = 6;
-        celulaVazia.textContent = "Nenhum produto com estoque baixo. Estoque saudável no momento.";
-        linhaVazia.appendChild(celulaVazia);
         elementos.tabelaEstoqueBaixo.appendChild(linhaVazia);
         return;
     }
@@ -419,12 +503,15 @@ function atualizarTabelaMovimentacoes(movimentacoes) {
     elementos.tabelaMovimentacoes.innerHTML = "";
 
     if (movimentacoes.length === 0) {
-        const linhaVazia = document.createElement("tr");
-        const celulaVazia = document.createElement("td");
+        const linhaVazia = criarLinhaEstadoVazio(
+            6,
+            "Nenhuma movimentação registrada para o filtro atual.",
+            "Registrar movimentação",
+            function () {
+                focarElementoComSuavidade(elementos.campoMovimentacaoCodigo);
+            }
+        );
 
-        celulaVazia.colSpan = 6;
-        celulaVazia.textContent = "Nenhuma movimentação registrada. Informe um código e clique em Ver histórico.";
-        linhaVazia.appendChild(celulaVazia);
         elementos.tabelaMovimentacoes.appendChild(linhaVazia);
         return;
     }
