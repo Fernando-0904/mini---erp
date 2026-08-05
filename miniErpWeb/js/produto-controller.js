@@ -325,18 +325,21 @@ function inicializarProdutoController() {
     }
 
     async function removerProduto(codigo) {
-        const confirmarRemocao = confirm("Deseja realmente remover este produto?");
-
-        if (!confirmarRemocao) {
-            return;
-        }
-
         const indiceProduto = produtos.findIndex(function (produto) {
             return produto.codigo === codigo;
         });
 
         if (indiceProduto === -1) {
             exibirMensagem("Produto não encontrado para remoção.", "erro");
+            return;
+        }
+
+        const produto = produtos[indiceProduto];
+        const confirmarRemocao = confirm(
+            `Deseja realmente remover o produto ${produto.codigo} - ${produto.nome}? Esta ação não pode ser desfeita.`
+        );
+
+        if (!confirmarRemocao) {
             return;
         }
 

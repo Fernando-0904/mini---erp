@@ -170,16 +170,18 @@ function inicializarFornecedorController() {
     }
 
     async function removerFornecedor(id) {
-        if (!confirm("Deseja realmente remover este fornecedor?")) {
-            return;
-        }
-
         const indiceFornecedor = fornecedores.findIndex(function (item) {
             return item.id === id;
         });
 
         if (indiceFornecedor === -1) {
             exibirMensagem("Fornecedor não encontrado para remoção.", "erro");
+            return;
+        }
+
+        const fornecedor = fornecedores[indiceFornecedor];
+
+        if (!confirm(`Deseja realmente remover o fornecedor ${fornecedor.codigo} - ${fornecedor.nome}? Esta ação não pode ser desfeita.`)) {
             return;
         }
 
@@ -195,16 +197,18 @@ function inicializarFornecedorController() {
     }
 
     async function inativarFornecedor(id) {
-        if (!confirm("Deseja inativar este fornecedor?")) {
-            return;
-        }
-
         const indiceFornecedor = fornecedores.findIndex(function (item) {
             return item.id === id;
         });
 
         if (indiceFornecedor === -1) {
             exibirMensagem("Fornecedor não encontrado para inativação.", "erro");
+            return;
+        }
+
+        const fornecedor = fornecedores[indiceFornecedor];
+
+        if (!confirm(`Deseja inativar o fornecedor ${fornecedor.codigo} - ${fornecedor.nome}?`)) {
             return;
         }
 

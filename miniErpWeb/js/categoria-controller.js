@@ -173,18 +173,21 @@ function inicializarCategoriaController() {
     }
 
     async function removerCategoria(id) {
-        const confirmarRemocao = confirm("Deseja realmente remover esta categoria?");
-
-        if (!confirmarRemocao) {
-            return;
-        }
-
         const indiceCategoria = categorias.findIndex(function (categoria) {
             return categoria.id === id;
         });
 
         if (indiceCategoria === -1) {
             exibirMensagem("Categoria não encontrada para remoção.", "erro");
+            return;
+        }
+
+        const categoria = categorias[indiceCategoria];
+        const confirmarRemocao = confirm(
+            `Deseja realmente remover a categoria ${categoria.id} - ${categoria.nome}? Esta ação não pode ser desfeita.`
+        );
+
+        if (!confirmarRemocao) {
             return;
         }
 
