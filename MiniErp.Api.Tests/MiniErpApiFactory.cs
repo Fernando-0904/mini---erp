@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiniErp.Api.Data;
 
 namespace MiniErp.Api.Tests;
@@ -10,25 +11,26 @@ namespace MiniErp.Api.Tests;
 public sealed class MiniErpApiFactory : WebApplicationFactory<Program>
 {
     private readonly string environmentName;
-    private readonly string databasePath;
+    private SqliteConnection? databaseConnection;
 
     public MiniErpApiFactory(string environmentName = "Development")
     {
         this.environmentName = environmentName;
-
-        string workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
-        string databaseDirectory = Path.Combine(workspaceRoot, ".tmp-tests");
-        Directory.CreateDirectory(databaseDirectory);
-
-        databasePath = Path.Combine(databaseDirectory, $"mini-erp-tests-{Guid.NewGuid():N}.db");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(environmentName);
-        builder.UseSetting(
-            "ConnectionStrings:DefaultConnection",
-            $"Data Source={databasePath};Pooling=False");
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
+
+            databaseConnection = new SqliteConnection("Data Source=:memory:;Cache=Shared");
+            databaseConnection.Open();
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite(databaseConnection));
+        });
     }
 
     public HttpClient CriarCliente()
@@ -52,42 +54,13 @@ public sealed class MiniErpApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         SqliteConnection.ClearAllPools();
 
-        if (disposing && File.Exists(databasePath))
+        if (disposing)
         {
-            ExcluirBancoComTentativas(databasePath);
-        }
-    }
-
-    private static void ExcluirBancoComTentativas(string caminhoArquivo)
-    {
-        const int totalTentativas = 8;
-        const int esperaMs = 120;
-
-        for (int tentativa = 1; tentativa <= totalTentativas; tentativa += 1)
-        {
-            try
+            if (databaseConnection is not null)
             {
-                if (!File.Exists(caminhoArquivo))
-                {
-                    return;
-                }
-
-                File.Delete(caminhoArquivo);
-                return;
+                databaseConnection.Dispose();
+                databaseConnection = null;
             }
-            catch (IOException) when (tentativa < totalTentativas)
-            {
-                Thread.Sleep(esperaMs);
-            }
-            catch (UnauthorizedAccessException) when (tentativa < totalTentativas)
-            {
-                Thread.Sleep(esperaMs);
-            }
-        }
-
-        if (File.Exists(caminhoArquivo))
-        {
-            File.Delete(caminhoArquivo);
         }
     }
 }
