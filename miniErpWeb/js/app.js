@@ -55,6 +55,14 @@ function inicializarControllersDaPagina() {
 		inicializarRelatoriosController();
 	}
 
+	if (elementos.formularioAuditoria !== null) {
+		inicializarAuditoriaController();
+	}
+
+	if (elementos.formularioPedidoCompra !== null) {
+		inicializarComprasController();
+	}
+
 	if (elementos.formularioBuscaGlobal) {
 		inicializarBuscaGlobalController();
 	}

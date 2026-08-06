@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<TokenUsuario> TokensUsuario => Set<TokenUsuario>();
     public DbSet<AuditoriaEvento> AuditoriaEventos => Set<AuditoriaEvento>();
+    public DbSet<PedidoCompra> PedidosCompra => Set<PedidoCompra>();
+    public DbSet<PedidoCompraItem> PedidosCompraItens => Set<PedidoCompraItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -152,6 +154,42 @@ public class AppDbContext : DbContext
             .HasIndex(evento => evento.DataUtc);
         modelBuilder.Entity<AuditoriaEvento>()
             .HasIndex(evento => new { evento.Entidade, evento.EntidadeId });
+
+        modelBuilder.Entity<PedidoCompra>().HasKey(pedido => pedido.Id);
+        modelBuilder.Entity<PedidoCompra>()
+            .Property(pedido => pedido.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<PedidoCompra>()
+            .Property(pedido => pedido.Status)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+        modelBuilder.Entity<PedidoCompra>()
+            .HasOne(pedido => pedido.Fornecedor)
+            .WithMany()
+            .HasForeignKey(pedido => pedido.FornecedorId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PedidoCompra>()
+            .HasIndex(pedido => pedido.CriadoEmUtc);
+
+        modelBuilder.Entity<PedidoCompraItem>().HasKey(item => item.Id);
+        modelBuilder.Entity<PedidoCompraItem>()
+            .Property(item => item.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<PedidoCompraItem>()
+            .HasOne(item => item.PedidoCompra)
+            .WithMany(pedido => pedido.Itens)
+            .HasForeignKey(item => item.PedidoCompraId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PedidoCompraItem>()
+            .HasOne(item => item.Produto)
+            .WithMany()
+            .HasForeignKey(item => item.ProdutoCodigo)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PedidoCompraItem>()
+            .HasIndex(item => item.PedidoCompraId);
+        modelBuilder.Entity<PedidoCompraItem>()
+            .HasIndex(item => item.ProdutoCodigo);
 
         modelBuilder.Entity<Usuario>().HasData(new Usuario
         {

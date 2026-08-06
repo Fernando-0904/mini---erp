@@ -367,6 +367,15 @@ async function listarRelatorioUltimasMovimentacoesApi(limite) {
     return executarRequisicaoApi(caminho, undefined, "Erro ao carregar o relatório das últimas movimentações.");
 }
 
+async function listarAuditoriaApi(limite) {
+    const limiteNumerico = Number(limite);
+    const caminho = Number.isFinite(limiteNumerico)
+        ? `/relatorios/auditoria?limite=${encodeURIComponent(limiteNumerico)}`
+        : "/relatorios/auditoria";
+
+    return executarRequisicaoApi(caminho, undefined, "Erro ao carregar os eventos de auditoria.");
+}
+
 async function listarAlertasOperacionaisApi() {
     return executarRequisicaoApi("/relatorios/alertas-operacionais", undefined, "Erro ao carregar os alertas operacionais.");
 }
@@ -490,6 +499,26 @@ async function inativarFornecedorApi(id) {
     return executarRequisicaoApi(`/fornecedores/${id}/inativar`, {
         method: "PATCH",
     }, "Erro ao inativar fornecedor na API.");
+}
+
+async function listarPedidosCompraApi() {
+    return executarRequisicaoApi("/compras/pedidos", undefined, "Erro ao listar pedidos de compra.");
+}
+
+async function criarPedidoCompraApi(pedido) {
+    return executarRequisicaoApi("/compras/pedidos", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(pedido),
+    }, "Erro ao criar pedido de compra.");
+}
+
+async function receberPedidoCompraApi(id) {
+    return executarRequisicaoApi(`/compras/pedidos/${id}/receber`, {
+        method: "POST",
+    }, "Erro ao receber pedido de compra.");
 }
 
 async function autenticarUsuarioApi(email, senha) {
