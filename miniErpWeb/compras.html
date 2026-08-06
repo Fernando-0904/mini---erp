@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini ERP - Busca global</title>
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <title>Mini ERP - Compras</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="stylesheet" href="css/tables.css?v=1">
     <link rel="stylesheet" href="css/login.css?v=4">
     <link rel="stylesheet" href="css/responsive.css?v=1">
@@ -61,18 +61,17 @@
             </section>
         </div>
     </div>
-    <h2>Busca global</h2>
+    <h2>Pedidos de compra</h2>
     <nav aria-label="Navegação principal">
         <a href="index.html">Painel</a>
         <a href="produtos.html">Produtos</a>
         <a href="categorias.html">Categorias</a>
         <a href="fornecedores.html">Fornecedores</a>
         <a href="movimentacoes.html">Movimentações</a>
-        <a href="compras.html">Compras</a>
-        <a href="estoque-baixo.html">Estoque baixo</a>
+        <a href="compras.html" aria-current="page">Compras</a>
         <a href="relatorios.html">Relatórios</a>
         <a href="auditoria.html">Auditoria</a>
-        <a href="busca-global.html" aria-current="page">Busca global</a>
+        <a href="busca-global.html">Busca global</a>
     </nav>
     <button type="button" id="botaoTema" class="botao-tema" aria-pressed="false" title="Ativar modo escuro" aria-label="Ativar modo escuro">
         <span class="icone-tema icone-sol" aria-hidden="true">☀</span>
@@ -80,105 +79,60 @@
     </button>
 </header>
 <main>
-    <section aria-label="Busca global por produtos categorias e fornecedores">
-        <h3>Buscar em todo o ERP</h3>
-        <form id="formBuscaGlobal" novalidate>
+    <section aria-label="Cadastro de pedido de compra">
+        <h3>Novo pedido</h3>
+        <form id="formPedidoCompra" novalidate>
             <div>
-                <label for="termoBuscaGlobal">Termo de busca</label>
-                <input type="text" id="termoBuscaGlobal" name="termoBuscaGlobal" placeholder="Ex.: caneta, papelaria, 1001 ou fornecedor" autocomplete="off">
-            </div>
-            <div>
-                <label for="filtroTipoBuscaGlobal">Filtrar por tipo</label>
-                <select id="filtroTipoBuscaGlobal" name="filtroTipoBuscaGlobal">
-                    <option value="todos">Todos</option>
-                    <option value="produtos">Produtos</option>
-                    <option value="categorias">Categorias</option>
-                    <option value="fornecedores">Fornecedores</option>
+                <label for="fornecedorPedidoCompra">Fornecedor</label>
+                <select id="fornecedorPedidoCompra" name="fornecedorPedidoCompra">
+                    <option value="">Selecione um fornecedor</option>
                 </select>
             </div>
-            <div class="campo-checkbox">
-                <label for="abrirMelhorResultadoBuscaGlobal">Abrir automaticamente o melhor resultado ao pressionar Enter</label>
-                <input type="checkbox" id="abrirMelhorResultadoBuscaGlobal" name="abrirMelhorResultadoBuscaGlobal" checked>
+            <div>
+                <label for="produtoPedidoCompra">Produto</label>
+                <select id="produtoPedidoCompra" name="produtoPedidoCompra">
+                    <option value="">Selecione um produto</option>
+                </select>
             </div>
-            <button type="submit" id="botaoBuscarGlobal">Buscar</button>
-            <button type="button" id="botaoLimparBuscaGlobal">Limpar</button>
+            <div>
+                <label for="quantidadeItemPedidoCompra">Quantidade</label>
+                <input type="number" id="quantidadeItemPedidoCompra" name="quantidadeItemPedidoCompra" min="1">
+            </div>
+            <button type="button" id="botaoAdicionarItemPedido">Adicionar item</button>
+            <button type="submit">Criar pedido</button>
         </form>
     </section>
 
     <p id="mensagem"></p>
 
-    <section class="resumo-busca-global" aria-label="Resumo dos resultados da busca global">
-        <h3>Resumo da busca</h3>
-        <div class="cards-indicadores">
-            <div class="card-indicador">
-                <h4>Total de resultados</h4>
-                <p id="totalResultadosGlobal">0</p>
-            </div>
-            <div class="card-indicador">
-                <h4>Produtos</h4>
-                <p id="totalProdutosGlobal">0</p>
-            </div>
-            <div class="card-indicador">
-                <h4>Categorias</h4>
-                <p id="totalCategoriasGlobal">0</p>
-            </div>
-            <div class="card-indicador">
-                <h4>Fornecedores</h4>
-                <p id="totalFornecedoresGlobal">0</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="atalhos-busca-global" aria-label="Atalhos diretos por tipo">
-        <h3>Atalhos por tipo</h3>
-        <ul id="listaAtalhosBuscaGlobal">
-            <li>Nenhum atalho disponível ainda. Faça uma busca para gerar sugestões.</li>
-        </ul>
-    </section>
-
-    <section class="tabela-busca-global" aria-label="Resultado de produtos">
-        <h3>Produtos encontrados</h3>
+    <section class="tabela-estoque-baixo" aria-label="Itens do pedido atual">
+        <h3>Itens do pedido</h3>
         <table>
-            <thead>
-                <tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th><th>Ação</th></tr>
-            </thead>
-            <tbody id="tabelaResultadoProdutos">
-                <tr><td colspan="6">Nenhum produto encontrado.</td></tr>
+            <thead><tr><th>Código</th><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Total</th><th>Ação</th></tr></thead>
+            <tbody id="tabelaItensPedidoCompra">
+                <tr><td colspan="6">Nenhum item adicionado ao pedido.</td></tr>
             </tbody>
         </table>
     </section>
 
-    <section class="tabela-busca-global" aria-label="Resultado de categorias">
-        <h3>Categorias encontradas</h3>
+    <section class="tabela-estoque-baixo" aria-label="Pedidos cadastrados">
+        <h3>Pedidos cadastrados</h3>
         <table>
-            <thead>
-                <tr><th>ID</th><th>Nome</th><th>Ação</th></tr>
-            </thead>
-            <tbody id="tabelaResultadoCategorias">
-                <tr><td colspan="3">Nenhuma categoria encontrada.</td></tr>
-            </tbody>
-        </table>
-    </section>
-
-    <section class="tabela-busca-global" aria-label="Resultado de fornecedores">
-        <h3>Fornecedores encontrados</h3>
-        <table>
-            <thead>
-                <tr><th>Código</th><th>Nome</th><th>Documento</th><th>E-mail</th><th>Status</th><th>Ação</th></tr>
-            </thead>
-            <tbody id="tabelaResultadoFornecedores">
-                <tr><td colspan="6">Nenhum fornecedor encontrado.</td></tr>
+            <thead><tr><th>ID</th><th>Fornecedor</th><th>Status</th><th>Itens</th><th>Valor total</th><th>Criado em</th><th>Ações</th></tr></thead>
+            <tbody id="tabelaPedidosCompra">
+                <tr><td colspan="7">Carregando pedidos...</td></tr>
             </tbody>
         </table>
     </section>
 </main>
 <footer><p>Mini ERP</p></footer>
-<script src="js/dom-elements.js?v=6"></script>
-<script src="js/api.js?v=9"></script>
+<script src="js/dom-elements.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
 <script src="js/login-controller.js?v=3"></script>
-<script src="js/ui.js?v=6"></script>
+<script src="js/ui.js?v=7"></script>
+<script src="js/compras-controller.js?v=1"></script>
 <script src="js/busca-global-controller.js?v=6"></script>
 <script src="js/tema-controller.js?v=2"></script>
-<script src="js/app.js?v=13"></script>
+<script src="js/app.js?v=14"></script>
 </body>
 </html>

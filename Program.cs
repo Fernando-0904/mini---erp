@@ -13,7 +13,7 @@ while (opcao != 0)
         case 1:
             Console.WriteLine("Cadastrar produto:");
 
-            if (!ProdutoConsole.LerCodigo("Codigo: ", "Codigo deve ser um número inteiro", out int codigo))
+            if (!ProdutoConsole.LerCodigo("Código: ", "Código deve ser um número inteiro", out int codigo))
             {
                 break;
             }
@@ -93,7 +93,7 @@ while (opcao != 0)
                 break;
             }
 
-            if (!ProdutoConsole.LerCodigo("Digite o código do produto que deseja editar: ", "Codigo invalido.", out int codigoEditar))
+            if (!ProdutoConsole.LerCodigo("Digite o código do produto que deseja editar: ", "Código inválido.", out int codigoEditar))
             {
                 break;
             }
@@ -106,7 +106,7 @@ while (opcao != 0)
                 break;
             }
 
-            Console.WriteLine("Produto encontrado. Proximo passo, editar os dados do produto.");
+            Console.WriteLine("Produto encontrado. Próximo passo, editar os dados do produto.");
 
             if (!ProdutoConsole.LerDadosEdicao(out string novoNome, out decimal novoPrecoUnitario, out int novaQuantidadeEstoque))
             {
@@ -125,7 +125,7 @@ while (opcao != 0)
                 break;
             }
 
-            if (!ProdutoConsole.LerCodigo("Digite o código do produto que deseja remover: ", "Codigo invalido.", out int codigoRemover))
+            if (!ProdutoConsole.LerCodigo("Digite o código do produto que deseja remover: ", "Código inválido.", out int codigoRemover))
             {
                 break;
             }
