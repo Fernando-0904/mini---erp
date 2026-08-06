@@ -7,6 +7,7 @@ function inicializarComprasController() {
     const itensPedido = [];
     let produtos = [];
     let fornecedores = [];
+    let pedidosCache = [];
 
     const botaoSalvarPedido = elementos.formularioPedidoCompra.querySelector("button[type='submit']");
 
@@ -20,6 +21,10 @@ function inicializarComprasController() {
         await executarComBotaoCarregando(botaoSalvarPedido, "Salvando...", async function () {
             await salvarPedido();
         });
+    });
+
+    elementos.campoFiltroStatusPedidoCompra?.addEventListener("change", function () {
+        aplicarFiltroStatus();
     });
 
     carregarDadosIniciais();
@@ -46,11 +51,30 @@ function inicializarComprasController() {
     async function carregarPedidos() {
         try {
             const pedidos = await listarPedidosCompraApi();
-            renderizarPedidos(Array.isArray(pedidos) ? pedidos : []);
+            pedidosCache = Array.isArray(pedidos) ? pedidos : [];
+            aplicarFiltroStatus();
         } catch (erro) {
+            pedidosCache = [];
             renderizarPedidos([]);
             exibirMensagem(erro instanceof Error ? erro.message : "Erro ao carregar pedidos de compra.", "erro");
         }
+    }
+
+    function aplicarFiltroStatus() {
+        const statusSelecionado = typeof elementos.campoFiltroStatusPedidoCompra?.value === "string"
+            ? elementos.campoFiltroStatusPedidoCompra.value.trim()
+            : "";
+
+        if (statusSelecionado === "") {
+            renderizarPedidos(pedidosCache);
+            return;
+        }
+
+        const pedidosFiltrados = pedidosCache.filter(function (pedido) {
+            return pedido.status === statusSelecionado;
+        });
+
+        renderizarPedidos(pedidosFiltrados);
     }
 
     function preencherSelectFornecedores() {

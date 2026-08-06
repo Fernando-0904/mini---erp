@@ -117,6 +117,14 @@
 
     <section class="tabela-estoque-baixo" aria-label="Pedidos cadastrados">
         <h3>Pedidos cadastrados</h3>
+        <div>
+            <label for="filtroStatusPedidoCompra">Filtro por status</label>
+            <select id="filtroStatusPedidoCompra" name="filtroStatusPedidoCompra">
+                <option value="">Todos</option>
+                <option value="Aberto">Aberto</option>
+                <option value="Recebido">Recebido</option>
+            </select>
+        </div>
         <table>
             <thead><tr><th>ID</th><th>Fornecedor</th><th>Status</th><th>Itens</th><th>Valor total</th><th>Criado em</th><th>Ações</th></tr></thead>
             <tbody id="tabelaPedidosCompra">

@@ -63,6 +63,7 @@ const elementos = {
     campoQuantidadeItemPedidoCompra: document.getElementById("quantidadeItemPedidoCompra"),
     botaoAdicionarItemPedido: document.getElementById("botaoAdicionarItemPedido"),
     tabelaItensPedidoCompra: document.getElementById("tabelaItensPedidoCompra"),
+    campoFiltroStatusPedidoCompra: document.getElementById("filtroStatusPedidoCompra"),
     tabelaPedidosCompra: document.getElementById("tabelaPedidosCompra"),
     formularioBuscaGlobal: document.getElementById("formBuscaGlobal"),
     campoTermoBuscaGlobal: document.getElementById("termoBuscaGlobal"),
