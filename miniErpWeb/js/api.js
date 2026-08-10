@@ -12,6 +12,7 @@ function obterApiBaseUrl() {
 
 const API_BASE_URL = obterApiBaseUrl();
 const MENSAGEM_ERRO_INESPERADO = "Ocorreu um erro inesperado. Tente novamente.";
+const MENSAGEM_ERRO_CONEXAO = "Não foi possível conectar ao sistema agora. Tente novamente em instantes.";
 const METODOS_HTTP_SEGUROS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 let tokenAntiforgery = null;
 
@@ -43,7 +44,7 @@ async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notifi
     try {
         resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoesRequisicao);
     } catch {
-        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+        throw new Error(MENSAGEM_ERRO_CONEXAO);
     }
 
     if (!METODOS_HTTP_SEGUROS.has(metodo) &&
@@ -78,7 +79,7 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
         return resposta.json();
     }
 
-    const correlationId = resposta.headers.get("X-Correlation-Id");
+    let correlationId = resposta.headers.get("X-Correlation-Id");
     let mensagemErro = resposta.status >= 500
         ? "Não foi possível concluir a operação agora. Tente novamente em instantes."
         : mensagemErroPadrao;
@@ -94,6 +95,19 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
 
     try {
         const erro = await resposta.json();
+        if (!correlationId && erro !== null && typeof erro === "object") {
+            if (typeof erro.correlationId === "string" && erro.correlationId.trim() !== "") {
+                correlationId = erro.correlationId.trim();
+            } else if (
+                erro.extensions !== null &&
+                typeof erro.extensions === "object" &&
+                typeof erro.extensions.correlationId === "string" &&
+                erro.extensions.correlationId.trim() !== ""
+            ) {
+                correlationId = erro.extensions.correlationId.trim();
+            }
+        }
+
         const mensagemExtraida = extrairMensagemErroApi(erro);
 
         if (resposta.status < 500 && resposta.status !== 403) {
@@ -119,17 +133,17 @@ async function obterTokenAntiforgeryApi() {
             cache: "no-store",
         });
     } catch {
-        throw new Error("Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.");
+        throw new Error(MENSAGEM_ERRO_CONEXAO);
     }
 
     if (!resposta.ok) {
-        throw new ErroApi("Não foi possível preparar a requisição segura.", resposta.status);
+        throw new ErroApi("Não foi possível validar sua sessão agora. Atualize a página e tente novamente.", resposta.status);
     }
 
     const dados = await resposta.json();
 
     if (typeof dados.token !== "string" || dados.token === "") {
-        throw new Error("Não foi possível preparar a requisição segura.");
+        throw new Error("Não foi possível validar sua sessão agora. Atualize a página e tente novamente.");
     }
 
     tokenAntiforgery = dados.token;
@@ -147,7 +161,7 @@ function normalizarMensagemErroUsuario(mensagem) {
 
     if (/failed to fetch|networkerror|network error|typeerror|internal server error|server error/i.test(mensagem)) {
         if (/failed to fetch|networkerror|network error/i.test(mensagem)) {
-            return "Não foi possível conectar à API. Verifique se ela está em execução e tente novamente.";
+            return MENSAGEM_ERRO_CONEXAO;
         }
 
         return MENSAGEM_ERRO_INESPERADO;
@@ -241,7 +255,7 @@ function resolverMensagemErroAmigavel(mensagemApi, mensagemPadrao, status) {
         return "O link usado não é mais válido. Solicite um novo link e tente novamente.";
     }
 
-    if (mensagemBase !== "") {
+    if (mensagemBase !== "" && !mensagemPareceTecnica(mensagemBase)) {
         return mensagemBase;
     }
 
@@ -266,6 +280,10 @@ function resolverMensagemErroAmigavel(mensagemApi, mensagemPadrao, status) {
     }
 
     return mensagemPadrao;
+}
+
+function mensagemPareceTecnica(mensagem) {
+    return /exception|stack trace|sql|sqlite|invalidoperation|object reference|inner exception|at\s+[a-z0-9_.]+\(/i.test(mensagem);
 }
 
 async function listarProdutosApi() {

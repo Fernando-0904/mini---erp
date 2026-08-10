@@ -121,6 +121,22 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    ILogger<Program> logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        dbContext.Database.Migrate();
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Falha ao aplicar migrations automáticas no startup da API.");
+        throw;
+    }
+}
+
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>

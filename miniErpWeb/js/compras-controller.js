@@ -44,7 +44,15 @@ function inicializarComprasController() {
             renderizarItensPedido();
             await carregarPedidos();
         } catch (erro) {
-            exibirMensagem(erro instanceof Error ? erro.message : "Erro ao carregar dados de compras.", "erro");
+            produtos = [];
+            fornecedores = [];
+            pedidosCache = [];
+
+            preencherSelectFornecedores();
+            preencherSelectProdutos();
+            renderizarItensPedido();
+            renderizarEstadoErroPedidos(erro);
+            exibirMensagem(montarMensagemErro(erro, "Erro ao carregar dados de compras."), "erro");
         }
     }
 
@@ -55,9 +63,39 @@ function inicializarComprasController() {
             aplicarFiltroStatus();
         } catch (erro) {
             pedidosCache = [];
-            renderizarPedidos([]);
-            exibirMensagem(erro instanceof Error ? erro.message : "Erro ao carregar pedidos de compra.", "erro");
+            renderizarEstadoErroPedidos(erro);
+            exibirMensagem(montarMensagemErro(erro, "Erro ao carregar pedidos de compra."), "erro");
         }
+    }
+
+    function renderizarEstadoErroPedidos(erro) {
+        elementos.tabelaPedidosCompra.innerHTML = "";
+
+        const linhaErro = criarLinhaEstadoVazio(
+            7,
+            montarMensagemErro(erro, "Não foi possível carregar os pedidos agora."),
+            "Tentar novamente",
+            function () {
+                carregarDadosIniciais();
+            }
+        );
+
+        elementos.tabelaPedidosCompra.appendChild(linhaErro);
+    }
+
+    function montarMensagemErro(erro, fallback) {
+        const mensagemBase = erro instanceof Error && erro.message
+            ? erro.message
+            : fallback;
+        const correlationId = erro !== null && typeof erro === "object" && typeof erro.correlationId === "string"
+            ? erro.correlationId.trim()
+            : "";
+
+        if (correlationId === "") {
+            return mensagemBase;
+        }
+
+        return `${mensagemBase} Protocolo: ${correlationId}.`;
     }
 
     function aplicarFiltroStatus() {
