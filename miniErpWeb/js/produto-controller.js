@@ -201,17 +201,7 @@ function inicializarProdutoController() {
             return;
         }
 
-        const listaFiltrada = produtos.filter(function (produto) {
-            const codigo = String(produto.codigo);
-            const nome = normalizarTextoParaBusca(produto.nome);
-            const categoria = normalizarTextoParaBusca(produto.categoriaNome);
-            const fornecedor = normalizarTextoParaBusca(produto.fornecedorNome);
-
-            return codigo.includes(termoFiltro)
-                || nome.includes(termoFiltro)
-                || categoria.includes(termoFiltro)
-                || fornecedor.includes(termoFiltro);
-        });
+        const listaFiltrada = filtrarProdutosPorTermo(termoFiltro);
 
         atualizarTabela(produtos, editarProduto, removerProduto, {
             lista: listaFiltrada,
@@ -225,6 +215,20 @@ function inicializarProdutoController() {
 
                 atualizarTabela(produtos, editarProduto, removerProduto);
             }
+        });
+    }
+
+    function filtrarProdutosPorTermo(termoFiltro) {
+        return produtos.filter(function (produto) {
+            const codigo = String(produto.codigo);
+            const nome = normalizarTextoParaBusca(produto.nome);
+            const categoria = normalizarTextoParaBusca(produto.categoriaNome);
+            const fornecedor = normalizarTextoParaBusca(produto.fornecedorNome);
+
+            return codigo.includes(termoFiltro)
+                || nome.includes(termoFiltro)
+                || categoria.includes(termoFiltro)
+                || fornecedor.includes(termoFiltro);
         });
     }
 
@@ -301,13 +305,7 @@ function inicializarProdutoController() {
 
         codigoProdutoEmEdicao = codigo;
 
-        elementos.campoCodigo.value = produtoEncontrado.codigo;
-        elementos.campoNome.value = produtoEncontrado.nome;
-        elementos.campoPreco.value = produtoEncontrado.preco;
-        elementos.campoQuantidade.value = produtoEncontrado.quantidade;
-        elementos.campoEstoqueMinimo.value = produtoEncontrado.estoqueMinimo;
-        elementos.campoCategoriaProduto.value = produtoEncontrado.categoriaId;
-        elementos.campoFornecedorProduto.value = produtoEncontrado.fornecedorId || "";
+        preencherFormularioEdicaoProduto(produtoEncontrado);
 
         elementos.campoCodigo.disabled = true;
         elementos.campoQuantidade.disabled = true;
@@ -315,6 +313,16 @@ function inicializarProdutoController() {
         elementos.campoNome.focus();
 
         exibirMensagem("Edite os dados do produto. Para alterar o estoque, registre uma movimentação.", "sucesso");
+    }
+
+    function preencherFormularioEdicaoProduto(produto) {
+        elementos.campoCodigo.value = produto.codigo;
+        elementos.campoNome.value = produto.nome;
+        elementos.campoPreco.value = produto.preco;
+        elementos.campoQuantidade.value = produto.quantidade;
+        elementos.campoEstoqueMinimo.value = produto.estoqueMinimo;
+        elementos.campoCategoriaProduto.value = produto.categoriaId;
+        elementos.campoFornecedorProduto.value = produto.fornecedorId || "";
     }
 
     function limparModoEdicao() {
@@ -367,12 +375,12 @@ function inicializarProdutoController() {
 
     async function atualizarProdutosDaApi() {
         const produtosApi = await listarProdutosApi();
+        const produtosConvertidos = produtosApi.map(function (produto) {
+            return converterProdutoApiParaTela(produto);
+        });
 
         produtos.length = 0;
-
-        for (const produto of produtosApi) {
-            produtos.push(converterProdutoApiParaTela(produto));
-        }
+        produtos.push(...produtosConvertidos);
 
         aplicarFiltroRapido();
         atualizarIndicadores(produtos);

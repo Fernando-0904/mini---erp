@@ -38,11 +38,7 @@ function inicializarFornecedorController() {
                         exibirMensagem("Fornecedor cadastrado com sucesso.", "sucesso");
                     } else {
                         const fornecedorEditado = await editarFornecedorApi(idFornecedorEmEdicao, fornecedor);
-                        const indiceFornecedor = fornecedores.findIndex(function (item) {
-                            return item.id === idFornecedorEmEdicao;
-                        });
-
-                        fornecedores[indiceFornecedor] = fornecedorEditado;
+                        aplicarAtualizacaoFornecedorNoArray(idFornecedorEmEdicao, fornecedorEditado);
                         limparModoEdicaoFornecedor();
                         exibirMensagem("Fornecedor editado com sucesso.", "sucesso");
                     }
@@ -117,19 +113,7 @@ function inicializarFornecedorController() {
             return;
         }
 
-        const filtrados = fornecedores.filter(function (fornecedor) {
-            const codigo = String(fornecedor.codigo);
-            const nome = normalizarTextoParaBusca(fornecedor.nome);
-            const documento = normalizarTextoParaBusca(fornecedor.documento);
-            const email = normalizarTextoParaBusca(fornecedor.email);
-            const status = fornecedor.ativo ? "ativo" : "inativo";
-
-            return codigo.includes(termo)
-                || nome.includes(termo)
-                || documento.includes(termo)
-                || email.includes(termo)
-                || status.includes(termo);
-        });
+        const filtrados = filtrarFornecedoresPorTermo(termo);
 
         atualizarTabelaFornecedores(fornecedores, editarFornecedor, inativarFornecedor, removerFornecedor, {
             lista: filtrados,
@@ -146,6 +130,22 @@ function inicializarFornecedorController() {
         });
     }
 
+    function filtrarFornecedoresPorTermo(termo) {
+        return fornecedores.filter(function (fornecedor) {
+            const codigo = String(fornecedor.codigo);
+            const nome = normalizarTextoParaBusca(fornecedor.nome);
+            const documento = normalizarTextoParaBusca(fornecedor.documento);
+            const email = normalizarTextoParaBusca(fornecedor.email);
+            const status = fornecedor.ativo ? "ativo" : "inativo";
+
+            return codigo.includes(termo)
+                || nome.includes(termo)
+                || documento.includes(termo)
+                || email.includes(termo)
+                || status.includes(termo);
+        });
+    }
+
     function editarFornecedor(id) {
         const fornecedor = fornecedores.find(function (item) {
             return item.id === id;
@@ -157,16 +157,20 @@ function inicializarFornecedorController() {
         }
 
         idFornecedorEmEdicao = id;
+        preencherFormularioEdicaoFornecedor(fornecedor);
+        elementos.botaoSalvarFornecedor.textContent = "Salvar alteração";
+        elementos.campoFornecedorCodigo.focus();
+
+        exibirMensagem("Edite os dados do fornecedor e salve a alteração.", "sucesso");
+    }
+
+    function preencherFormularioEdicaoFornecedor(fornecedor) {
         elementos.campoFornecedorCodigo.value = fornecedor.codigo;
         elementos.campoFornecedorNome.value = fornecedor.nome;
         elementos.campoFornecedorDocumento.value = fornecedor.documento;
         elementos.campoFornecedorEmail.value = fornecedor.email;
         elementos.campoFornecedorTelefone.value = fornecedor.telefone;
         elementos.campoFornecedorAtivo.checked = fornecedor.ativo;
-        elementos.botaoSalvarFornecedor.textContent = "Salvar alteração";
-        elementos.campoFornecedorCodigo.focus();
-
-        exibirMensagem("Edite os dados do fornecedor e salve a alteração.", "sucesso");
     }
 
     async function removerFornecedor(id) {
@@ -226,6 +230,16 @@ function inicializarFornecedorController() {
     function limparModoEdicaoFornecedor() {
         idFornecedorEmEdicao = null;
         elementos.botaoSalvarFornecedor.textContent = "Cadastrar fornecedor";
+    }
+
+    function aplicarAtualizacaoFornecedorNoArray(idFornecedor, fornecedorAtualizado) {
+        const indiceFornecedor = fornecedores.findIndex(function (item) {
+            return item.id === idFornecedor;
+        });
+
+        if (indiceFornecedor >= 0) {
+            fornecedores[indiceFornecedor] = fornecedorAtualizado;
+        }
     }
 
     async function atualizarFornecedoresDoProduto() {

@@ -6,6 +6,9 @@ namespace MiniErp.Api.Services;
 
 public class RelatorioService
 {
+    private const string PrioridadeCritico = "Crítico";
+    private const string PrioridadeAtencao = "Atenção";
+    private const string PrioridadeInformativo = "Informativo";
     private readonly AppDbContext contexto;
 
     public RelatorioService(AppDbContext contexto)
@@ -134,93 +137,21 @@ public class RelatorioService
 
         foreach (ProdutoAlertaInterno produto in produtos)
         {
-            string nomeProduto = $"{produto.Codigo} - {produto.Nome}";
+            string nomeProduto = CriarNomeProduto(produto);
 
-            if (produto.QuantidadeEstoque == 0)
-            {
-                alertas.Add(new AlertaOperacionalResponse
-                {
-                    Prioridade = "Crítico",
-                    Titulo = "Produto sem estoque",
-                    Produto = nomeProduto,
-                    Detalhe = "Sem saldo disponível para venda/consumo.",
-                    Acao = new AlertaOperacionalAcaoResponse
-                    {
-                        Label = "Repor estoque",
-                        Href = $"movimentacoes.html?produtoCodigo={produto.Codigo}&acao=entrada&autoHistorico=1"
-                    }
-                });
-            }
-            else if (produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
-            {
-                alertas.Add(new AlertaOperacionalResponse
-                {
-                    Prioridade = "Atenção",
-                    Titulo = "Estoque abaixo do mínimo",
-                    Produto = nomeProduto,
-                    Detalhe = $"Saldo {produto.QuantidadeEstoque} (mínimo {produto.EstoqueMinimo}).",
-                    Acao = new AlertaOperacionalAcaoResponse
-                    {
-                        Label = "Planejar reposição",
-                        Href = $"movimentacoes.html?produtoCodigo={produto.Codigo}&acao=entrada&autoHistorico=1"
-                    }
-                });
-            }
-
-            if (produto.FornecedorId is null || string.IsNullOrWhiteSpace(produto.FornecedorNome))
-            {
-                alertas.Add(new AlertaOperacionalResponse
-                {
-                    Prioridade = "Atenção",
-                    Titulo = "Produto sem fornecedor",
-                    Produto = nomeProduto,
-                    Detalhe = "Vincule um fornecedor para agilizar futuras reposições.",
-                    Acao = new AlertaOperacionalAcaoResponse
-                    {
-                        Label = "Editar produto",
-                        Href = $"produtos.html?codigoEdicao={produto.Codigo}"
-                    }
-                });
-            }
+            AdicionarAlertasEstoque(alertas, produto, nomeProduto);
+            AdicionarAlertaFornecedor(alertas, produto, nomeProduto);
 
             if (!ultimaMovimentacaoPorProduto.TryGetValue(produto.Codigo, out DateTime ultimaMovimentacaoUtc))
             {
-                if (produto.QuantidadeEstoque > 0)
-                {
-                    alertas.Add(new AlertaOperacionalResponse
-                    {
-                        Prioridade = "Informativo",
-                        Titulo = "Produto sem histórico",
-                        Produto = nomeProduto,
-                        Detalhe = "Sem movimentações registradas até o momento.",
-                        Acao = new AlertaOperacionalAcaoResponse
-                        {
-                            Label = "Ver histórico",
-                            Href = $"movimentacoes.html?produtoCodigo={produto.Codigo}&autoHistorico=1"
-                        }
-                    });
-                }
+                AdicionarAlertaSemHistorico(alertas, produto, nomeProduto);
 
                 continue;
             }
 
             int diasSemMovimentacaoProduto = (int)Math.Floor((hojeUtc - ultimaMovimentacaoUtc).TotalDays);
 
-            if (diasSemMovimentacaoProduto > diasSemMovimentacao)
-            {
-                alertas.Add(new AlertaOperacionalResponse
-                {
-                    Prioridade = "Informativo",
-                    Titulo = "Sem movimentação recente",
-                    Produto = nomeProduto,
-                    Detalhe = $"Última movimentação há {diasSemMovimentacaoProduto} dias.",
-                    Acao = new AlertaOperacionalAcaoResponse
-                    {
-                        Label = "Analisar histórico",
-                        Href = $"movimentacoes.html?produtoCodigo={produto.Codigo}&autoHistorico=1"
-                    }
-                });
-            }
+            AdicionarAlertaSemMovimentacaoRecente(alertas, produto, nomeProduto, diasSemMovimentacaoProduto, diasSemMovimentacao);
         }
 
         return alertas
@@ -253,17 +184,136 @@ public class RelatorioService
 
     private static int PesoPrioridade(string prioridade)
     {
-        if (string.Equals(prioridade, "Crítico", StringComparison.Ordinal))
+        if (string.Equals(prioridade, PrioridadeCritico, StringComparison.Ordinal))
         {
             return 0;
         }
 
-        if (string.Equals(prioridade, "Atenção", StringComparison.Ordinal))
+        if (string.Equals(prioridade, PrioridadeAtencao, StringComparison.Ordinal))
         {
             return 1;
         }
 
         return 2;
+    }
+
+    private static string CriarNomeProduto(ProdutoAlertaInterno produto)
+    {
+        return $"{produto.Codigo} - {produto.Nome}";
+    }
+
+    private static void AdicionarAlertasEstoque(List<AlertaOperacionalResponse> alertas, ProdutoAlertaInterno produto, string nomeProduto)
+    {
+        if (produto.QuantidadeEstoque == 0)
+        {
+            alertas.Add(new AlertaOperacionalResponse
+            {
+                Prioridade = PrioridadeCritico,
+                Titulo = "Produto sem estoque",
+                Produto = nomeProduto,
+                Detalhe = "Sem saldo disponível para venda/consumo.",
+                Acao = new AlertaOperacionalAcaoResponse
+                {
+                    Label = "Repor estoque",
+                    Href = CriarLinkMovimentacaoEntrada(produto.Codigo)
+                }
+            });
+            return;
+        }
+
+        if (produto.EstoqueMinimo > 0 && produto.QuantidadeEstoque <= produto.EstoqueMinimo)
+        {
+            alertas.Add(new AlertaOperacionalResponse
+            {
+                Prioridade = PrioridadeAtencao,
+                Titulo = "Estoque abaixo do mínimo",
+                Produto = nomeProduto,
+                Detalhe = $"Saldo {produto.QuantidadeEstoque} (mínimo {produto.EstoqueMinimo}).",
+                Acao = new AlertaOperacionalAcaoResponse
+                {
+                    Label = "Planejar reposição",
+                    Href = CriarLinkMovimentacaoEntrada(produto.Codigo)
+                }
+            });
+        }
+    }
+
+    private static void AdicionarAlertaFornecedor(List<AlertaOperacionalResponse> alertas, ProdutoAlertaInterno produto, string nomeProduto)
+    {
+        if (produto.FornecedorId is not null && !string.IsNullOrWhiteSpace(produto.FornecedorNome))
+        {
+            return;
+        }
+
+        alertas.Add(new AlertaOperacionalResponse
+        {
+            Prioridade = PrioridadeAtencao,
+            Titulo = "Produto sem fornecedor",
+            Produto = nomeProduto,
+            Detalhe = "Vincule um fornecedor para agilizar futuras reposições.",
+            Acao = new AlertaOperacionalAcaoResponse
+            {
+                Label = "Editar produto",
+                Href = $"produtos.html?codigoEdicao={produto.Codigo}"
+            }
+        });
+    }
+
+    private static void AdicionarAlertaSemHistorico(List<AlertaOperacionalResponse> alertas, ProdutoAlertaInterno produto, string nomeProduto)
+    {
+        if (produto.QuantidadeEstoque <= 0)
+        {
+            return;
+        }
+
+        alertas.Add(new AlertaOperacionalResponse
+        {
+            Prioridade = PrioridadeInformativo,
+            Titulo = "Produto sem histórico",
+            Produto = nomeProduto,
+            Detalhe = "Sem movimentações registradas até o momento.",
+            Acao = new AlertaOperacionalAcaoResponse
+            {
+                Label = "Ver histórico",
+                Href = CriarLinkHistoricoMovimentacao(produto.Codigo)
+            }
+        });
+    }
+
+    private static void AdicionarAlertaSemMovimentacaoRecente(
+        List<AlertaOperacionalResponse> alertas,
+        ProdutoAlertaInterno produto,
+        string nomeProduto,
+        int diasSemMovimentacaoProduto,
+        int diasSemMovimentacao)
+    {
+        if (diasSemMovimentacaoProduto <= diasSemMovimentacao)
+        {
+            return;
+        }
+
+        alertas.Add(new AlertaOperacionalResponse
+        {
+            Prioridade = PrioridadeInformativo,
+            Titulo = "Sem movimentação recente",
+            Produto = nomeProduto,
+            Detalhe = $"Última movimentação há {diasSemMovimentacaoProduto} dias.",
+            Acao = new AlertaOperacionalAcaoResponse
+            {
+                Label = "Analisar histórico",
+                Href = CriarLinkHistoricoMovimentacao(produto.Codigo)
+            }
+        });
+    }
+
+    private static string CriarLinkMovimentacaoEntrada(int produtoCodigo)
+    {
+        return $"movimentacoes.html?produtoCodigo={produtoCodigo}&acao=entrada&autoHistorico=1";
+    }
+
+    private static string CriarLinkHistoricoMovimentacao(int produtoCodigo)
+    {
+        return $"movimentacoes.html?produtoCodigo={produtoCodigo}&autoHistorico=1";
     }
 
     private sealed class ProdutoAlertaInterno

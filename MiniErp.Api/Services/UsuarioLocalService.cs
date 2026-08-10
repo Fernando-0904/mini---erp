@@ -35,7 +35,7 @@ public class UsuarioLocalService
             return (null, erro);
         }
 
-        if (contexto.Usuarios.Any(usuario => usuario.Email == email))
+        if (EmailJaCadastrado(email))
         {
             return (null, "Já existe uma conta com este e-mail.");
         }
@@ -43,13 +43,9 @@ public class UsuarioLocalService
         Usuario usuario = CriarUsuario(nome, email, senha, "Operador", emailConfirmado: false);
         contexto.Usuarios.Add(usuario);
 
-        try
+        if (!TentarSalvarComTratamentoDeEmailDuplicado(out string erroPersistencia))
         {
-            contexto.SaveChanges();
-        }
-        catch (DbUpdateException ex) when (IsConstraintViolation(ex))
-        {
-            return (null, "Já existe uma conta com este e-mail.");
+            return (null, erroPersistencia);
         }
 
         await GerarEEnviarTokenAsync(usuario, TokenUsuarioTipo.ConfirmacaoEmail);
@@ -90,7 +86,7 @@ public class UsuarioLocalService
             return;
         }
 
-        Usuario? usuario = contexto.Usuarios.SingleOrDefault(item => item.Email == email);
+        Usuario? usuario = BuscarUsuarioPorEmail(email);
 
         if (usuario is null || usuario.EmailConfirmado)
         {
@@ -124,7 +120,7 @@ public class UsuarioLocalService
             return;
         }
 
-        Usuario? usuario = contexto.Usuarios.SingleOrDefault(item => item.Email == email);
+        Usuario? usuario = BuscarUsuarioPorEmail(email);
 
         if (usuario is null || !usuario.EmailConfirmado)
         {
@@ -329,5 +325,30 @@ public class UsuarioLocalService
     {
         return ex.InnerException is SqliteException sqliteException &&
                sqliteException.SqliteErrorCode == 19;
+    }
+
+    private bool EmailJaCadastrado(string email)
+    {
+        return contexto.Usuarios.Any(usuario => usuario.Email == email);
+    }
+
+    private Usuario? BuscarUsuarioPorEmail(string email)
+    {
+        return contexto.Usuarios.SingleOrDefault(item => item.Email == email);
+    }
+
+    private bool TentarSalvarComTratamentoDeEmailDuplicado(out string erro)
+    {
+        try
+        {
+            contexto.SaveChanges();
+            erro = string.Empty;
+            return true;
+        }
+        catch (DbUpdateException ex) when (IsConstraintViolation(ex))
+        {
+            erro = "Já existe uma conta com este e-mail.";
+            return false;
+        }
     }
 }

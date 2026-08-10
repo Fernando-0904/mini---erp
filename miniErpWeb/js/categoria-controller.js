@@ -102,10 +102,7 @@ function inicializarCategoriaController() {
             const categoriasApi = await listarCategoriasApi();
 
             categorias.length = 0;
-
-            for (const categoria of categoriasApi) {
-                categorias.push(categoria);
-            }
+            categorias.push(...categoriasApi);
 
             aplicarFiltroRapidoCategorias();
         } catch (erro) {
@@ -122,12 +119,7 @@ function inicializarCategoriaController() {
             return;
         }
 
-        const filtradas = categorias.filter(function (categoria) {
-            const id = String(categoria.id);
-            const nome = normalizarTextoParaBusca(categoria.nome);
-
-            return id.includes(termo) || nome.includes(termo);
-        });
+        const filtradas = filtrarCategoriasPorTermo(termo);
 
         atualizarTabelaCategorias(categorias, editarCategoria, removerCategoria, {
             lista: filtradas,
@@ -144,6 +136,15 @@ function inicializarCategoriaController() {
         });
     }
 
+    function filtrarCategoriasPorTermo(termo) {
+        return categorias.filter(function (categoria) {
+            const id = String(categoria.id);
+            const nome = normalizarTextoParaBusca(categoria.nome);
+
+            return id.includes(termo) || nome.includes(termo);
+        });
+    }
+
     function editarCategoria(id) {
         const categoria = categorias.find(function (item) {
             return item.id === id;
@@ -156,14 +157,18 @@ function inicializarCategoriaController() {
 
         idCategoriaEmEdicao = id;
 
-        elementos.campoCategoriaId.value = categoria.id;
-        elementos.campoCategoriaNome.value = categoria.nome;
+        preencherFormularioEdicaoCategoria(categoria);
 
         elementos.campoCategoriaId.disabled = true;
         elementos.botaoSalvarCategoria.textContent = "Salvar alteração";
         elementos.campoCategoriaNome.focus();
 
         exibirMensagem("Edite os dados da categoria e salve a alteração.", "sucesso");
+    }
+
+    function preencherFormularioEdicaoCategoria(categoria) {
+        elementos.campoCategoriaId.value = categoria.id;
+        elementos.campoCategoriaNome.value = categoria.nome;
     }
 
     function limparModoEdicaoCategoria() {

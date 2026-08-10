@@ -1,3 +1,6 @@
+const COLSPAN_ITENS_PEDIDO = 5;
+const COLSPAN_TABELA_PEDIDOS = 7;
+
 function inicializarComprasController() {
     if (!(elementos.formularioPedidoCompra instanceof HTMLFormElement) ||
         !(elementos.tabelaPedidosCompra instanceof HTMLElement)) {
@@ -8,12 +11,10 @@ function inicializarComprasController() {
     let produtos = [];
     let fornecedores = [];
     let pedidosCache = [];
-
     const botaoSalvarPedido = elementos.formularioPedidoCompra.querySelector("button[type='submit']");
 
-    elementos.botaoAdicionarItemPedido?.addEventListener("click", function () {
-        adicionarItem();
-    });
+    elementos.botaoAdicionarItemPedido?.addEventListener("click", adicionarItem);
+    elementos.campoFiltroStatusPedidoCompra?.addEventListener("change", aplicarFiltroStatus);
 
     elementos.formularioPedidoCompra.addEventListener("submit", async function (evento) {
         evento.preventDefault();
@@ -21,10 +22,6 @@ function inicializarComprasController() {
         await executarComBotaoCarregando(botaoSalvarPedido, "Salvando...", async function () {
             await salvarPedido();
         });
-    });
-
-    elementos.campoFiltroStatusPedidoCompra?.addEventListener("change", function () {
-        aplicarFiltroStatus();
     });
 
     carregarDadosIniciais();
@@ -37,10 +34,12 @@ function inicializarComprasController() {
             ]);
 
             produtos = Array.isArray(produtosApi) ? produtosApi : [];
-            fornecedores = Array.isArray(fornecedoresApi) ? fornecedoresApi.filter(function (item) { return item.ativo; }) : [];
+            fornecedores = Array.isArray(fornecedoresApi)
+                ? fornecedoresApi.filter(function (item) { return item.ativo; })
+                : [];
 
-            preencherSelectFornecedores();
             preencherSelectProdutos();
+            preencherSelectFornecedores();
             renderizarItensPedido();
             await carregarPedidos();
         } catch (erro) {
@@ -48,11 +47,11 @@ function inicializarComprasController() {
             fornecedores = [];
             pedidosCache = [];
 
-            preencherSelectFornecedores();
             preencherSelectProdutos();
+            preencherSelectFornecedores();
             renderizarItensPedido();
             renderizarEstadoErroPedidos(erro);
-            exibirMensagem(montarMensagemErro(erro, "Erro ao carregar dados de compras."), "erro");
+            exibirMensagem(montarMensagemErroComProtocolo(erro, "Erro ao carregar dados de compras."), "erro");
         }
     }
 
@@ -64,107 +63,77 @@ function inicializarComprasController() {
         } catch (erro) {
             pedidosCache = [];
             renderizarEstadoErroPedidos(erro);
-            exibirMensagem(montarMensagemErro(erro, "Erro ao carregar pedidos de compra."), "erro");
+            exibirMensagem(montarMensagemErroComProtocolo(erro, "Erro ao carregar pedidos de compra."), "erro");
         }
     }
 
     function renderizarEstadoErroPedidos(erro) {
-        elementos.tabelaPedidosCompra.innerHTML = "";
+        if (!(elementos.tabelaPedidosCompra instanceof HTMLElement)) {
+            return;
+        }
 
-        const linhaErro = criarLinhaEstadoVazio(
-            7,
-            montarMensagemErro(erro, "Não foi possível carregar os pedidos agora."),
+        elementos.tabelaPedidosCompra.innerHTML = "";
+        elementos.tabelaPedidosCompra.appendChild(criarLinhaEstadoVazio(
+            COLSPAN_TABELA_PEDIDOS,
+            montarMensagemErroComProtocolo(erro, "Não foi possível carregar os pedidos agora."),
             "Tentar novamente",
             function () {
                 carregarDadosIniciais();
             }
-        );
-
-        elementos.tabelaPedidosCompra.appendChild(linhaErro);
-    }
-
-    function montarMensagemErro(erro, fallback) {
-        const mensagemBase = erro instanceof Error && erro.message
-            ? erro.message
-            : fallback;
-        const correlationId = erro !== null && typeof erro === "object" && typeof erro.correlationId === "string"
-            ? erro.correlationId.trim()
-            : "";
-
-        if (correlationId === "") {
-            return mensagemBase;
-        }
-
-        return `${mensagemBase} Protocolo: ${correlationId}.`;
+        ));
     }
 
     function aplicarFiltroStatus() {
         const statusSelecionado = typeof elementos.campoFiltroStatusPedidoCompra?.value === "string"
             ? elementos.campoFiltroStatusPedidoCompra.value.trim()
             : "";
-
-        if (statusSelecionado === "") {
-            renderizarPedidos(pedidosCache);
-            return;
-        }
-
-        const pedidosFiltrados = pedidosCache.filter(function (pedido) {
-            return pedido.status === statusSelecionado;
-        });
+        const pedidosFiltrados = statusSelecionado === ""
+            ? pedidosCache
+            : pedidosCache.filter(function (pedido) {
+                return pedido.status === statusSelecionado;
+            });
 
         renderizarPedidos(pedidosFiltrados);
     }
 
-    function preencherSelectFornecedores() {
-        if (!(elementos.campoFornecedorPedidoCompra instanceof HTMLSelectElement)) {
-            return;
-        }
-
-        elementos.campoFornecedorPedidoCompra.innerHTML = "";
-
-        const opcaoPadrao = document.createElement("option");
-        opcaoPadrao.value = "";
-        opcaoPadrao.textContent = "Selecione um fornecedor";
-        elementos.campoFornecedorPedidoCompra.appendChild(opcaoPadrao);
-
-        for (const fornecedor of fornecedores) {
-            const opcao = document.createElement("option");
-            opcao.value = String(fornecedor.id);
-            opcao.textContent = `${fornecedor.codigo} - ${fornecedor.nome}`;
-            elementos.campoFornecedorPedidoCompra.appendChild(opcao);
-        }
+    function preencherSelectProdutos() {
+        preencherSelectGenerico(
+            elementos.campoProdutoPedidoCompra,
+            "Selecione um produto",
+            produtos,
+            function (produto) {
+                return String(produto.codigo);
+            },
+            function (produto) {
+                return `${produto.codigo} - ${produto.nome}`;
+            }
+        );
     }
 
-    function preencherSelectProdutos() {
-        if (!(elementos.campoProdutoPedidoCompra instanceof HTMLSelectElement)) {
-            return;
-        }
-
-        elementos.campoProdutoPedidoCompra.innerHTML = "";
-
-        const opcaoPadrao = document.createElement("option");
-        opcaoPadrao.value = "";
-        opcaoPadrao.textContent = "Selecione um produto";
-        elementos.campoProdutoPedidoCompra.appendChild(opcaoPadrao);
-
-        for (const produto of produtos) {
-            const opcao = document.createElement("option");
-            opcao.value = String(produto.codigo);
-            opcao.textContent = `${produto.codigo} - ${produto.nome}`;
-            elementos.campoProdutoPedidoCompra.appendChild(opcao);
-        }
+    function preencherSelectFornecedores() {
+        preencherSelectGenerico(
+            elementos.campoFornecedorPedidoCompra,
+            "Selecione um fornecedor",
+            fornecedores,
+            function (fornecedor) {
+                return String(fornecedor.id);
+            },
+            function (fornecedor) {
+                return `${fornecedor.codigo} - ${fornecedor.nome}`;
+            }
+        );
     }
 
     function adicionarItem() {
-        const produtoCodigo = Number(elementos.campoProdutoPedidoCompra?.value || "");
-        const quantidade = Number(elementos.campoQuantidadeItemPedidoCompra?.value || "");
+        const produtoCodigo = lerInteiroPositivo(elementos.campoProdutoPedidoCompra?.value);
+        const quantidade = lerInteiroPositivo(elementos.campoQuantidadeItemPedidoCompra?.value);
 
-        if (!Number.isInteger(produtoCodigo) || produtoCodigo <= 0) {
+        if (produtoCodigo === null) {
             exibirMensagem("Selecione um produto para adicionar no pedido.", "erro");
             return;
         }
 
-        if (!Number.isInteger(quantidade) || quantidade <= 0) {
+        if (quantidade === null) {
             exibirMensagem("Informe uma quantidade válida para o item.", "erro");
             return;
         }
@@ -209,16 +178,14 @@ function inicializarComprasController() {
         elementos.tabelaItensPedidoCompra.innerHTML = "";
 
         if (itensPedido.length === 0) {
-            const linhaVazia = criarLinhaEstadoVazio(
-                5,
+            elementos.tabelaItensPedidoCompra.appendChild(criarLinhaEstadoVazio(
+                COLSPAN_ITENS_PEDIDO,
                 "Nenhum item adicionado ao pedido.",
                 "Selecionar produto",
                 function () {
                     elementos.campoProdutoPedidoCompra?.focus();
                 }
-            );
-
-            elementos.tabelaItensPedidoCompra.appendChild(linhaVazia);
+            ));
             return;
         }
 
@@ -231,19 +198,24 @@ function inicializarComprasController() {
             linha.appendChild(criarCelula(item.quantidade));
             linha.appendChild(criarCelula(formatarMoeda(item.precoUnitario)));
             linha.appendChild(criarCelula(formatarMoeda(valorTotal)));
-
-            const celulaAcao = document.createElement("td");
-            const botaoRemover = document.createElement("button");
-            botaoRemover.type = "button";
-            botaoRemover.textContent = "Remover";
-            botaoRemover.addEventListener("click", function () {
-                removerItem(item.produtoCodigo);
-            });
-            celulaAcao.appendChild(botaoRemover);
-            linha.appendChild(celulaAcao);
+            linha.appendChild(criarCelulaAcaoRemoverItem(item.produtoCodigo));
 
             elementos.tabelaItensPedidoCompra.appendChild(linha);
         }
+    }
+
+    function criarCelulaAcaoRemoverItem(produtoCodigo) {
+        const celulaAcao = document.createElement("td");
+        const botaoRemover = document.createElement("button");
+
+        botaoRemover.type = "button";
+        botaoRemover.textContent = "Remover";
+        botaoRemover.addEventListener("click", function () {
+            removerItem(produtoCodigo);
+        });
+
+        celulaAcao.appendChild(botaoRemover);
+        return celulaAcao;
     }
 
     function removerItem(produtoCodigo) {
@@ -258,9 +230,9 @@ function inicializarComprasController() {
     }
 
     async function salvarPedido() {
-        const fornecedorId = Number(elementos.campoFornecedorPedidoCompra?.value || "");
+        const fornecedorId = lerInteiroPositivo(elementos.campoFornecedorPedidoCompra?.value);
 
-        if (!Number.isInteger(fornecedorId) || fornecedorId <= 0) {
+        if (fornecedorId === null) {
             exibirMensagem("Selecione um fornecedor para criar o pedido.", "erro");
             return;
         }
@@ -293,53 +265,59 @@ function inicializarComprasController() {
     }
 
     function renderizarPedidos(pedidos) {
+        if (!(elementos.tabelaPedidosCompra instanceof HTMLElement)) {
+            return;
+        }
+
         elementos.tabelaPedidosCompra.innerHTML = "";
 
         if (pedidos.length === 0) {
-            const linhaVazia = criarLinhaEstadoVazio(
-                7,
+            elementos.tabelaPedidosCompra.appendChild(criarLinhaEstadoVazio(
+                COLSPAN_TABELA_PEDIDOS,
                 "Nenhum pedido de compra cadastrado.",
                 "Criar pedido",
                 function () {
                     elementos.campoFornecedorPedidoCompra?.focus();
                 }
-            );
-
-            elementos.tabelaPedidosCompra.appendChild(linhaVazia);
+            ));
             return;
         }
 
         for (const pedido of pedidos) {
-            const linha = document.createElement("tr");
-            const resumoItens = (pedido.itens || [])
-                .map(function (item) {
-                    return `${item.produtoCodigo}(${item.quantidade})`;
-                })
-                .join(", ");
-
-            linha.appendChild(criarCelula(pedido.id));
-            linha.appendChild(criarCelula(pedido.fornecedorNome));
-            linha.appendChild(criarCelula(pedido.status));
-            linha.appendChild(criarCelula(resumoItens));
-            linha.appendChild(criarCelula(formatarMoeda(pedido.valorTotal || 0)));
-            linha.appendChild(criarCelula(formatarData(pedido.criadoEmUtc)));
-
-            const celulaAcoes = document.createElement("td");
-            if (pedido.status === "Aberto") {
-                const botaoReceber = document.createElement("button");
-                botaoReceber.type = "button";
-                botaoReceber.textContent = "Receber";
-                botaoReceber.addEventListener("click", async function () {
-                    await receberPedido(pedido.id);
-                });
-                celulaAcoes.appendChild(botaoReceber);
-            } else {
-                celulaAcoes.textContent = "Concluído";
-            }
-
-            linha.appendChild(celulaAcoes);
-            elementos.tabelaPedidosCompra.appendChild(linha);
+            elementos.tabelaPedidosCompra.appendChild(criarLinhaPedido(pedido));
         }
+    }
+
+    function criarLinhaPedido(pedido) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(pedido.id));
+        linha.appendChild(criarCelula(pedido.fornecedorNome));
+        linha.appendChild(criarCelula(pedido.status));
+        linha.appendChild(criarCelula(montarResumoItensPedido(pedido.itens)));
+        linha.appendChild(criarCelula(formatarMoeda(pedido.valorTotal || 0)));
+        linha.appendChild(criarCelula(formatarDataPedido(pedido.criadoEmUtc)));
+        linha.appendChild(criarCelulaAcaoPedido(pedido));
+
+        return linha;
+    }
+
+    function criarCelulaAcaoPedido(pedido) {
+        const celulaAcoes = document.createElement("td");
+
+        if (pedido.status === "Aberto") {
+            const botaoReceber = document.createElement("button");
+            botaoReceber.type = "button";
+            botaoReceber.textContent = "Receber";
+            botaoReceber.addEventListener("click", async function () {
+                await receberPedido(pedido.id);
+            });
+            celulaAcoes.appendChild(botaoReceber);
+        } else {
+            celulaAcoes.textContent = "Concluído";
+        }
+
+        return celulaAcoes;
     }
 
     async function receberPedido(pedidoId) {
@@ -357,18 +335,73 @@ function inicializarComprasController() {
             exibirMensagem(erro instanceof Error ? erro.message : "Não foi possível receber o pedido.", "erro");
         }
     }
+}
 
-    function formatarData(dataIso) {
-        if (typeof dataIso !== "string" || dataIso.trim() === "") {
-            return "";
-        }
-
-        const data = new Date(dataIso);
-
-        if (Number.isNaN(data.getTime())) {
-            return dataIso;
-        }
-
-        return data.toLocaleString("pt-BR");
+function preencherSelectGenerico(select, textoPadrao, lista, obterValor, obterTexto) {
+    if (!(select instanceof HTMLSelectElement)) {
+        return;
     }
+
+    select.innerHTML = "";
+
+    const opcaoPadrao = document.createElement("option");
+    opcaoPadrao.value = "";
+    opcaoPadrao.textContent = textoPadrao;
+    select.appendChild(opcaoPadrao);
+
+    for (const item of lista) {
+        const opcao = document.createElement("option");
+        opcao.value = obterValor(item);
+        opcao.textContent = obterTexto(item);
+        select.appendChild(opcao);
+    }
+}
+
+function lerInteiroPositivo(valor) {
+    const numero = Number(valor || "");
+
+    if (!Number.isInteger(numero) || numero <= 0) {
+        return null;
+    }
+
+    return numero;
+}
+
+function montarMensagemErroComProtocolo(erro, fallback) {
+    const mensagemBase = erro instanceof Error && erro.message
+        ? erro.message
+        : fallback;
+    const correlationId = erro !== null && typeof erro === "object" && typeof erro.correlationId === "string"
+        ? erro.correlationId.trim()
+        : "";
+
+    if (correlationId === "") {
+        return mensagemBase;
+    }
+
+    return `${mensagemBase} Protocolo: ${correlationId}.`;
+}
+
+function montarResumoItensPedido(itens) {
+    if (!Array.isArray(itens) || itens.length === 0) {
+        return "";
+    }
+
+    return itens.map(function (item) {
+        return `${item.produtoCodigo}(${item.quantidade})`;
+    }).join(", ");
+}
+
+function formatarDataPedido(dataIso) {
+    if (typeof dataIso !== "string" || dataIso.trim() === "") {
+        return "";
+    }
+
+    const data = new Date(dataIso);
+
+    if (Number.isNaN(data.getTime())) {
+        return dataIso;
+    }
+
+    return data.toLocaleString("pt-BR");
 }
