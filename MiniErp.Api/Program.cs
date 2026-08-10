@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using MiniErp.Api.Data;
@@ -106,7 +107,7 @@ using (IServiceScope scope = app.Services.CreateScope())
 
     try
     {
-        dbContext.Database.Migrate();
+        AplicarMigrationsComProtecao(dbContext, logger);
     }
     catch (Exception exception)
     {
@@ -206,7 +207,62 @@ static async Task EscreverProblemAsync(HttpContext context, int statusCode, stri
         context,
         statusCode,
         title,
-            detail);
+        detail);
+}
+
+static void AplicarMigrationsComProtecao(AppDbContext dbContext, ILogger logger)
+{
+    if (!dbContext.Database.IsSqlite())
+    {
+        dbContext.Database.Migrate();
+        return;
+    }
+
+    string? connectionString = dbContext.Database.GetConnectionString();
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        dbContext.Database.Migrate();
+        return;
+    }
+
+    string dataSource = new SqliteConnectionStringBuilder(connectionString).DataSource ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(dataSource) || dataSource == ":memory:")
+    {
+        dbContext.Database.Migrate();
+        return;
+    }
+
+    string databasePath = Path.GetFullPath(dataSource, Directory.GetCurrentDirectory());
+    string backupPath = $"{databasePath}.pre-migrate.bak";
+
+    if (!File.Exists(databasePath))
+    {
+        dbContext.Database.Migrate();
+        return;
+    }
+
+    File.Copy(databasePath, backupPath, overwrite: true);
+
+    try
+    {
+        dbContext.Database.Migrate();
+
+        if (File.Exists(backupPath))
+        {
+            File.Delete(backupPath);
+        }
+    }
+    catch
+    {
+        if (File.Exists(backupPath))
+        {
+            File.Copy(backupPath, databasePath, overwrite: true);
+            File.Delete(backupPath);
+            logger.LogWarning("Falha na migration. Banco SQLite restaurado a partir do backup de segurança.");
+        }
+
+        throw;
+    }
 }
 
 static void AplicarPoliticaCorsMiniErp(CorsPolicyBuilder policy, string[] allowedOrigins)
