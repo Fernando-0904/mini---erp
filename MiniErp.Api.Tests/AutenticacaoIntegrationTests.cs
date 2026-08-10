@@ -103,6 +103,32 @@ public class AutenticacaoIntegrationTests
     }
 
     [Fact]
+    public async Task Login_ComCredenciaisInvalidas_RegistraEventoDeAuditoria()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage response = await PostComToken(client, "/auth/login", new
+        {
+            email = "admin@mini-erp.com",
+            senha = "senha-incorreta"
+        }, token);
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        List<AuditoriaEvento> eventos = await contexto.AuditoriaEventos
+            .AsNoTracking()
+            .Where(item => item.Acao == "LoginFalhou" && item.Entidade == "Auth")
+            .ToListAsync();
+        bool eventoRegistrado = eventos.Any(item =>
+            item.Descricao.Contains("credenciais inválidas", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.True(eventoRegistrado);
+    }
+
+    [Fact]
     public async Task Login_AposMuitasFalhas_BloqueiaTemporariamente()
     {
         using MiniErpApiFactory factory = new();
@@ -133,6 +159,40 @@ public class AutenticacaoIntegrationTests
             "Detectamos muitas tentativas de acesso",
             await bloqueio.Content.ReadAsStringAsync(),
             StringComparison.Ordinal);
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        bool eventoBloqueio = await contexto.AuditoriaEventos
+            .AsNoTracking()
+            .AnyAsync(item => item.Acao == "LoginBloqueado" && item.Entidade == "Auth");
+
+        Assert.True(eventoBloqueio);
+    }
+
+    [Fact]
+    public async Task Login_ComCredenciaisValidas_RegistraEventoDeAuditoria()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage login = await PostComToken(client, "/auth/login", new
+        {
+            email = "admin@mini-erp.com",
+            senha = "123456"
+        }, token);
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        bool eventoRegistrado = await contexto.AuditoriaEventos
+            .AsNoTracking()
+            .AnyAsync(item =>
+                item.Acao == "LoginSucesso" &&
+                item.Entidade == "Auth" &&
+                item.Descricao == "Login realizado com sucesso.");
+
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        Assert.True(eventoRegistrado);
     }
 
     [Fact]

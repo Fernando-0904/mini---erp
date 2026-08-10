@@ -44,10 +44,22 @@ internal static class AuthEndpoints
             .AllowAnonymous()
             .RequireAntiforgery();
 
-        app.MapPost("/auth/login", async (LoginRequest request, UsuarioLocalService usuarioService, HttpContext context) =>
+        app.MapPost("/auth/login", async (LoginRequest request, UsuarioLocalService usuarioService, AuditoriaService auditoriaService, HttpContext context) =>
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Senha))
             {
+                await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                    context,
+                    "LoginInvalido",
+                    "Auth",
+                    "n/a",
+                    "Tentativa de login sem e-mail ou senha.",
+                    new
+                    {
+                        EmailInformado = request.Email,
+                        Ip = context.Connection.RemoteIpAddress?.ToString()
+                    });
+
                 return ApiHttpHelpers.CriarProblem(
                     context,
                     StatusCodes.Status400BadRequest,
@@ -61,6 +73,19 @@ internal static class AuthEndpoints
             if (autenticacao.TentativaBloqueada)
             {
                 context.Response.Headers.RetryAfter = autenticacao.RetryAfterSeconds.ToString();
+                await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                    context,
+                    "LoginBloqueado",
+                    "Auth",
+                    request.Email.Trim(),
+                    "Tentativa de login bloqueada por excesso de falhas.",
+                    new
+                    {
+                        EmailInformado = request.Email,
+                        Ip = ipAddress,
+                        autenticacao.RetryAfterSeconds
+                    });
+
                 return ApiHttpHelpers.CriarProblem(
                     context,
                     StatusCodes.Status429TooManyRequests,
@@ -70,6 +95,18 @@ internal static class AuthEndpoints
 
             if (autenticacao.EmailNaoConfirmado)
             {
+                await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                    context,
+                    "LoginPendenteConfirmacao",
+                    "Auth",
+                    request.Email.Trim(),
+                    "Tentativa de login com e-mail ainda não confirmado.",
+                    new
+                    {
+                        EmailInformado = request.Email,
+                        Ip = ipAddress
+                    });
+
                 return ApiHttpHelpers.CriarProblem(
                     context,
                     StatusCodes.Status400BadRequest,
@@ -79,6 +116,18 @@ internal static class AuthEndpoints
 
             if (autenticacao.Usuario is null)
             {
+                await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                    context,
+                    "LoginFalhou",
+                    "Auth",
+                    request.Email.Trim(),
+                    "Falha de login por credenciais inválidas.",
+                    new
+                    {
+                        EmailInformado = request.Email,
+                        Ip = ipAddress
+                    });
+
                 return ApiHttpHelpers.CriarProblem(
                     context,
                     StatusCodes.Status401Unauthorized,
@@ -90,6 +139,19 @@ internal static class AuthEndpoints
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 ApiHttpHelpers.CriarPrincipal(autenticacao.Usuario),
                 ApiHttpHelpers.CriarPropriedadesAutenticacao());
+
+            await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                context,
+                "LoginSucesso",
+                "Auth",
+                autenticacao.Usuario.Id.ToString(),
+                "Login realizado com sucesso.",
+                new
+                {
+                    EmailInformado = request.Email,
+                    autenticacao.Usuario.Email,
+                    Ip = ipAddress
+                });
 
             context.Response.Headers.CacheControl = "no-store";
             return Results.Ok(autenticacao.Usuario);
@@ -158,9 +220,23 @@ internal static class AuthEndpoints
                 : Results.Ok(usuario);
         });
 
-        app.MapPost("/auth/logout", async (HttpContext context) =>
+        app.MapPost("/auth/logout", async (AuditoriaService auditoriaService, HttpContext context) =>
         {
+            string? emailUsuario = context.User.FindFirst(ClaimTypes.Email)?.Value;
             await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            await auditoriaService.RegistrarSemImpactarFluxoAsync(
+                context,
+                "Logout",
+                "Auth",
+                emailUsuario ?? "n/a",
+                "Logout realizado.",
+                new
+                {
+                    EmailUsuario = emailUsuario,
+                    Ip = context.Connection.RemoteIpAddress?.ToString()
+                });
+
             context.Response.Headers.CacheControl = "no-store";
             return Results.NoContent();
         })

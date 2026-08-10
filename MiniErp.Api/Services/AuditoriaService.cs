@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using MiniErp.Api.Data;
 using MiniErp.Api.Models;
 
@@ -8,10 +9,12 @@ namespace MiniErp.Api.Services;
 public class AuditoriaService
 {
     private readonly AppDbContext contexto;
+    private readonly ILogger<AuditoriaService> logger;
 
-    public AuditoriaService(AppDbContext contexto)
+    public AuditoriaService(AppDbContext contexto, ILogger<AuditoriaService> logger)
     {
         this.contexto = contexto;
+        this.logger = logger;
     }
 
     public async Task RegistrarAsync(
@@ -38,6 +41,29 @@ public class AuditoriaService
 
         contexto.AuditoriaEventos.Add(evento);
         await contexto.SaveChangesAsync();
+    }
+
+    public async Task RegistrarSemImpactarFluxoAsync(
+        HttpContext httpContext,
+        string acao,
+        string entidade,
+        string entidadeId,
+        string descricao,
+        object? dados = null)
+    {
+        try
+        {
+            await RegistrarAsync(httpContext, acao, entidade, entidadeId, descricao, dados);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "Falha ao registrar auditoria ({Acao}/{Entidade}/{EntidadeId}).",
+                acao,
+                entidade,
+                entidadeId);
+        }
     }
 
     private static (int? UsuarioId, string UsuarioEmail) ExtrairUsuario(ClaimsPrincipal usuario)
