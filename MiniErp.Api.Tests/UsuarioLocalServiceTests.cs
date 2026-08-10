@@ -149,15 +149,18 @@ public class UsuarioLocalServiceTests
 
     private static UsuarioLocalService CriarService(AppDbContext contexto, EmailSimuladoService? emailService = null)
     {
+        IConfiguration configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Frontend:BaseUrl"] = "http://localhost:5500"
+            })
+            .Build();
+
         return new UsuarioLocalService(
             contexto,
             emailService ?? CriarEmailService(),
-            new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Frontend:BaseUrl"] = "http://localhost:5500"
-                })
-                .Build());
+            configuration,
+            new LoginAttemptGuardService(configuration));
     }
 
     private static EmailSimuladoService CriarEmailService()

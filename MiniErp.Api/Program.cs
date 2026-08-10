@@ -294,6 +294,7 @@ static void RegistrarServicosAplicacao(IServiceCollection services, string datab
     services.AddScoped<RelatorioService>();
     services.AddScoped<AuditoriaService>();
     services.AddScoped<UsuarioLocalService>();
+    services.AddSingleton<LoginAttemptGuardService>();
     services.AddSingleton<EmailSimuladoService>();
     services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<EmailSimuladoService>());
     services.AddProblemDetails();

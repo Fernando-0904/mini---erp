@@ -103,6 +103,93 @@ public class AutenticacaoIntegrationTests
     }
 
     [Fact]
+    public async Task Login_AposMuitasFalhas_BloqueiaTemporariamente()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string token = await ObterTokenAntiforgery(client);
+
+        for (int tentativa = 0; tentativa < 5; tentativa++)
+        {
+            HttpResponseMessage falha = await PostComToken(client, "/auth/login", new
+            {
+                email = "admin@mini-erp.com",
+                senha = "senha-incorreta"
+            }, token);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, falha.StatusCode);
+        }
+
+        HttpResponseMessage bloqueio = await PostComToken(client, "/auth/login", new
+        {
+            email = "admin@mini-erp.com",
+            senha = "123456"
+        }, token);
+
+        Assert.Equal((HttpStatusCode)429, bloqueio.StatusCode);
+        Assert.True(bloqueio.Headers.TryGetValues("Retry-After", out IEnumerable<string>? retryAfter));
+        Assert.True(int.TryParse(retryAfter?.SingleOrDefault(), out int segundos) && segundos > 0);
+        Assert.Contains(
+            "Detectamos muitas tentativas de acesso",
+            await bloqueio.Content.ReadAsStringAsync(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Login_ComSucesso_AntesDoLimite_NaoBloqueiaTentativaSeguinte()
+    {
+        using MiniErpApiFactory factory = new();
+        using HttpClient client = factory.CriarCliente();
+        string token = await ObterTokenAntiforgery(client);
+        string email = "limite-login@teste.com";
+        string senha = "senha123";
+
+        HttpResponseMessage cadastro = await PostComToken(client, "/auth/cadastro", new
+        {
+            nome = "Usuário Limite",
+            email,
+            senha
+        }, token);
+        cadastro.EnsureSuccessStatusCode();
+
+        string tokenConfirmacao = ExtrairToken((await ObterEmailsSimulados(client)).Single().Link);
+        HttpResponseMessage confirmacao = await PostComToken(client, "/auth/confirmar-email", new
+        {
+            token = tokenConfirmacao
+        }, token);
+        confirmacao.EnsureSuccessStatusCode();
+
+        for (int tentativa = 0; tentativa < 3; tentativa++)
+        {
+            HttpResponseMessage falha = await PostComToken(client, "/auth/login", new
+            {
+                email,
+                senha = "senha-incorreta"
+            }, token);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, falha.StatusCode);
+        }
+
+        HttpResponseMessage sucesso = await PostComToken(client, "/auth/login", new
+        {
+            email,
+            senha
+        }, token);
+
+        token = await ObterTokenAntiforgery(client);
+
+        HttpResponseMessage novaFalha = await PostComToken(client, "/auth/login", new
+        {
+            email,
+            senha = "senha-incorreta"
+        }, token);
+
+        Assert.Equal(HttpStatusCode.OK, sucesso.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, novaFalha.StatusCode);
+        Assert.NotEqual((HttpStatusCode)429, novaFalha.StatusCode);
+    }
+
+    [Fact]
     public async Task Cadastro_ComDadosValidos_PersisteUsuarioEGeraConfirmacaoSemIniciarSessao()
     {
         using MiniErpApiFactory factory = new();

@@ -18,12 +18,14 @@ public class UsuarioLocalService
     private readonly AppDbContext contexto;
     private readonly IEmailService emailService;
     private readonly IConfiguration configuration;
+    private readonly LoginAttemptGuardService loginAttemptGuardService;
 
-    public UsuarioLocalService(AppDbContext contexto, IEmailService emailService, IConfiguration configuration)
+    public UsuarioLocalService(AppDbContext contexto, IEmailService emailService, IConfiguration configuration, LoginAttemptGuardService loginAttemptGuardService)
     {
         this.contexto = contexto;
         this.emailService = emailService;
         this.configuration = configuration;
+        this.loginAttemptGuardService = loginAttemptGuardService;
     }
 
     public async Task<(UsuarioResponse? Usuario, string Erro)> CadastrarAsync(string nome, string email, string senha)
@@ -52,27 +54,41 @@ public class UsuarioLocalService
         return (MapearUsuario(usuario), string.Empty);
     }
 
-    public ResultadoAutenticacao Autenticar(string email, string senha)
+    public ResultadoAutenticacao Autenticar(string email, string senha, string? ipAddress = null)
     {
-        if (!NormalizarEmail(ref email) || string.IsNullOrEmpty(senha))
+        string? emailInformado = email;
+        bool emailValido = NormalizarEmail(ref emailInformado!);
+        LoginLockDecision lockDecision = loginAttemptGuardService.AvaliarBloqueio(emailValido ? emailInformado : email, ipAddress);
+
+        if (lockDecision.IsLocked)
         {
+            return ResultadoAutenticacao.Bloqueado(lockDecision.RetryAfterSeconds);
+        }
+
+        if (!emailValido || string.IsNullOrEmpty(senha))
+        {
+            loginAttemptGuardService.RegistrarFalha(email, ipAddress);
             return ResultadoAutenticacao.CredenciaisInvalidas();
         }
 
         Usuario? usuario = contexto.Usuarios
             .AsNoTracking()
-            .SingleOrDefault(item => item.Email == email);
+            .SingleOrDefault(item => item.Email == emailInformado);
 
         if (usuario is null)
         {
+            loginAttemptGuardService.RegistrarFalha(emailInformado, ipAddress);
             return ResultadoAutenticacao.CredenciaisInvalidas();
         }
 
         byte[] hashInformado = GerarHash(senha, usuario.SenhaSalt);
         if (!CryptographicOperations.FixedTimeEquals(hashInformado, usuario.SenhaHash))
         {
+            loginAttemptGuardService.RegistrarFalha(emailInformado, ipAddress);
             return ResultadoAutenticacao.CredenciaisInvalidas();
         }
+
+        loginAttemptGuardService.RegistrarSucesso(emailInformado);
 
         return usuario.EmailConfirmado
             ? ResultadoAutenticacao.Sucesso(MapearUsuario(usuario))

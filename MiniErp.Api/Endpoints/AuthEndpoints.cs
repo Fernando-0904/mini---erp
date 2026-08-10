@@ -55,7 +55,18 @@ internal static class AuthEndpoints
                     "E-mail e senha são obrigatórios.");
             }
 
-            ResultadoAutenticacao autenticacao = usuarioService.Autenticar(request.Email, request.Senha);
+            string? ipAddress = context.Connection.RemoteIpAddress?.ToString();
+            ResultadoAutenticacao autenticacao = usuarioService.Autenticar(request.Email, request.Senha, ipAddress);
+
+            if (autenticacao.TentativaBloqueada)
+            {
+                context.Response.Headers.RetryAfter = autenticacao.RetryAfterSeconds.ToString();
+                return ApiHttpHelpers.CriarProblem(
+                    context,
+                    StatusCodes.Status429TooManyRequests,
+                    "Acesso temporariamente bloqueado.",
+                    "Detectamos muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.");
+            }
 
             if (autenticacao.EmailNaoConfirmado)
             {
