@@ -12,9 +12,19 @@ function obterApiBaseUrl() {
 
 const API_BASE_URL = obterApiBaseUrl();
 const MENSAGEM_ERRO_INESPERADO = "Ocorreu um erro inesperado. Tente novamente.";
-const MENSAGEM_ERRO_CONEXAO = "Não foi possível conectar ao sistema agora. Tente novamente em instantes.";
+const MENSAGEM_ERRO_CONEXAO = "Não foi possível conectar ao sistema agora. Tente novamente mais tarde.";
 const METODOS_HTTP_SEGUROS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 let tokenAntiforgery = null;
+
+function notificarStatusConexaoSistema(status) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent("miniErp:status-conexao", {
+        detail: { status }
+    }));
+}
 
 class ErroApi extends Error {
     constructor(mensagem, status, correlationId = null) {
@@ -43,7 +53,9 @@ async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notifi
 
     try {
         resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoesRequisicao);
+        notificarStatusConexaoSistema("online");
     } catch {
+        notificarStatusConexaoSistema("offline");
         throw new Error(MENSAGEM_ERRO_CONEXAO);
     }
 
@@ -81,7 +93,7 @@ async function tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoEx
 
     let correlationId = resposta.headers.get("X-Correlation-Id");
     let mensagemErro = resposta.status >= 500
-        ? "Não foi possível concluir a operação agora. Tente novamente em instantes."
+        ? "Não foi possível concluir a operação agora. Tente novamente mais tarde."
         : mensagemErroPadrao;
 
     if (resposta.status === 401 && notificarSessaoExpirada) {
@@ -132,7 +144,9 @@ async function obterTokenAntiforgeryApi() {
             credentials: "include",
             cache: "no-store",
         });
+        notificarStatusConexaoSistema("online");
     } catch {
+        notificarStatusConexaoSistema("offline");
         throw new Error(MENSAGEM_ERRO_CONEXAO);
     }
 

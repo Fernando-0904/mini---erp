@@ -4,6 +4,8 @@ async function inicializarAplicacao() {
 	let usuario = null;
 	let erroSessao = "";
 
+	inicializarStatusConexaoSistema();
+
 	try {
 		usuario = await obterSessaoAtualApi();
 	} catch (erro) {

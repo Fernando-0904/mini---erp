@@ -111,6 +111,39 @@ header h2 {
     font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
+.status-conexao {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(234, 244, 255, 0.24);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--sidebar-text);
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.status-conexao-ponto {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.9;
+}
+
+.status-conexao-online {
+    color: #97efb3;
+}
+
+.status-conexao-offline {
+    color: #ffb3b8;
+}
+
+.status-conexao-verificando {
+    color: #ffe2a1;
+}
+
 nav {
     display: grid;
     gap: 8px;

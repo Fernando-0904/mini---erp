@@ -8,6 +8,82 @@ const CLASSE_TIPO_MENSAGEM = {
     info: "mensagem-info"
 };
 
+function inicializarStatusConexaoSistema() {
+    if (document.getElementById("statusConexaoSistema") instanceof HTMLElement) {
+        return;
+    }
+
+    const cabecalho = document.querySelector("header");
+
+    if (!(cabecalho instanceof HTMLElement)) {
+        return;
+    }
+
+    const indicador = document.createElement("div");
+    indicador.id = "statusConexaoSistema";
+    indicador.className = "status-conexao status-conexao-verificando";
+    indicador.setAttribute("role", "status");
+    indicador.setAttribute("aria-live", "polite");
+
+    const ponto = document.createElement("span");
+    ponto.className = "status-conexao-ponto";
+    ponto.setAttribute("aria-hidden", "true");
+
+    const texto = document.createElement("span");
+    texto.className = "status-conexao-texto";
+    texto.textContent = "Conexão com o sistema: verificando";
+
+    indicador.append(ponto, texto);
+    cabecalho.insertBefore(indicador, cabecalho.querySelector("nav"));
+
+    window.addEventListener("miniErp:status-conexao", function (evento) {
+        const status = evento instanceof CustomEvent && evento.detail !== null && typeof evento.detail === "object"
+            ? evento.detail.status
+            : "verificando";
+
+        atualizarStatusConexaoSistema(status);
+    });
+
+    window.addEventListener("online", function () {
+        atualizarStatusConexaoSistema("verificando");
+    });
+
+    window.addEventListener("offline", function () {
+        atualizarStatusConexaoSistema("offline");
+    });
+}
+
+function atualizarStatusConexaoSistema(status) {
+    const indicador = document.getElementById("statusConexaoSistema");
+
+    if (!(indicador instanceof HTMLElement)) {
+        return;
+    }
+
+    const texto = indicador.querySelector(".status-conexao-texto");
+
+    if (!(texto instanceof HTMLElement)) {
+        return;
+    }
+
+    indicador.classList.remove("status-conexao-online", "status-conexao-offline", "status-conexao-verificando");
+
+    if (status === "online") {
+        indicador.classList.add("status-conexao-online");
+        texto.textContent = "Conexão com o sistema: online";
+        return;
+    }
+
+    if (status === "offline") {
+        indicador.classList.add("status-conexao-offline");
+        texto.textContent = "Conexão com o sistema: indisponível";
+        return;
+    }
+
+    indicador.classList.add("status-conexao-verificando");
+    texto.textContent = "Conexão com o sistema: verificando";
+}
+
 function normalizarTipoMensagem(tipo) {
     if (typeof tipo !== "string") {
         return "info";
