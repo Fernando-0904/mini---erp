@@ -14,6 +14,8 @@ const API_BASE_URL = obterApiBaseUrl();
 const MENSAGEM_ERRO_INESPERADO = "Ocorreu um erro inesperado. Tente novamente.";
 const MENSAGEM_ERRO_CONEXAO = "Não foi possível conectar ao sistema agora. Tente novamente mais tarde.";
 const METODOS_HTTP_SEGUROS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+const TENTATIVAS_REDE_METODO_SEGURO = 2;
+const ESPERA_REDE_MS = 350;
 let tokenAntiforgery = null;
 
 function notificarStatusConexaoSistema(status) {
@@ -42,6 +44,9 @@ async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notifi
         credentials: "include",
     };
     const metodo = (opcoesRequisicao.method || "GET").toUpperCase();
+    const totalTentativas = METODOS_HTTP_SEGUROS.has(metodo)
+        ? TENTATIVAS_REDE_METODO_SEGURO
+        : 1;
 
     if (!METODOS_HTTP_SEGUROS.has(metodo)) {
         const token = await obterTokenAntiforgeryApi();
@@ -51,11 +56,23 @@ async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notifi
         };
     }
 
-    try {
-        resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoesRequisicao);
-        notificarStatusConexaoSistema("online");
-    } catch {
-        notificarStatusConexaoSistema("offline");
+    for (let tentativa = 1; tentativa <= totalTentativas; tentativa += 1) {
+        try {
+            resposta = await fetch(`${API_BASE_URL}${caminho}`, opcoesRequisicao);
+            notificarStatusConexaoSistema("online");
+            break;
+        } catch {
+            notificarStatusConexaoSistema("offline");
+
+            if (tentativa >= totalTentativas) {
+                throw new Error(MENSAGEM_ERRO_CONEXAO);
+            }
+
+            await esperar(ESPERA_REDE_MS * tentativa);
+        }
+    }
+
+    if (!(resposta instanceof Response)) {
         throw new Error(MENSAGEM_ERRO_CONEXAO);
     }
 
@@ -67,6 +84,12 @@ async function executarRequisicaoApi(caminho, opcoes, mensagemErroPadrao, notifi
     }
 
     return tratarRespostaApi(resposta, mensagemErroPadrao, notificarSessaoExpirada);
+}
+
+function esperar(tempoMs) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, tempoMs);
+    });
 }
 
 async function respostaIndicaErroAntiforgery(resposta) {

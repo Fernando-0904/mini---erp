@@ -1,12 +1,60 @@
 let temporizadorMensagemSucesso = null;
 let tokenMensagemAtual = 0;
 const DURACAO_MENSAGEM_SUCESSO_MS = 4000;
+const DURACAO_TOAST_MS = 4200;
 const CLASSE_TIPO_MENSAGEM = {
     sucesso: "mensagem-sucesso",
     erro: "mensagem-erro",
     aviso: "mensagem-aviso",
     info: "mensagem-info"
 };
+let temporizadorToast = null;
+let containerToast = null;
+
+function obterContainerToast() {
+    if (containerToast instanceof HTMLElement) {
+        return containerToast;
+    }
+
+    const existente = document.getElementById("miniErpToast");
+
+    if (existente instanceof HTMLElement) {
+        containerToast = existente;
+        return containerToast;
+    }
+
+    const novoContainer = document.createElement("div");
+    novoContainer.id = "miniErpToast";
+    novoContainer.className = "toast-notificacao";
+    novoContainer.setAttribute("role", "status");
+    novoContainer.setAttribute("aria-live", "polite");
+    document.body.appendChild(novoContainer);
+    containerToast = novoContainer;
+    return containerToast;
+}
+
+function exibirToast(texto, tipo) {
+    const mensagem = typeof texto === "string" ? texto.trim() : "";
+
+    if (mensagem === "") {
+        return;
+    }
+
+    const tipoNormalizado = normalizarTipoMensagem(tipo);
+    const toast = obterContainerToast();
+
+    toast.className = `toast-notificacao toast-${tipoNormalizado} toast-visivel`;
+    toast.textContent = mensagem;
+
+    if (temporizadorToast !== null) {
+        clearTimeout(temporizadorToast);
+    }
+
+    temporizadorToast = setTimeout(function () {
+        toast.classList.remove("toast-visivel");
+        temporizadorToast = null;
+    }, DURACAO_TOAST_MS);
+}
 
 function inicializarStatusConexaoSistema() {
     if (document.getElementById("statusConexaoSistema") instanceof HTMLElement) {
@@ -121,6 +169,7 @@ function exibirMensagem(texto, tipo) {
     }
 
     elementos.mensagem.className = `mensagem ${CLASSE_TIPO_MENSAGEM[tipoNormalizado]}`;
+    exibirToast(textoNormalizado, tipoNormalizado);
 
     if (tipoNormalizado === "sucesso") {
         temporizadorMensagemSucesso = setTimeout(function () {
@@ -132,6 +181,55 @@ function exibirMensagem(texto, tipo) {
             elementos.mensagem.className = "";
             temporizadorMensagemSucesso = null;
         }, DURACAO_MENSAGEM_SUCESSO_MS);
+    }
+}
+
+function atualizarResumoOperacionalPainel(pedidosAbertos, movimentacoesRecentes) {
+    if (elementos.pedidosAbertosPainel instanceof HTMLElement) {
+        elementos.pedidosAbertosPainel.textContent = String(pedidosAbertos);
+    }
+
+    if (elementos.movimentacoesRecentesPainel instanceof HTMLElement) {
+        elementos.movimentacoesRecentesPainel.textContent = String(movimentacoesRecentes);
+    }
+
+    if (elementos.painelAtualizadoEm instanceof HTMLElement) {
+        const agora = new Date();
+        elementos.painelAtualizadoEm.textContent = `Atualizado em ${agora.toLocaleString("pt-BR")}`;
+    }
+}
+
+function atualizarTabelaAtividadePainel(movimentacoes) {
+    if (!(elementos.tabelaAtividadePainel instanceof HTMLElement)) {
+        return;
+    }
+
+    elementos.tabelaAtividadePainel.innerHTML = "";
+
+    if (!Array.isArray(movimentacoes) || movimentacoes.length === 0) {
+        const linhaVazia = criarLinhaEstadoVazio(
+            5,
+            "Nenhuma movimentação recente.",
+            "Abrir movimentações",
+            function () {
+                window.location.href = "movimentacoes.html";
+            }
+        );
+
+        elementos.tabelaAtividadePainel.appendChild(linhaVazia);
+        return;
+    }
+
+    for (const movimentacao of movimentacoes) {
+        const linha = document.createElement("tr");
+
+        linha.appendChild(criarCelula(formatarDataMovimentacao(movimentacao.dataMovimentacaoUtc)));
+        linha.appendChild(criarCelula(movimentacao.produto || "Produto não identificado"));
+        linha.appendChild(criarCelula(movimentacao.tipo || "-"));
+        linha.appendChild(criarCelula(String(movimentacao.quantidade ?? "-")));
+        linha.appendChild(criarCelula(String(movimentacao.saldoNovo ?? "-")));
+
+        elementos.tabelaAtividadePainel.appendChild(linha);
     }
 }
 

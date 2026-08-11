@@ -108,7 +108,18 @@
                 <h4>Total de alertas</h4>
                 <p id="quantidadeAlertasTotal">0</p>
             </div>
+
+            <div class="card-indicador">
+                <h4>Pedidos em aberto</h4>
+                <p id="pedidosAbertosPainel">0</p>
+            </div>
+
+            <div class="card-indicador">
+                <h4>Movimentações recentes</h4>
+                <p id="movimentacoesRecentesPainel">0</p>
+            </div>
         </div>
+        <p id="painelAtualizadoEm" class="texto-apoio texto-atualizacao-painel">Atualizando indicadores...</p>
     </section>
 
     <section class="secao-acoes-rapidas" aria-label="Ações rápidas do painel">
@@ -131,6 +142,19 @@
             </thead>
             <tbody id="tabelaAlertasPainel">
                 <tr><td colspan="5">Nenhum alerta operacional no momento.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="tabela-painel-alertas" aria-label="Atividade recente no estoque">
+        <h3>Atividade recente</h3>
+        <p class="texto-apoio">Últimas movimentações para acompanhamento rápido da operação.</p>
+        <table>
+            <thead>
+                <tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Quantidade</th><th>Saldo novo</th></tr>
+            </thead>
+            <tbody id="tabelaAtividadePainel">
+                <tr><td colspan="5">Nenhuma movimentação recente.</td></tr>
             </tbody>
         </table>
     </section>

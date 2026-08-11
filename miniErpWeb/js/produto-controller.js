@@ -2,6 +2,9 @@ function inicializarProdutoController() {
     const produtos = [];
     let codigoProdutoEmEdicao = null;
     let contextoUrlAplicado = false;
+    let paginaAtualProdutos = 1;
+    let tamanhoPaginaProdutos = obterTamanhoPaginaProdutos();
+    let criterioOrdenacaoProdutos = obterCriterioOrdenacaoProdutos();
 
     window.recarregarProdutosNaTela = atualizarProdutosDaApi;
     window.recarregarCategoriasDoProduto = carregarCategoriasDoProduto;
@@ -124,6 +127,38 @@ function inicializarProdutoController() {
         });
     }
 
+    if (elementos.campoOrdenacaoProdutos instanceof HTMLSelectElement) {
+        elementos.campoOrdenacaoProdutos.addEventListener("change", function () {
+            criterioOrdenacaoProdutos = obterCriterioOrdenacaoProdutos();
+            paginaAtualProdutos = 1;
+            aplicarFiltroRapido(false);
+        });
+    }
+
+    if (elementos.campoTamanhoPaginaProdutos instanceof HTMLSelectElement) {
+        elementos.campoTamanhoPaginaProdutos.addEventListener("change", function () {
+            tamanhoPaginaProdutos = obterTamanhoPaginaProdutos();
+            paginaAtualProdutos = 1;
+            aplicarFiltroRapido(false);
+        });
+    }
+
+    if (elementos.botaoPaginaAnteriorProdutos instanceof HTMLButtonElement) {
+        elementos.botaoPaginaAnteriorProdutos.addEventListener("click", function () {
+            if (paginaAtualProdutos > 1) {
+                paginaAtualProdutos -= 1;
+                aplicarFiltroRapido(false);
+            }
+        });
+    }
+
+    if (elementos.botaoPaginaProximaProdutos instanceof HTMLButtonElement) {
+        elementos.botaoPaginaProximaProdutos.addEventListener("click", function () {
+            paginaAtualProdutos += 1;
+            aplicarFiltroRapido(false);
+        });
+    }
+
     function validarProduto(codigoTexto, nome, precoTexto, quantidadeTexto, estoqueMinimoTexto, categoriaIdTexto, codigo, preco, quantidade, estoqueMinimo, categoriaId) {
         if (codigoTexto === "" || Number.isNaN(codigo) || !Number.isInteger(codigo) || codigo <= 0) {
             exibirMensagem("Informe um código válido.", "erro");
@@ -193,18 +228,21 @@ function inicializarProdutoController() {
         elementos.campoCodigoBusca.focus();
     }
 
-    function aplicarFiltroRapido() {
+    function aplicarFiltroRapido(reiniciarPaginacao = true) {
+        if (reiniciarPaginacao) {
+            paginaAtualProdutos = 1;
+        }
+
         const termoFiltro = normalizarTextoParaBusca(elementos.campoFiltroRapidoProdutos?.value);
 
         if (termoFiltro === "") {
-            atualizarTabela(produtos, editarProduto, removerProduto);
+            renderizarTabelaProdutos(produtos);
             return;
         }
 
         const listaFiltrada = filtrarProdutosPorTermo(termoFiltro);
 
-        atualizarTabela(produtos, editarProduto, removerProduto, {
-            lista: listaFiltrada,
+        renderizarTabelaProdutos(listaFiltrada, {
             mensagemVazia: "Nenhum produto encontrado para este filtro.",
             textoAcaoVazia: "Limpar filtro",
             acaoVazia: function () {
@@ -213,9 +251,88 @@ function inicializarProdutoController() {
                     elementos.campoFiltroRapidoProdutos.focus();
                 }
 
-                atualizarTabela(produtos, editarProduto, removerProduto);
+                paginaAtualProdutos = 1;
+                renderizarTabelaProdutos(produtos);
             }
         });
+    }
+
+    function renderizarTabelaProdutos(listaBase, opcoes = {}) {
+        const listaOrdenada = ordenarProdutos(listaBase);
+        const totalPaginas = Math.max(1, Math.ceil(listaOrdenada.length / tamanhoPaginaProdutos));
+
+        if (paginaAtualProdutos > totalPaginas) {
+            paginaAtualProdutos = totalPaginas;
+        }
+
+        const indiceInicial = (paginaAtualProdutos - 1) * tamanhoPaginaProdutos;
+        const indiceFinal = indiceInicial + tamanhoPaginaProdutos;
+        const listaPaginada = listaOrdenada.slice(indiceInicial, indiceFinal);
+
+        atualizarTabela(produtos, editarProduto, removerProduto, {
+            ...opcoes,
+            lista: listaPaginada
+        });
+
+        atualizarControlesPaginacao(totalPaginas, listaOrdenada.length);
+    }
+
+    function atualizarControlesPaginacao(totalPaginas, totalRegistros) {
+        if (elementos.paginaAtualProdutos instanceof HTMLElement) {
+            elementos.paginaAtualProdutos.textContent = `Página ${paginaAtualProdutos} de ${totalPaginas} (${totalRegistros})`;
+        }
+
+        if (elementos.botaoPaginaAnteriorProdutos instanceof HTMLButtonElement) {
+            elementos.botaoPaginaAnteriorProdutos.disabled = paginaAtualProdutos <= 1;
+        }
+
+        if (elementos.botaoPaginaProximaProdutos instanceof HTMLButtonElement) {
+            elementos.botaoPaginaProximaProdutos.disabled = paginaAtualProdutos >= totalPaginas;
+        }
+    }
+
+    function ordenarProdutos(listaBase) {
+        const lista = [...listaBase];
+
+        lista.sort(function (a, b) {
+            switch (criterioOrdenacaoProdutos) {
+                case "codigo-desc":
+                    return b.codigo - a.codigo;
+                case "nome-asc":
+                    return a.nome.localeCompare(b.nome, "pt-BR");
+                case "nome-desc":
+                    return b.nome.localeCompare(a.nome, "pt-BR");
+                case "estoque-asc":
+                    return a.quantidade - b.quantidade;
+                case "estoque-desc":
+                    return b.quantidade - a.quantidade;
+                case "codigo-asc":
+                default:
+                    return a.codigo - b.codigo;
+            }
+        });
+
+        return lista;
+    }
+
+    function obterCriterioOrdenacaoProdutos() {
+        if (elementos.campoOrdenacaoProdutos instanceof HTMLSelectElement) {
+            return elementos.campoOrdenacaoProdutos.value || "codigo-asc";
+        }
+
+        return "codigo-asc";
+    }
+
+    function obterTamanhoPaginaProdutos() {
+        if (elementos.campoTamanhoPaginaProdutos instanceof HTMLSelectElement) {
+            const valor = Number(elementos.campoTamanhoPaginaProdutos.value);
+
+            if (!Number.isNaN(valor) && valor > 0) {
+                return valor;
+            }
+        }
+
+        return 10;
     }
 
     function filtrarProdutosPorTermo(termoFiltro) {
@@ -261,12 +378,14 @@ function inicializarProdutoController() {
                 const produtoEncontrado = converterProdutoApiParaTela(produtoApi);
                 const produtoSincronizado = upsertProdutoNoArray(produtoEncontrado);
 
-                atualizarTabela([produtoSincronizado], editarProduto, removerProduto);
+                paginaAtualProdutos = 1;
+                renderizarTabelaProdutos([produtoSincronizado]);
                 exibirMensagem("Busca concluída: 1 resultado(s).", "sucesso");
                 return;
             } catch (erro) {
                 if (!(erro instanceof TypeError)) {
-                    atualizarTabela([], editarProduto, removerProduto);
+                    paginaAtualProdutos = 1;
+                    renderizarTabelaProdutos([]);
                     exibirMensagem("Nenhum produto encontrado.", "erro");
                     return;
                 }
@@ -284,12 +403,14 @@ function inicializarProdutoController() {
         });
 
         if (resultados.length === 0) {
-            atualizarTabela([], editarProduto, removerProduto);
+            paginaAtualProdutos = 1;
+            renderizarTabelaProdutos([]);
             exibirMensagem("Nenhum produto encontrado.", "erro");
             return;
         }
 
-        atualizarTabela(resultados, editarProduto, removerProduto);
+        paginaAtualProdutos = 1;
+        renderizarTabelaProdutos(resultados);
         exibirMensagem("Busca concluída: " + resultados.length + " resultado(s).", "sucesso");
     }
 

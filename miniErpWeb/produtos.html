@@ -109,6 +109,28 @@
             <label for="filtroRapidoProdutos">Filtro rápido</label>
             <input type="text" id="filtroRapidoProdutos" name="filtroRapidoProdutos" placeholder="Filtrar por código, nome, categoria ou fornecedor">
         </div>
+        <div class="controles-tabela-produtos" aria-label="Controles da tabela de produtos">
+            <label for="ordenacaoProdutos">Ordenar por</label>
+            <select id="ordenacaoProdutos" name="ordenacaoProdutos">
+                <option value="codigo-asc">Código (crescente)</option>
+                <option value="codigo-desc">Código (decrescente)</option>
+                <option value="nome-asc">Nome (A-Z)</option>
+                <option value="nome-desc">Nome (Z-A)</option>
+                <option value="estoque-asc">Estoque (menor para maior)</option>
+                <option value="estoque-desc">Estoque (maior para menor)</option>
+            </select>
+            <label for="tamanhoPaginaProdutos">Itens por página</label>
+            <select id="tamanhoPaginaProdutos" name="tamanhoPaginaProdutos">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+            <div class="paginacao-tabela" aria-live="polite">
+                <button type="button" id="botaoPaginaAnteriorProdutos">Anterior</button>
+                <span id="paginaAtualProdutos">Página 1</span>
+                <button type="button" id="botaoPaginaProximaProdutos">Próxima</button>
+            </div>
+        </div>
         <table>
             <thead><tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Fornecedor</th><th>Preço Unitário</th><th>Quantidade</th><th>Valor Total</th><th>Situação</th><th>Ações</th></tr></thead>
             <tbody id="tabelaProdutos"><tr><td colspan="9">Nenhum produto cadastrado.</td></tr></tbody>

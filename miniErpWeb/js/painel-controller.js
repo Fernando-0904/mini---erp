@@ -2,25 +2,60 @@ function inicializarPainelController() {
     carregarIndicadores();
 
     async function carregarIndicadores() {
-        try {
-            const produtosApi = await listarProdutosApi();
-            const produtos = produtosApi.map(function (produto) {
-                return {
-                    codigo: produto.codigo,
-                    nome: produto.nome,
-                    preco: produto.precoUnitario,
-                    quantidade: produto.quantidadeEstoque
-                };
-            });
-            const alertasApi = await listarAlertasOperacionaisApi();
-            const alertas = normalizarAlertas(alertasApi);
+        const resultados = await Promise.allSettled([
+            listarProdutosApi(),
+            listarAlertasOperacionaisApi(),
+            listarPedidosCompraApi(),
+            listarRelatorioUltimasMovimentacoesApi(5)
+        ]);
 
-            atualizarIndicadores(produtos);
-            atualizarResumoAlertasPainel(alertas);
-            atualizarTabelaAlertasPainel(alertas);
-        } catch (erro) {
-            exibirMensagem(erro.message, "erro");
+        const produtosApi = obterResultadoOuPadrao(resultados[0], []);
+        const alertasApi = obterResultadoOuPadrao(resultados[1], []);
+        const pedidosApi = obterResultadoOuPadrao(resultados[2], []);
+        const movimentacoesRecentesApi = obterResultadoOuPadrao(resultados[3], []);
+
+        const produtos = produtosApi.map(function (produto) {
+            return {
+                codigo: produto.codigo,
+                nome: produto.nome,
+                preco: produto.precoUnitario,
+                quantidade: produto.quantidadeEstoque
+            };
+        });
+        const alertas = normalizarAlertas(alertasApi);
+        const pedidosAbertos = contarPedidosAbertos(pedidosApi);
+        const movimentacoesRecentes = Array.isArray(movimentacoesRecentesApi)
+            ? movimentacoesRecentesApi
+            : [];
+
+        atualizarIndicadores(produtos);
+        atualizarResumoAlertasPainel(alertas);
+        atualizarTabelaAlertasPainel(alertas);
+        atualizarResumoOperacionalPainel(pedidosAbertos, movimentacoesRecentes.length);
+        atualizarTabelaAtividadePainel(movimentacoesRecentes);
+
+        if (resultados.some(function (resultado) { return resultado.status === "rejected"; })) {
+            exibirMensagem("Parte dos dados do painel está temporariamente indisponível. Tente atualizar em instantes.", "aviso");
         }
+    }
+
+    function obterResultadoOuPadrao(resultado, valorPadrao) {
+        if (resultado && resultado.status === "fulfilled") {
+            return resultado.value;
+        }
+
+        return valorPadrao;
+    }
+
+    function contarPedidosAbertos(pedidos) {
+        if (!Array.isArray(pedidos)) {
+            return 0;
+        }
+
+        return pedidos.filter(function (pedido) {
+            const status = typeof pedido.status === "string" ? pedido.status.toLowerCase() : "";
+            return status === "aberto";
+        }).length;
     }
 
     function normalizarAlertas(alertas) {

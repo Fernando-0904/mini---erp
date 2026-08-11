@@ -4,6 +4,8 @@ async function inicializarAplicacao() {
 	let usuario = null;
 	let erroSessao = "";
 
+	configurarTratamentoGlobalErros();
+
 	inicializarStatusConexaoSistema();
 
 	try {
@@ -29,45 +31,52 @@ async function inicializarAplicacao() {
 }
 
 function inicializarControllersDaPagina() {
-	if (elementos.quantidadeProdutos !== null) {
-		inicializarPainelController();
+	inicializarControllerComIsolamento(elementos.quantidadeProdutos !== null, inicializarPainelController, "painel");
+	inicializarControllerComIsolamento(elementos.formulario !== null, inicializarProdutoController, "produtos");
+	inicializarControllerComIsolamento(elementos.formularioCategoria !== null, inicializarCategoriaController, "categorias");
+	inicializarControllerComIsolamento(elementos.formularioFornecedor !== null, inicializarFornecedorController, "fornecedores");
+	inicializarControllerComIsolamento(elementos.formularioMovimentacaoEstoque !== null, inicializarMovimentacaoController, "movimentacoes");
+	inicializarControllerComIsolamento(elementos.tabelaEstoqueBaixo !== null, inicializarEstoqueBaixoController, "estoque-baixo");
+	inicializarControllerComIsolamento(elementos.formularioRelatorios !== null, inicializarRelatoriosController, "relatorios");
+	inicializarControllerComIsolamento(elementos.formularioAuditoria !== null, inicializarAuditoriaController, "auditoria");
+	inicializarControllerComIsolamento(elementos.formularioPedidoCompra !== null, inicializarComprasController, "compras");
+	inicializarControllerComIsolamento(Boolean(elementos.formularioBuscaGlobal), inicializarBuscaGlobalController, "busca-global");
+}
+
+function inicializarControllerComIsolamento(deveInicializar, inicializador, nomeController) {
+	if (!deveInicializar) {
+		return;
 	}
 
-	if (elementos.formulario !== null) {
-		inicializarProdutoController();
+	try {
+		inicializador();
+	} catch (erro) {
+		console.error("Falha ao inicializar controller:", nomeController, erro);
+
+		if (typeof exibirMensagem === "function") {
+			exibirMensagem("Alguns recursos da tela não puderam ser carregados agora. Recarregue para tentar novamente.", "aviso");
+		}
+	}
+}
+
+function configurarTratamentoGlobalErros() {
+	if (typeof window === "undefined") {
+		return;
 	}
 
-	if (elementos.formularioCategoria !== null) {
-		inicializarCategoriaController();
+	if (window.__miniErpTratamentoErrosConfigurado === true) {
+		return;
 	}
 
-	if (elementos.formularioFornecedor !== null) {
-		inicializarFornecedorController();
-	}
+	window.__miniErpTratamentoErrosConfigurado = true;
 
-	if (elementos.formularioMovimentacaoEstoque !== null) {
-		inicializarMovimentacaoController();
-	}
+	window.addEventListener("error", function (evento) {
+		console.error("Erro global do frontend:", evento.error || evento.message);
+	});
 
-	if (elementos.tabelaEstoqueBaixo !== null) {
-		inicializarEstoqueBaixoController();
-	}
-
-	if (elementos.formularioRelatorios !== null) {
-		inicializarRelatoriosController();
-	}
-
-	if (elementos.formularioAuditoria !== null) {
-		inicializarAuditoriaController();
-	}
-
-	if (elementos.formularioPedidoCompra !== null) {
-		inicializarComprasController();
-	}
-
-	if (elementos.formularioBuscaGlobal) {
-		inicializarBuscaGlobalController();
-	}
+	window.addEventListener("unhandledrejection", function (evento) {
+		console.error("Promise rejeitada sem tratamento:", evento.reason);
+	});
 }
 
 function mostrarAcessoRestrito(mensagemErro = "") {
