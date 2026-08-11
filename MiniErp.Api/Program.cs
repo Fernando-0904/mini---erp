@@ -212,30 +212,7 @@ static async Task EscreverProblemAsync(HttpContext context, int statusCode, stri
 
 static void AplicarMigrationsComProtecao(AppDbContext dbContext, ILogger logger)
 {
-    if (!dbContext.Database.IsSqlite())
-    {
-        dbContext.Database.Migrate();
-        return;
-    }
-
-    string? connectionString = dbContext.Database.GetConnectionString();
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        dbContext.Database.Migrate();
-        return;
-    }
-
-    string dataSource = new SqliteConnectionStringBuilder(connectionString).DataSource ?? string.Empty;
-    if (string.IsNullOrWhiteSpace(dataSource) || dataSource == ":memory:")
-    {
-        dbContext.Database.Migrate();
-        return;
-    }
-
-    string databasePath = Path.GetFullPath(dataSource, Directory.GetCurrentDirectory());
-    string backupPath = $"{databasePath}.pre-migrate.bak";
-
-    if (!File.Exists(databasePath))
+    if (!TentarObterCaminhosBackupSqlite(dbContext, out string databasePath, out string backupPath))
     {
         dbContext.Database.Migrate();
         return;
@@ -246,22 +223,68 @@ static void AplicarMigrationsComProtecao(AppDbContext dbContext, ILogger logger)
     try
     {
         dbContext.Database.Migrate();
-
-        if (File.Exists(backupPath))
-        {
-            File.Delete(backupPath);
-        }
+        RemoverArquivoSeExistir(backupPath);
     }
     catch
     {
-        if (File.Exists(backupPath))
-        {
-            File.Copy(backupPath, databasePath, overwrite: true);
-            File.Delete(backupPath);
-            logger.LogWarning("Falha na migration. Banco SQLite restaurado a partir do backup de segurança.");
-        }
+        RestaurarBancoSqliteDoBackupSeDisponivel(databasePath, backupPath, logger);
 
         throw;
+    }
+}
+
+static bool TentarObterCaminhosBackupSqlite(AppDbContext dbContext, out string databasePath, out string backupPath)
+{
+    databasePath = string.Empty;
+    backupPath = string.Empty;
+
+    if (!dbContext.Database.IsSqlite())
+    {
+        return false;
+    }
+
+    string? connectionString = dbContext.Database.GetConnectionString();
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return false;
+    }
+
+    string dataSource = new SqliteConnectionStringBuilder(connectionString).DataSource ?? string.Empty;
+
+    if (string.IsNullOrWhiteSpace(dataSource) || dataSource == ":memory:")
+    {
+        return false;
+    }
+
+    databasePath = Path.GetFullPath(dataSource, Directory.GetCurrentDirectory());
+
+    if (!File.Exists(databasePath))
+    {
+        return false;
+    }
+
+    backupPath = $"{databasePath}.pre-migrate.bak";
+    return true;
+}
+
+static void RestaurarBancoSqliteDoBackupSeDisponivel(string databasePath, string backupPath, ILogger logger)
+{
+    if (!File.Exists(backupPath))
+    {
+        return;
+    }
+
+    File.Copy(backupPath, databasePath, overwrite: true);
+    RemoverArquivoSeExistir(backupPath);
+    logger.LogWarning("Falha na migration. Banco SQLite restaurado a partir do backup de segurança.");
+}
+
+static void RemoverArquivoSeExistir(string filePath)
+{
+    if (File.Exists(filePath))
+    {
+        File.Delete(filePath);
     }
 }
 
