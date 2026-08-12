@@ -31,20 +31,29 @@ async function inicializarAplicacao() {
 }
 
 function inicializarControllersDaPagina() {
-	inicializarControllerComIsolamento(elementos.quantidadeProdutos !== null, inicializarPainelController, "painel");
-	inicializarControllerComIsolamento(elementos.formulario !== null, inicializarProdutoController, "produtos");
-	inicializarControllerComIsolamento(elementos.formularioCategoria !== null, inicializarCategoriaController, "categorias");
-	inicializarControllerComIsolamento(elementos.formularioFornecedor !== null, inicializarFornecedorController, "fornecedores");
-	inicializarControllerComIsolamento(elementos.formularioMovimentacaoEstoque !== null, inicializarMovimentacaoController, "movimentacoes");
-	inicializarControllerComIsolamento(elementos.tabelaEstoqueBaixo !== null, inicializarEstoqueBaixoController, "estoque-baixo");
-	inicializarControllerComIsolamento(elementos.formularioRelatorios !== null, inicializarRelatoriosController, "relatorios");
-	inicializarControllerComIsolamento(elementos.formularioAuditoria !== null, inicializarAuditoriaController, "auditoria");
-	inicializarControllerComIsolamento(elementos.formularioPedidoCompra !== null, inicializarComprasController, "compras");
-	inicializarControllerComIsolamento(Boolean(elementos.formularioBuscaGlobal), inicializarBuscaGlobalController, "busca-global");
+	inicializarControllerComIsolamento(elementos.quantidadeProdutos !== null, "inicializarPainelController", "painel");
+	inicializarControllerComIsolamento(elementos.formulario !== null, "inicializarProdutoController", "produtos");
+	inicializarControllerComIsolamento(elementos.formularioCategoria !== null, "inicializarCategoriaController", "categorias");
+	inicializarControllerComIsolamento(elementos.formularioFornecedor !== null, "inicializarFornecedorController", "fornecedores");
+	inicializarControllerComIsolamento(elementos.formularioMovimentacaoEstoque !== null, "inicializarMovimentacaoController", "movimentacoes");
+	inicializarControllerComIsolamento(elementos.tabelaEstoqueBaixo !== null, "inicializarEstoqueBaixoController", "estoque-baixo");
+	inicializarControllerComIsolamento(elementos.formularioRelatorios !== null, "inicializarRelatoriosController", "relatorios");
+	inicializarControllerComIsolamento(elementos.formularioAuditoria !== null, "inicializarAuditoriaController", "auditoria");
+	inicializarControllerComIsolamento(elementos.formularioPedidoCompra !== null, "inicializarComprasController", "compras");
+	inicializarControllerComIsolamento(Boolean(elementos.formularioBuscaGlobal), "inicializarBuscaGlobalController", "busca-global");
 }
 
-function inicializarControllerComIsolamento(deveInicializar, inicializador, nomeController) {
+function inicializarControllerComIsolamento(deveInicializar, nomeInicializador, nomeController) {
 	if (!deveInicializar) {
+		return;
+	}
+
+	const inicializador = typeof window[nomeInicializador] === "function"
+		? window[nomeInicializador]
+		: null;
+
+	if (inicializador === null) {
+		console.warn("Controller não carregado para a página:", nomeController, nomeInicializador);
 		return;
 	}
 

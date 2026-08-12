@@ -52,9 +52,11 @@ function inicializarPainelController() {
             return 0;
         }
 
+        const statusEmAberto = new Set(["aberto", "pendenteaprovacao", "aprovado"]);
+
         return pedidos.filter(function (pedido) {
             const status = typeof pedido.status === "string" ? pedido.status.toLowerCase() : "";
-            return status === "aberto";
+            return statusEmAberto.has(status);
         }).length;
     }
 
