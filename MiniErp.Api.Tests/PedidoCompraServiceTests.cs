@@ -73,7 +73,7 @@ public class PedidoCompraServiceTests
         Assert.Empty(errosCriacao);
         Assert.NotNull(criado);
 
-        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id);
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id, true, 1000m);
         Assert.Equal(string.Empty, erroAprovacao);
         Assert.NotNull(aprovado);
         Assert.Equal("Aprovado", aprovado!.Status);
@@ -181,7 +181,7 @@ public class PedidoCompraServiceTests
         Assert.Empty(errosCriacao);
         Assert.NotNull(criado);
 
-        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id);
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id, true, 1000m);
         Assert.Equal(string.Empty, erroAprovacao);
         Assert.NotNull(aprovado);
 
@@ -208,6 +208,54 @@ public class PedidoCompraServiceTests
 
         PedidoCompra pedido = banco.Contexto.PedidosCompra.Single(item => item.Id == criado.Id);
         Assert.Equal(PedidoCompraStatus.Aprovado, pedido.Status);
+    }
+
+    [Fact]
+    public async Task AprovarPedidoAsync_Operador_ComValorDentroDoLimite_AprovaPedido()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens = [new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoA.Codigo, Quantidade = 10 }]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id, false, 1000m);
+
+        Assert.Equal(string.Empty, erroAprovacao);
+        Assert.NotNull(aprovado);
+        Assert.Equal("Aprovado", aprovado!.Status);
+    }
+
+    [Fact]
+    public async Task AprovarPedidoAsync_Operador_ComValorAcimaDoLimite_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens = [new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoB.Codigo, Quantidade = 60 }]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id, false, 1000m);
+
+        Assert.Null(aprovado);
+        Assert.Contains("Seu perfil pode aprovar pedidos de até", erroAprovacao);
+
+        PedidoCompra pedido = banco.Contexto.PedidosCompra.Single(item => item.Id == criado.Id);
+        Assert.Equal(PedidoCompraStatus.PendenteAprovacao, pedido.Status);
     }
 
     private sealed class BancoDeTeste : IDisposable

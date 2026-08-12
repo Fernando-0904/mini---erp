@@ -145,7 +145,7 @@ public class PedidoCompraService
             : (MapearResponse(pedidoAtualizado), string.Empty);
     }
 
-    public async Task<(PedidoCompraResponse? Pedido, string Erro)> AprovarPedidoAsync(int pedidoId)
+    public async Task<(PedidoCompraResponse? Pedido, string Erro)> AprovarPedidoAsync(int pedidoId, bool usuarioEhAdministrador, decimal limiteAprovacaoOperador)
     {
         PedidoCompra? pedido = await contexto.PedidosCompra
             .Include(item => item.Itens)
@@ -161,6 +161,14 @@ public class PedidoCompraService
         if (!PodeAprovarOuRejeitar(pedido.Status))
         {
             return (null, "Somente pedidos pendentes podem ser aprovados.");
+        }
+
+        decimal limiteNormalizado = limiteAprovacaoOperador > 0m ? limiteAprovacaoOperador : 1000m;
+        decimal valorTotalPedido = pedido.Itens.Sum(item => item.PrecoUnitario * item.Quantidade);
+
+        if (!usuarioEhAdministrador && valorTotalPedido > limiteNormalizado)
+        {
+            return (null, $"Seu perfil pode aprovar pedidos de até {limiteNormalizado:C}. Acima disso, solicite aprovação de um administrador.");
         }
 
         pedido.Status = PedidoCompraStatus.Aprovado;

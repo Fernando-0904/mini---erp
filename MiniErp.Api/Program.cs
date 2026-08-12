@@ -19,6 +19,10 @@ const string PerfilOperador = "Operador";
 const string PerfilUsuarioLegado = "Usuário";
 const string PoliticaOperar = "PodeOperar";
 const string PoliticaAdministrar = "PodeAdministrar";
+const decimal LimiteAprovacaoOperadorPadrao = 1000m;
+
+decimal limiteAprovacaoOperador = builder.Configuration.GetValue<decimal?>("Compras:LimiteAprovacaoOperador")
+    ?? LimiteAprovacaoOperadorPadrao;
 
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -194,7 +198,7 @@ app.UseAuthorization();
 app.MapProdutoEndpoints(PoliticaOperar, PoliticaAdministrar);
 app.MapCategoriaEndpoints(PoliticaOperar, PoliticaAdministrar);
 app.MapFornecedorEndpoints(PoliticaOperar, PoliticaAdministrar);
-app.MapCompraEndpoints(PoliticaOperar, PoliticaAdministrar);
+app.MapCompraEndpoints(PoliticaOperar, PoliticaAdministrar, limiteAprovacaoOperador);
 app.MapRelatorioEndpoints(PoliticaAdministrar);
 app.MapAuthEndpoints();
 app.MapDevEndpoints();

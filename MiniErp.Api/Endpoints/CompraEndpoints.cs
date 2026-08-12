@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Antiforgery;
+using System.Security.Claims;
 using MiniErp.Api.DTOs;
 using MiniErp.Api.Security;
 using MiniErp.Api.Services;
@@ -7,7 +8,7 @@ namespace MiniErp.Api.Endpoints;
 
 internal static class CompraEndpoints
 {
-    internal static void MapCompraEndpoints(this WebApplication app, string politicaOperar, string politicaAdministrar)
+    internal static void MapCompraEndpoints(this WebApplication app, string politicaOperar, string politicaAdministrar, decimal limiteAprovacaoOperador)
     {
         app.MapGet("/compras/pedidos", async (PedidoCompraService pedidoCompraService) =>
         {
@@ -68,7 +69,8 @@ internal static class CompraEndpoints
 
         app.MapPost("/compras/pedidos/{id:int}/aprovar", async (int id, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
         {
-            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.AprovarPedidoAsync(id);
+            bool usuarioEhAdministrador = UsuarioEhAdministrador(context.User);
+            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.AprovarPedidoAsync(id, usuarioEhAdministrador, limiteAprovacaoOperador);
 
             if (!string.IsNullOrWhiteSpace(erro))
             {
@@ -92,7 +94,7 @@ internal static class CompraEndpoints
                 new { pedido.FornecedorId, QuantidadeItens = pedido.Itens.Count, pedido.ValorTotal });
 
             return Results.Ok(pedido);
-        }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();
+        }).RequireAuthorization(politicaOperar).RequireAntiforgery();
 
         app.MapPost("/compras/pedidos/{id:int}/rejeitar", async (int id, RejeicaoPedidoCompraRequest request, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
         {
@@ -121,5 +123,10 @@ internal static class CompraEndpoints
 
             return Results.Ok(pedido);
         }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();
+    }
+
+    private static bool UsuarioEhAdministrador(ClaimsPrincipal usuario)
+    {
+        return usuario.IsInRole("Administrador") || usuario.IsInRole("Admin");
     }
 }
