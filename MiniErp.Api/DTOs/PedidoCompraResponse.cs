@@ -7,7 +7,9 @@ public class PedidoCompraResponse
     public string FornecedorNome { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime CriadoEmUtc { get; set; }
+    public DateTime? RejeitadoEmUtc { get; set; }
     public DateTime? RecebidoEmUtc { get; set; }
+    public string? MotivoRejeicao { get; set; }
     public decimal ValorTotal { get; set; }
     public List<PedidoCompraItemResponse> Itens { get; set; } = [];
 }

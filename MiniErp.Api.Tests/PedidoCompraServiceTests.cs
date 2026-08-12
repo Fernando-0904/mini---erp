@@ -130,11 +130,35 @@ public class PedidoCompraServiceTests
         Assert.Empty(errosCriacao);
         Assert.NotNull(criado);
 
-        (PedidoCompraResponse? rejeitado, string erroRejeicao) = await service.RejeitarPedidoAsync(criado!.Id);
+        (PedidoCompraResponse? rejeitado, string erroRejeicao) = await service.RejeitarPedidoAsync(criado!.Id, "Fornecedor sem prazo de entrega confiável.");
 
         Assert.Equal(string.Empty, erroRejeicao);
         Assert.NotNull(rejeitado);
         Assert.Equal("Rejeitado", rejeitado!.Status);
+        Assert.Equal("Fornecedor sem prazo de entrega confiável.", rejeitado.MotivoRejeicao);
+        Assert.NotNull(rejeitado.RejeitadoEmUtc);
+    }
+
+    [Fact]
+    public async Task RejeitarPedidoAsync_SemMotivo_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens = [new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoA.Codigo, Quantidade = 1 }]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? rejeitado, string erroRejeicao) = await service.RejeitarPedidoAsync(criado!.Id, "   ");
+
+        Assert.Null(rejeitado);
+        Assert.Equal("O motivo da rejeição é obrigatório.", erroRejeicao);
     }
 
     [Fact]

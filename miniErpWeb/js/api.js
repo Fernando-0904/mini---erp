@@ -582,9 +582,13 @@ async function aprovarPedidoCompraApi(id) {
     }, "Erro ao aprovar pedido de compra.");
 }
 
-async function rejeitarPedidoCompraApi(id) {
+async function rejeitarPedidoCompraApi(id, motivo) {
     return executarRequisicaoApi(`/compras/pedidos/${id}/rejeitar`, {
         method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ motivo }),
     }, "Erro ao rejeitar pedido de compra.");
 }
 

@@ -165,6 +165,9 @@ public class AppDbContext : DbContext
             .HasMaxLength(20)
             .IsRequired();
         modelBuilder.Entity<PedidoCompra>()
+            .Property(pedido => pedido.MotivoRejeicao)
+            .HasMaxLength(300);
+        modelBuilder.Entity<PedidoCompra>()
             .HasOne(pedido => pedido.Fornecedor)
             .WithMany()
             .HasForeignKey(pedido => pedido.FornecedorId)

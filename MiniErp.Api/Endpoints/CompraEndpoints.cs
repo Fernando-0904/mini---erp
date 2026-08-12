@@ -94,9 +94,9 @@ internal static class CompraEndpoints
             return Results.Ok(pedido);
         }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();
 
-        app.MapPost("/compras/pedidos/{id:int}/rejeitar", async (int id, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
+        app.MapPost("/compras/pedidos/{id:int}/rejeitar", async (int id, RejeicaoPedidoCompraRequest request, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
         {
-            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.RejeitarPedidoAsync(id);
+            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.RejeitarPedidoAsync(id, request.Motivo);
 
             if (!string.IsNullOrWhiteSpace(erro))
             {
@@ -117,7 +117,7 @@ internal static class CompraEndpoints
                 "PedidoCompra",
                 pedido!.Id.ToString(),
                 $"Pedido de compra {pedido.Id} rejeitado.",
-                new { pedido.FornecedorId, QuantidadeItens = pedido.Itens.Count, pedido.ValorTotal });
+                new { pedido.FornecedorId, QuantidadeItens = pedido.Itens.Count, pedido.ValorTotal, pedido.MotivoRejeicao });
 
             return Results.Ok(pedido);
         }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();

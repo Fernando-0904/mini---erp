@@ -358,6 +358,24 @@ function inicializarComprasController() {
     }
 
     async function rejeitarPedido(pedidoId) {
+        const motivoDigitado = prompt(`Informe o motivo da rejeição do pedido ${pedidoId}:`);
+
+        if (motivoDigitado === null) {
+            return;
+        }
+
+        const motivo = motivoDigitado.trim();
+
+        if (motivo === "") {
+            exibirMensagem("O motivo da rejeição é obrigatório.", "erro");
+            return;
+        }
+
+        if (motivo.length > 300) {
+            exibirMensagem("O motivo da rejeição deve ter no máximo 300 caracteres.", "erro");
+            return;
+        }
+
         const confirmar = confirm(`Confirma a rejeição do pedido ${pedidoId}?`);
 
         if (!confirmar) {
@@ -365,7 +383,7 @@ function inicializarComprasController() {
         }
 
         try {
-            await rejeitarPedidoCompraApi(pedidoId);
+            await rejeitarPedidoCompraApi(pedidoId, motivo);
             exibirMensagem("Pedido rejeitado com sucesso.", "sucesso");
             await carregarPedidos();
         } catch (erro) {

@@ -172,8 +172,20 @@ public class PedidoCompraService
             : (MapearResponse(pedidoAtualizado), string.Empty);
     }
 
-    public async Task<(PedidoCompraResponse? Pedido, string Erro)> RejeitarPedidoAsync(int pedidoId)
+    public async Task<(PedidoCompraResponse? Pedido, string Erro)> RejeitarPedidoAsync(int pedidoId, string motivo)
     {
+        string motivoNormalizado = (motivo ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(motivoNormalizado))
+        {
+            return (null, "O motivo da rejeição é obrigatório.");
+        }
+
+        if (motivoNormalizado.Length > 300)
+        {
+            return (null, "O motivo da rejeição deve ter no máximo 300 caracteres.");
+        }
+
         PedidoCompra? pedido = await contexto.PedidosCompra
             .Include(item => item.Itens)
             .ThenInclude(item => item.Produto)
@@ -191,6 +203,8 @@ public class PedidoCompraService
         }
 
         pedido.Status = PedidoCompraStatus.Rejeitado;
+        pedido.RejeitadoEmUtc = DateTime.UtcNow;
+        pedido.MotivoRejeicao = motivoNormalizado;
         await contexto.SaveChangesAsync();
 
         PedidoCompra? pedidoAtualizado = await BuscarPedidoCompletoAsync(pedido.Id);
@@ -249,7 +263,9 @@ public class PedidoCompraService
             FornecedorNome = pedido.Fornecedor?.Nome ?? string.Empty,
             Status = pedido.Status.ToString(),
             CriadoEmUtc = pedido.CriadoEmUtc,
+            RejeitadoEmUtc = pedido.RejeitadoEmUtc,
             RecebidoEmUtc = pedido.RecebidoEmUtc,
+            MotivoRejeicao = pedido.MotivoRejeicao,
             ValorTotal = pedido.Itens.Sum(item => item.PrecoUnitario * item.Quantidade),
             Itens = pedido.Itens.Select(item => new PedidoCompraItemResponse
             {
