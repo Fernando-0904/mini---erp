@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MiniErp.Api.Data;
 using MiniErp.Api.DTOs;
 using MiniErp.Api.Models;
@@ -61,7 +62,7 @@ public class PedidoCompraService
         PedidoCompra pedido = new()
         {
             FornecedorId = request.FornecedorId,
-            Status = PedidoCompraStatus.Aberto,
+            Status = PedidoCompraStatus.PendenteAprovacao,
             CriadoEmUtc = DateTime.UtcNow,
             Itens = request.Itens.Select(item =>
             {
@@ -110,10 +111,12 @@ public class PedidoCompraService
             return (null, "Pedido de compra não encontrado.");
         }
 
-        if (pedido.Status != PedidoCompraStatus.Aberto)
+        if (pedido.Status != PedidoCompraStatus.Aprovado)
         {
-            return (null, "Apenas pedidos abertos podem ser recebidos.");
+            return (null, "Apenas pedidos aprovados podem ser recebidos.");
         }
+
+        await using IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
 
         foreach (PedidoCompraItem item in pedido.Itens)
         {
@@ -125,6 +128,8 @@ public class PedidoCompraService
 
             if (!movimentado)
             {
+                await transacao.RollbackAsync();
+                contexto.ChangeTracker.Clear();
                 return (null, $"Não foi possível receber o pedido: {erroMovimentacao}");
             }
         }
@@ -132,10 +137,65 @@ public class PedidoCompraService
         pedido.Status = PedidoCompraStatus.Recebido;
         pedido.RecebidoEmUtc = DateTime.UtcNow;
         await contexto.SaveChangesAsync();
+        await transacao.CommitAsync();
 
         PedidoCompra? pedidoAtualizado = await BuscarPedidoCompletoAsync(pedido.Id);
         return pedidoAtualizado is null
             ? (null, "Pedido recebido, mas não foi possível recarregar os dados.")
+            : (MapearResponse(pedidoAtualizado), string.Empty);
+    }
+
+    public async Task<(PedidoCompraResponse? Pedido, string Erro)> AprovarPedidoAsync(int pedidoId)
+    {
+        PedidoCompra? pedido = await contexto.PedidosCompra
+            .Include(item => item.Itens)
+            .ThenInclude(item => item.Produto)
+            .Include(item => item.Fornecedor)
+            .FirstOrDefaultAsync(item => item.Id == pedidoId);
+
+        if (pedido is null)
+        {
+            return (null, "Pedido de compra não encontrado.");
+        }
+
+        if (!PodeAprovarOuRejeitar(pedido.Status))
+        {
+            return (null, "Somente pedidos pendentes podem ser aprovados.");
+        }
+
+        pedido.Status = PedidoCompraStatus.Aprovado;
+        await contexto.SaveChangesAsync();
+
+        PedidoCompra? pedidoAtualizado = await BuscarPedidoCompletoAsync(pedido.Id);
+        return pedidoAtualizado is null
+            ? (null, "Pedido aprovado, mas não foi possível recarregar os dados.")
+            : (MapearResponse(pedidoAtualizado), string.Empty);
+    }
+
+    public async Task<(PedidoCompraResponse? Pedido, string Erro)> RejeitarPedidoAsync(int pedidoId)
+    {
+        PedidoCompra? pedido = await contexto.PedidosCompra
+            .Include(item => item.Itens)
+            .ThenInclude(item => item.Produto)
+            .Include(item => item.Fornecedor)
+            .FirstOrDefaultAsync(item => item.Id == pedidoId);
+
+        if (pedido is null)
+        {
+            return (null, "Pedido de compra não encontrado.");
+        }
+
+        if (!PodeAprovarOuRejeitar(pedido.Status))
+        {
+            return (null, "Somente pedidos pendentes podem ser rejeitados.");
+        }
+
+        pedido.Status = PedidoCompraStatus.Rejeitado;
+        await contexto.SaveChangesAsync();
+
+        PedidoCompra? pedidoAtualizado = await BuscarPedidoCompletoAsync(pedido.Id);
+        return pedidoAtualizado is null
+            ? (null, "Pedido rejeitado, mas não foi possível recarregar os dados.")
             : (MapearResponse(pedidoAtualizado), string.Empty);
     }
 
@@ -200,5 +260,10 @@ public class PedidoCompraService
                 ValorTotal = item.PrecoUnitario * item.Quantidade
             }).ToList()
         };
+    }
+
+    private static bool PodeAprovarOuRejeitar(PedidoCompraStatus status)
+    {
+        return status == PedidoCompraStatus.PendenteAprovacao || status == PedidoCompraStatus.Aberto;
     }
 }

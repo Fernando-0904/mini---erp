@@ -30,7 +30,7 @@ public class PedidoCompraServiceTests
 
         Assert.Empty(erros);
         Assert.NotNull(pedido);
-        Assert.Equal("Aberto", pedido!.Status);
+        Assert.Equal("PendenteAprovacao", pedido!.Status);
         Assert.Equal(2, pedido.Itens.Count);
         Assert.Equal(0, banco.Contexto.MovimentacoesEstoque.Count());
     }
@@ -73,6 +73,11 @@ public class PedidoCompraServiceTests
         Assert.Empty(errosCriacao);
         Assert.NotNull(criado);
 
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id);
+        Assert.Equal(string.Empty, erroAprovacao);
+        Assert.NotNull(aprovado);
+        Assert.Equal("Aprovado", aprovado!.Status);
+
         (PedidoCompraResponse? recebido, string erroRecebimento) = await service.ReceberPedidoAsync(criado!.Id);
 
         Assert.Equal(string.Empty, erroRecebimento);
@@ -85,6 +90,100 @@ public class PedidoCompraServiceTests
         Assert.Equal(9, produtoA.QuantidadeEstoque);
         Assert.Equal(4, produtoB.QuantidadeEstoque);
         Assert.Equal(2, banco.Contexto.MovimentacoesEstoque.Count());
+    }
+
+    [Fact]
+    public async Task ReceberPedidoAsync_SemAprovacao_RetornaErro()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens = [new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoA.Codigo, Quantidade = 2 }]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? recebido, string erroRecebimento) = await service.ReceberPedidoAsync(criado!.Id);
+
+        Assert.Null(recebido);
+        Assert.Equal("Apenas pedidos aprovados podem ser recebidos.", erroRecebimento);
+    }
+
+    [Fact]
+    public async Task RejeitarPedidoAsync_ComPedidoPendente_AtualizaStatus()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens = [new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoA.Codigo, Quantidade = 1 }]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? rejeitado, string erroRejeicao) = await service.RejeitarPedidoAsync(criado!.Id);
+
+        Assert.Equal(string.Empty, erroRejeicao);
+        Assert.NotNull(rejeitado);
+        Assert.Equal("Rejeitado", rejeitado!.Status);
+    }
+
+    [Fact]
+    public async Task ReceberPedidoAsync_QuandoFalhaItemNoMeio_DesfazMovimentacoesParciais()
+    {
+        using BancoDeTeste banco = new();
+        PedidoCompraService service = banco.CriarService();
+
+        PedidoCompraRequest request = new()
+        {
+            FornecedorId = banco.FornecedorAtivo.Id,
+            Itens =
+            [
+                new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoA.Codigo, Quantidade = 2 },
+                new PedidoCompraItemRequest { ProdutoCodigo = banco.ProdutoB.Codigo, Quantidade = 1 },
+            ]
+        };
+
+        (PedidoCompraResponse? criado, List<string> errosCriacao) = await service.CriarPedidoAsync(request);
+        Assert.Empty(errosCriacao);
+        Assert.NotNull(criado);
+
+        (PedidoCompraResponse? aprovado, string erroAprovacao) = await service.AprovarPedidoAsync(criado!.Id);
+        Assert.Equal(string.Empty, erroAprovacao);
+        Assert.NotNull(aprovado);
+
+        PedidoCompraItem itemCorrompido = banco.Contexto.PedidosCompra
+            .Include(pedido => pedido.Itens)
+            .Single(pedido => pedido.Id == criado.Id)
+            .Itens
+            .Single(item => item.ProdutoCodigo == banco.ProdutoB.Codigo);
+
+        itemCorrompido.Quantidade = 0;
+        banco.Contexto.SaveChanges();
+
+        (PedidoCompraResponse? recebido, string erroRecebimento) = await service.ReceberPedidoAsync(criado.Id);
+
+        Assert.Null(recebido);
+        Assert.Contains("Não foi possível receber o pedido", erroRecebimento);
+
+        Produto produtoA = banco.Contexto.Produtos.Single(item => item.Codigo == banco.ProdutoA.Codigo);
+        Produto produtoB = banco.Contexto.Produtos.Single(item => item.Codigo == banco.ProdutoB.Codigo);
+
+        Assert.Equal(5, produtoA.QuantidadeEstoque);
+        Assert.Equal(3, produtoB.QuantidadeEstoque);
+        Assert.Equal(0, banco.Contexto.MovimentacoesEstoque.Count());
+
+        PedidoCompra pedido = banco.Contexto.PedidosCompra.Single(item => item.Id == criado.Id);
+        Assert.Equal(PedidoCompraStatus.Aprovado, pedido.Status);
     }
 
     private sealed class BancoDeTeste : IDisposable

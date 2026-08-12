@@ -1,4 +1,4 @@
-const COLSPAN_ITENS_PEDIDO = 5;
+const COLSPAN_ITENS_PEDIDO = 6;
 const COLSPAN_TABELA_PEDIDOS = 7;
 
 function inicializarComprasController() {
@@ -257,7 +257,7 @@ function inicializarComprasController() {
             itensPedido.length = 0;
             renderizarItensPedido();
             elementos.formularioPedidoCompra.reset();
-            exibirMensagem("Pedido de compra criado com sucesso.", "sucesso");
+            exibirMensagem("Pedido de compra criado e enviado para aprovação.", "sucesso");
             await carregarPedidos();
         } catch (erro) {
             exibirMensagem(erro instanceof Error ? erro.message : "Não foi possível criar o pedido.", "erro");
@@ -293,7 +293,7 @@ function inicializarComprasController() {
 
         linha.appendChild(criarCelula(pedido.id));
         linha.appendChild(criarCelula(pedido.fornecedorNome));
-        linha.appendChild(criarCelula(pedido.status));
+        linha.appendChild(criarCelula(formatarStatusPedido(pedido.status)));
         linha.appendChild(criarCelula(montarResumoItensPedido(pedido.itens)));
         linha.appendChild(criarCelula(formatarMoeda(pedido.valorTotal || 0)));
         linha.appendChild(criarCelula(formatarDataPedido(pedido.criadoEmUtc)));
@@ -305,7 +305,27 @@ function inicializarComprasController() {
     function criarCelulaAcaoPedido(pedido) {
         const celulaAcoes = document.createElement("td");
 
-        if (pedido.status === "Aberto") {
+        if (pedido.status === "PendenteAprovacao" || pedido.status === "Aberto") {
+            const botaoAprovar = document.createElement("button");
+            botaoAprovar.type = "button";
+            botaoAprovar.textContent = "Aprovar";
+            botaoAprovar.addEventListener("click", async function () {
+                await aprovarPedido(pedido.id);
+            });
+            celulaAcoes.appendChild(botaoAprovar);
+
+            const botaoRejeitar = document.createElement("button");
+            botaoRejeitar.type = "button";
+            botaoRejeitar.textContent = "Rejeitar";
+            botaoRejeitar.addEventListener("click", async function () {
+                await rejeitarPedido(pedido.id);
+            });
+            celulaAcoes.appendChild(botaoRejeitar);
+
+            return celulaAcoes;
+        }
+
+        if (pedido.status === "Aprovado") {
             const botaoReceber = document.createElement("button");
             botaoReceber.type = "button";
             botaoReceber.textContent = "Receber";
@@ -313,11 +333,44 @@ function inicializarComprasController() {
                 await receberPedido(pedido.id);
             });
             celulaAcoes.appendChild(botaoReceber);
-        } else {
-            celulaAcoes.textContent = "Concluído";
+            return celulaAcoes;
         }
 
+        celulaAcoes.textContent = "Concluído";
+
         return celulaAcoes;
+    }
+
+    async function aprovarPedido(pedidoId) {
+        const confirmar = confirm(`Confirma a aprovação do pedido ${pedidoId}?`);
+
+        if (!confirmar) {
+            return;
+        }
+
+        try {
+            await aprovarPedidoCompraApi(pedidoId);
+            exibirMensagem("Pedido aprovado com sucesso.", "sucesso");
+            await carregarPedidos();
+        } catch (erro) {
+            exibirMensagem(erro instanceof Error ? erro.message : "Não foi possível aprovar o pedido.", "erro");
+        }
+    }
+
+    async function rejeitarPedido(pedidoId) {
+        const confirmar = confirm(`Confirma a rejeição do pedido ${pedidoId}?`);
+
+        if (!confirmar) {
+            return;
+        }
+
+        try {
+            await rejeitarPedidoCompraApi(pedidoId);
+            exibirMensagem("Pedido rejeitado com sucesso.", "sucesso");
+            await carregarPedidos();
+        } catch (erro) {
+            exibirMensagem(erro instanceof Error ? erro.message : "Não foi possível rejeitar o pedido.", "erro");
+        }
     }
 
     async function receberPedido(pedidoId) {
@@ -404,4 +457,21 @@ function formatarDataPedido(dataIso) {
     }
 
     return data.toLocaleString("pt-BR");
+}
+
+function formatarStatusPedido(status) {
+    switch (status) {
+        case "PendenteAprovacao":
+            return "Pendente de aprovação";
+        case "Aprovado":
+            return "Aprovado";
+        case "Rejeitado":
+            return "Rejeitado";
+        case "Recebido":
+            return "Recebido";
+        case "Aberto":
+            return "Aberto";
+        default:
+            return status || "-";
+    }
 }

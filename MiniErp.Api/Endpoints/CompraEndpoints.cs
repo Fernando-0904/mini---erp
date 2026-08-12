@@ -7,7 +7,7 @@ namespace MiniErp.Api.Endpoints;
 
 internal static class CompraEndpoints
 {
-    internal static void MapCompraEndpoints(this WebApplication app, string politicaOperar)
+    internal static void MapCompraEndpoints(this WebApplication app, string politicaOperar, string politicaAdministrar)
     {
         app.MapGet("/compras/pedidos", async (PedidoCompraService pedidoCompraService) =>
         {
@@ -65,5 +65,61 @@ internal static class CompraEndpoints
 
             return Results.Ok(pedido);
         }).RequireAuthorization(politicaOperar).RequireAntiforgery();
+
+        app.MapPost("/compras/pedidos/{id:int}/aprovar", async (int id, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
+        {
+            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.AprovarPedidoAsync(id);
+
+            if (!string.IsNullOrWhiteSpace(erro))
+            {
+                int statusCode = erro.Contains("não encontrado", StringComparison.OrdinalIgnoreCase)
+                    ? StatusCodes.Status404NotFound
+                    : StatusCodes.Status400BadRequest;
+
+                return ApiHttpHelpers.CriarProblem(
+                    context,
+                    statusCode,
+                    statusCode == StatusCodes.Status404NotFound ? "Recurso não encontrado." : "Operação inválida.",
+                    erro);
+            }
+
+            await auditoriaService.RegistrarAsync(
+                context,
+                "Aprovação",
+                "PedidoCompra",
+                pedido!.Id.ToString(),
+                $"Pedido de compra {pedido.Id} aprovado.",
+                new { pedido.FornecedorId, QuantidadeItens = pedido.Itens.Count, pedido.ValorTotal });
+
+            return Results.Ok(pedido);
+        }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();
+
+        app.MapPost("/compras/pedidos/{id:int}/rejeitar", async (int id, PedidoCompraService pedidoCompraService, AuditoriaService auditoriaService, HttpContext context) =>
+        {
+            (PedidoCompraResponse? pedido, string erro) = await pedidoCompraService.RejeitarPedidoAsync(id);
+
+            if (!string.IsNullOrWhiteSpace(erro))
+            {
+                int statusCode = erro.Contains("não encontrado", StringComparison.OrdinalIgnoreCase)
+                    ? StatusCodes.Status404NotFound
+                    : StatusCodes.Status400BadRequest;
+
+                return ApiHttpHelpers.CriarProblem(
+                    context,
+                    statusCode,
+                    statusCode == StatusCodes.Status404NotFound ? "Recurso não encontrado." : "Operação inválida.",
+                    erro);
+            }
+
+            await auditoriaService.RegistrarAsync(
+                context,
+                "Rejeição",
+                "PedidoCompra",
+                pedido!.Id.ToString(),
+                $"Pedido de compra {pedido.Id} rejeitado.",
+                new { pedido.FornecedorId, QuantidadeItens = pedido.Itens.Count, pedido.ValorTotal });
+
+            return Results.Ok(pedido);
+        }).RequireAuthorization(politicaAdministrar).RequireAntiforgery();
     }
 }

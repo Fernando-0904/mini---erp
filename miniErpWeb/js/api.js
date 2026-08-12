@@ -576,6 +576,18 @@ async function receberPedidoCompraApi(id) {
     }, "Erro ao receber pedido de compra.");
 }
 
+async function aprovarPedidoCompraApi(id) {
+    return executarRequisicaoApi(`/compras/pedidos/${id}/aprovar`, {
+        method: "POST",
+    }, "Erro ao aprovar pedido de compra.");
+}
+
+async function rejeitarPedidoCompraApi(id) {
+    return executarRequisicaoApi(`/compras/pedidos/${id}/rejeitar`, {
+        method: "POST",
+    }, "Erro ao rejeitar pedido de compra.");
+}
+
 async function autenticarUsuarioApi(email, senha) {
     const usuario = await executarRequisicaoApi("/auth/login", {
         method: "POST",

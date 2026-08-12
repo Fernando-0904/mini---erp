@@ -194,7 +194,7 @@ app.UseAuthorization();
 app.MapProdutoEndpoints(PoliticaOperar, PoliticaAdministrar);
 app.MapCategoriaEndpoints(PoliticaOperar, PoliticaAdministrar);
 app.MapFornecedorEndpoints(PoliticaOperar, PoliticaAdministrar);
-app.MapCompraEndpoints(PoliticaOperar);
+app.MapCompraEndpoints(PoliticaOperar, PoliticaAdministrar);
 app.MapRelatorioEndpoints(PoliticaAdministrar);
 app.MapAuthEndpoints();
 app.MapDevEndpoints();
