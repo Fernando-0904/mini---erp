@@ -1,12 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
 :root {
-    --bg: #f1f4f8;
+    --bg: #f4f7fb;
     --surface: #ffffff;
-    --surface-alt: #f8fafc;
-    --text: #102133;
-    --text-muted: #5a6b7b;
-    --border: #d9e3ee;
-    --primary: #0f4c81;
-    --primary-strong: #0c3d67;
+    --surface-alt: #eef4fb;
+    --text: #0f1f31;
+    --text-muted: #55687c;
+    --border: #d3dfeb;
+    --primary: #0f6b8f;
+    --primary-strong: #0b5574;
+    --accent: #f59e0b;
+    --accent-soft: #fff4de;
     --success-bg: #e8f8ec;
     --success-border: #bde8c7;
     --success-text: #1e6f3f;
@@ -14,10 +18,10 @@
     --error-border: #f6c7cc;
     --error-text: #a32430;
     --warning-row: #fff7e7;
-    --shadow: 0 10px 24px rgba(16, 33, 51, 0.06);
-    --sidebar-bg-start: #0f2f4e;
-    --sidebar-bg-mid: #153d62;
-    --sidebar-bg-end: #1a4a75;
+    --shadow: 0 18px 42px rgba(10, 31, 53, 0.1);
+    --sidebar-bg-start: #092235;
+    --sidebar-bg-mid: #0b2d45;
+    --sidebar-bg-end: #10405c;
     --sidebar-text: #f5f9ff;
     --sidebar-link: #eaf4ff;
     --sidebar-link-hover: rgba(234, 244, 255, 0.12);
@@ -28,14 +32,16 @@
 }
 
 html.tema-escuro {
-    --bg: #11161d;
-    --surface: #1b222c;
-    --surface-alt: #222b36;
-    --text: #e7ecf3;
-    --text-muted: #a8b2bf;
-    --border: #313c4b;
-    --primary: #3b82f6;
-    --primary-strong: #2563eb;
+    --bg: #0e141b;
+    --surface: #18222d;
+    --surface-alt: #1f2b38;
+    --text: #e9eef5;
+    --text-muted: #a7b4c3;
+    --border: #2d3c4d;
+    --primary: #26a0c7;
+    --primary-strong: #1584a8;
+    --accent: #f6b73d;
+    --accent-soft: #3b2a11;
     --success-bg: #173324;
     --success-border: #29533a;
     --success-text: #8ed9ad;
@@ -43,7 +49,7 @@ html.tema-escuro {
     --error-border: #613642;
     --error-text: #f0a9b7;
     --warning-row: #332b1e;
-    --shadow: 0 10px 24px rgba(3, 8, 15, 0.34);
+    --shadow: 0 20px 44px rgba(2, 7, 13, 0.44);
     --sidebar-bg-start: #141b24;
     --sidebar-bg-mid: #141b24;
     --sidebar-bg-end: #141b24;
@@ -66,9 +72,12 @@ body {
     display: grid;
     grid-template-columns: 280px 1fr;
     grid-template-rows: 1fr auto;
-    background-color: var(--bg);
+    background:
+        radial-gradient(circle at 90% -8%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 44%),
+        radial-gradient(circle at 4% 6%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 38%),
+        var(--bg);
     color: var(--text);
-    font-family: "Trebuchet MS", "Segoe UI", "Noto Sans", sans-serif;
+    font-family: "Source Sans 3", "Segoe UI", "Noto Sans", sans-serif;
     line-height: 1.45;
     transition: background-color 0.22s ease, color 0.22s ease;
 }
@@ -78,7 +87,7 @@ header {
     grid-row: 1 / span 2;
     background: linear-gradient(180deg, var(--sidebar-bg-start) 0%, var(--sidebar-bg-mid) 65%, var(--sidebar-bg-end) 100%);
     color: var(--sidebar-text);
-    padding: 24px 18px;
+    padding: 22px 18px;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -86,14 +95,15 @@ header {
     top: 0;
     height: 100vh;
     overflow-y: auto;
-    box-shadow: 8px 0 24px rgba(9, 30, 50, 0.18);
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 8px 0 28px rgba(9, 30, 50, 0.18);
 }
 
 header h1 {
     margin: 0;
-    font-size: 1.45rem;
+    font-size: 1.42rem;
     letter-spacing: 0.3px;
-    font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+    font-family: "Space Grotesk", "Bahnschrift", "Trebuchet MS", sans-serif;
 }
 
 .topo-marca {
@@ -108,7 +118,7 @@ header h2 {
     font-size: 0.95rem;
     font-weight: 600;
     color: color-mix(in srgb, var(--sidebar-text) 82%, #7cb3e0);
-    font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+    font-family: "Space Grotesk", "Bahnschrift", "Trebuchet MS", sans-serif;
 }
 
 .status-conexao {
@@ -144,32 +154,148 @@ header h2 {
     color: #ffe2a1;
 }
 
-nav {
+header nav {
     display: grid;
     gap: 8px;
 }
 
-nav a {
+header nav a {
     text-decoration: none;
     color: var(--sidebar-link);
     padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid transparent;
     font-weight: 600;
-    font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+    font-family: "Space Grotesk", "Bahnschrift", "Trebuchet MS", sans-serif;
     transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
-nav a:hover {
-    background-color: var(--sidebar-link-hover);
+header nav a:hover {
+    background-color: color-mix(in srgb, var(--sidebar-link-hover) 78%, var(--accent-soft));
     border-color: var(--sidebar-link-hover-border);
     transform: translateX(2px);
 }
 
-nav a[aria-current="page"] {
+header nav a[aria-current="page"] {
     background: var(--sidebar-link-active-bg);
     color: var(--sidebar-link-active-text);
     border-color: var(--sidebar-link-active-border);
+}
+
+.nav-modular {
+    gap: 14px;
+}
+
+.nav-modulo {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.nav-modulo-titulo {
+    margin: 0 0 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    color: color-mix(in srgb, var(--sidebar-text) 78%, #91bde2);
+    font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.nav-modulo-links {
+    display: grid;
+    gap: 6px;
+}
+
+.botao-menu-modular {
+    display: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--sidebar-text);
+}
+
+.botao-menu-modular:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.breadcrumb-app {
+    display: block;
+    margin: 0 0 14px;
+    padding: 8px 2px;
+}
+
+.breadcrumb-trilha {
+    margin: 0;
+    font-size: 0.83rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+}
+
+.navegacao-contextual {
+    padding: 14px 16px;
+    margin-top: -8px;
+    background: color-mix(in srgb, var(--surface) 88%, #f6faff);
+}
+
+.navegacao-contextual h3 {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.navegacao-contextual-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.acoes-compras-rapidas {
+    padding: 14px 16px;
+    margin-top: -8px;
+    background: color-mix(in srgb, var(--surface) 86%, #ecf7ff);
+}
+
+.acoes-compras-rapidas h3 {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.atalho-contextual {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.82rem;
+    transition: border-color 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+
+.atalho-contextual:hover {
+    border-color: color-mix(in srgb, var(--primary) 50%, #98c2e3);
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--surface) 84%, #eef6ff);
+}
+
+.atalho-contextual[aria-current="page"] {
+    background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    color: var(--primary);
 }
 
 .botao-tema {
@@ -227,23 +353,36 @@ main {
     grid-column: 2;
     grid-row: 1;
     width: min(1220px, 100% - 48px);
-    margin: 28px auto;
+    margin: 24px auto;
 }
 
-section {
+main section {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: var(--shadow);
     padding: 20px;
     margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
 }
 
-section h3 {
+main section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 65%, var(--accent)) 58%, var(--accent) 100%);
+    opacity: 0.7;
+}
+
+main section h3 {
     margin-top: 0;
     margin-bottom: 14px;
-    font-size: 1.04rem;
-    font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+    font-size: 1.06rem;
+    font-family: "Space Grotesk", "Bahnschrift", "Trebuchet MS", sans-serif;
 }
 
 form {
@@ -296,18 +435,20 @@ select:focus {
 button {
     appearance: none;
     border: 0;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 10px 14px;
     cursor: pointer;
     font-weight: 700;
-    background-color: var(--primary);
+    background: linear-gradient(120deg, var(--primary), color-mix(in srgb, var(--primary) 60%, #0da4c6));
     color: #fff;
-    transition: background-color 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 8px 18px rgba(15, 107, 143, 0.22);
+    transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 button:hover {
-    background-color: var(--primary-strong);
-    transform: translateY(-1px);
+    background: linear-gradient(120deg, var(--primary-strong), var(--primary));
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 11px 22px rgba(11, 85, 116, 0.28);
 }
 
 button:disabled {
@@ -592,9 +733,9 @@ html.tema-escuro .prioridade-info {
 }
 
 .card-indicador {
-    background: color-mix(in srgb, var(--surface-alt) 92%, var(--surface));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-alt) 92%, var(--surface)) 0%, var(--surface) 100%);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
     padding: 14px;
 }
 
@@ -606,9 +747,9 @@ html.tema-escuro .prioridade-info {
 
 .card-indicador p {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.38rem;
     font-weight: 800;
-    color: color-mix(in srgb, var(--text) 82%, #6ea6d5);
+    color: color-mix(in srgb, var(--text) 82%, var(--primary));
 }
 
 footer {

@@ -12,15 +12,32 @@
         box-shadow: none;
     }
 
-    nav {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding-bottom: 4px;
+    .botao-menu-modular {
+        display: none;
     }
 
-    nav a {
-        white-space: nowrap;
+    header nav {
+        display: grid;
+        margin-top: 4px;
+        gap: 10px;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+
+    .nav-modulo {
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-modulo-titulo {
+        margin-bottom: 6px;
+    }
+
+    .nav-modulo-links a {
+        white-space: normal;
     }
 
     .botao-tema {
@@ -49,10 +66,14 @@
     .resumo-busca-global .cards-indicadores {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .navegacao-contextual-links {
+        gap: 6px;
+    }
 }
 
 @media (max-width: 640px) {
-    section {
+    main section {
         padding: 14px;
     }
 
